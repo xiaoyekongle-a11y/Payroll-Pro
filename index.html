@@ -562,6 +562,37 @@ body.dark .rbac-table th{background:#1a1d26}
 .rbac-ok{color:var(--green);font-weight:700}
 .rbac-no{color:var(--border)}
 .rbac-own{color:var(--gold);font-weight:700;font-size:0.65rem}
+
+/* ===== SPRINT 9: 社保届出 ===== */
+.shahou-alert-row{display:flex;align-items:center;gap:0.75rem;padding:0.65rem 0.85rem;border-bottom:1px solid var(--border);font-size:0.8rem}
+.shahou-alert-row:last-child{border-bottom:none}
+.shahou-grade-change{display:inline-flex;align-items:center;gap:0.3rem;font-family:var(--font-mono);font-size:0.75rem}
+.shahou-grade-up{color:var(--accent);font-weight:700}
+.shahou-grade-down{color:var(--blue);font-weight:700}
+.shahou-tbl{width:100%;border-collapse:collapse;font-size:0.72rem}
+.shahou-tbl th{background:var(--cream);padding:0.35rem 0.5rem;text-align:center;font-size:0.62rem;font-weight:700;letter-spacing:0.05em;color:var(--muted);border-bottom:2px solid var(--border)}
+body.dark .shahou-tbl th{background:#1a1d26}
+.shahou-tbl td{padding:0.35rem 0.5rem;border-bottom:1px solid var(--border);text-align:center;vertical-align:middle}
+.shahou-tbl tr:last-child td{border-bottom:none}
+.grade-badge{display:inline-block;background:var(--blue);color:#fff;font-family:var(--font-mono);font-size:0.6rem;font-weight:700;padding:0.1em 0.45em;border-radius:3px;min-width:1.8rem;text-align:center}
+.grade-badge.changed{background:var(--accent)}
+.hoshu-tbl{width:100%;border-collapse:collapse;font-size:0.7rem}
+.hoshu-tbl th{background:var(--cream);padding:0.3rem 0.5rem;text-align:center;font-size:0.6rem;font-weight:700;letter-spacing:0.04em;color:var(--muted);border-bottom:2px solid var(--border);position:sticky;top:0}
+body.dark .hoshu-tbl th{background:#1a1d26}
+.hoshu-tbl td{padding:0.3rem 0.5rem;border-bottom:1px solid var(--border);text-align:center}
+.hoshu-tbl tr:nth-child(even) td{background:rgba(0,0,0,0.02)}
+body.dark .hoshu-tbl tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
+
+/* ===== SPRINT 10: ダッシュボード強化 ===== */
+.dept-legend-row{display:flex;align-items:center;gap:0.5rem;padding:0.2rem 0;font-size:0.72rem}
+.dept-legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.dept-legend-name{flex:1;color:var(--muted)}
+.dept-legend-val{font-family:var(--font-mono);font-weight:700;font-size:0.7rem}
+.diff-badge{display:inline-flex;align-items:center;gap:0.15rem;font-size:0.62rem;font-family:var(--font-mono);font-weight:700;padding:0.1em 0.4em;border-radius:3px}
+.diff-up{background:rgba(192,66,42,0.12);color:var(--accent)}
+.diff-down{background:rgba(30,110,69,0.12);color:var(--green)}
+.diff-flat{background:rgba(122,117,110,0.1);color:var(--muted)}
+.report-export-btn{display:flex;align-items:center;gap:0.4rem}
 </style>
 </head>
 <body>
@@ -647,6 +678,7 @@ body.dark .rbac-table th{background:#1a1d26}
     <div class="nav-tab" data-page="attendance">勤怠管理</div>
     <div class="nav-tab" data-page="yearend">年末調整</div>
     <div class="nav-tab owner-only" data-page="transfer">振込管理</div>
+    <div class="nav-tab owner-only" data-page="shahou">社保届出</div>
     <div class="nav-tab" data-page="taxrates">税率管理</div>
     <div class="nav-tab owner-only" data-page="users">ユーザー管理</div>
     <div class="nav-tab owner-only" data-page="settings">会社設定</div>
@@ -658,36 +690,75 @@ body.dark .rbac-table th{background:#1a1d26}
         <div class="panel"><div class="panel-header">📊 今月の予実管理</div><div class="panel-body" id="dashBudget"></div></div>
         <div class="panel"><div class="panel-header">⚠️ 扶養の壁アラート</div><div class="panel-body" id="dashWall"></div></div>
       </div>
-      <div class="panel" style="margin-top:1rem">
-        <div class="panel-header">🚀 v5.0 新機能クイックアクセス</div>
-        <div class="panel-body">
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0.65rem">
-            <button class="btn btn-secondary" style="flex-direction:column;gap:0.3rem;padding:1rem;height:auto;align-items:center" onclick="showPage('attendance')">
-              <span style="font-size:1.5rem">🕐</span>
-              <span style="font-size:0.75rem;font-weight:700">勤怠管理</span>
-              <span style="font-size:0.65rem;color:var(--muted)">打刻・残業計算・取込</span>
-            </button>
-            <button class="btn btn-secondary" style="flex-direction:column;gap:0.3rem;padding:1rem;height:auto;align-items:center" onclick="showPage('yearend')">
-              <span style="font-size:1.5rem">📋</span>
-              <span style="font-size:0.75rem;font-weight:700">年末調整</span>
-              <span style="font-size:0.65rem;color:var(--muted)">控除入力・源泉徴収票</span>
-            </button>
-            <button class="btn btn-secondary owner-only" style="flex-direction:column;gap:0.3rem;padding:1rem;height:auto;align-items:center" onclick="showPage('transfer')">
-              <span style="font-size:1.5rem">💳</span>
-              <span style="font-size:0.75rem;font-weight:700">振込管理</span>
-              <span style="font-size:0.65rem;color:var(--muted)">全銀FBファイル生成</span>
-            </button>
-            <button class="btn btn-secondary" style="flex-direction:column;gap:0.3rem;padding:1rem;height:auto;align-items:center" onclick="showPage('history')">
-              <span style="font-size:1.5rem">📂</span>
-              <span style="font-size:0.75rem;font-weight:700">給与履歴</span>
-              <span style="font-size:0.65rem;color:var(--muted)">過去データ・再発行</span>
-            </button>
+      <!-- 社保月額変更アラート（Sprint 9） -->
+      <div class="panel" id="shahoAlertPanel" style="margin-top:1rem;display:none">
+        <div class="panel-header">🏥 社会保険 月額変更検出アラート</div>
+        <div class="panel-body" id="shahoAlertBody"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:1rem;margin-top:1rem">
+        <!-- 月別人件費推移（YoY強化版） -->
+        <div class="panel">
+          <div class="panel-header" style="display:flex;align-items:center;justify-content:space-between">
+            <span>📈 月別人件費推移</span>
+            <div style="display:flex;gap:0.4rem">
+              <button class="btn btn-sm btn-secondary" id="btnChartModeToggle" style="font-size:0.65rem;padding:0.2rem 0.5rem">前年比表示</button>
+              <button class="btn btn-sm btn-secondary" id="btnDashExport" style="font-size:0.65rem;padding:0.2rem 0.5rem">📥 レポート出力</button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <canvas id="trendChart" height="90"></canvas>
+            <p id="trendChartMsg" style="display:none;font-size:0.78rem;color:var(--muted);padding:0.5rem 0">2ヶ月以上のデータが揃うとグラフが表示されます</p>
+          </div>
+        </div>
+        <!-- 部署別コスト比率ドーナツ -->
+        <div class="panel">
+          <div class="panel-header">🍩 部署別人件費比率</div>
+          <div class="panel-body" style="display:flex;flex-direction:column;align-items:center">
+            <canvas id="deptDonutChart" width="180" height="180"></canvas>
+            <div id="deptDonutLegend" style="width:100%;margin-top:0.5rem"></div>
           </div>
         </div>
       </div>
+      <!-- 従業員別手取り推移ドリルダウン -->
       <div class="panel" style="margin-top:1rem">
-        <div class="panel-header">📈 月別人件費推移</div>
-        <div class="panel-body"><canvas id="trendChart" height="80"></canvas><p id="trendChartMsg" style="display:none;font-size:0.78rem;color:var(--muted);padding:0.5rem 0">2ヶ月以上のデータが揃うとグラフが表示されます</p></div>
+        <div class="panel-header" style="display:flex;align-items:center;justify-content:space-between">
+          <span>👤 従業員別手取り推移</span>
+          <select id="drilldownEmpSel" style="padding:0.25rem 0.5rem;border:1.5px solid var(--border);border-radius:var(--radius);font-family:var(--font-body);font-size:0.75rem">
+            <option value="">— 従業員を選択 —</option>
+          </select>
+        </div>
+        <div class="panel-body">
+          <canvas id="drilldownChart" height="70"></canvas>
+          <p id="drilldownMsg" style="font-size:0.78rem;color:var(--muted);padding:0.5rem 0">従業員を選択すると手取り推移が表示されます</p>
+        </div>
+      </div>
+      <!-- v5クイックアクセス -->
+      <div class="panel" style="margin-top:1rem">
+        <div class="panel-header">🚀 クイックアクセス</div>
+        <div class="panel-body">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.65rem">
+            <button class="btn btn-secondary" style="flex-direction:column;gap:0.3rem;padding:0.85rem;height:auto;align-items:center" onclick="showPage('attendance')">
+              <span style="font-size:1.3rem">🕐</span>
+              <span style="font-size:0.72rem;font-weight:700">勤怠管理</span>
+            </button>
+            <button class="btn btn-secondary" style="flex-direction:column;gap:0.3rem;padding:0.85rem;height:auto;align-items:center" onclick="showPage('yearend')">
+              <span style="font-size:1.3rem">📋</span>
+              <span style="font-size:0.72rem;font-weight:700">年末調整</span>
+            </button>
+            <button class="btn btn-secondary owner-only" style="flex-direction:column;gap:0.3rem;padding:0.85rem;height:auto;align-items:center" onclick="showPage('transfer')">
+              <span style="font-size:1.3rem">💳</span>
+              <span style="font-size:0.72rem;font-weight:700">振込管理</span>
+            </button>
+            <button class="btn btn-secondary owner-only" style="flex-direction:column;gap:0.3rem;padding:0.85rem;height:auto;align-items:center" onclick="showPage('shahou')">
+              <span style="font-size:1.3rem">🏥</span>
+              <span style="font-size:0.72rem;font-weight:700">社保届出</span>
+            </button>
+            <button class="btn btn-secondary" style="flex-direction:column;gap:0.3rem;padding:0.85rem;height:auto;align-items:center" onclick="showPage('history')">
+              <span style="font-size:1.3rem">📂</span>
+              <span style="font-size:0.72rem;font-weight:700">給与履歴</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="page" id="pagePayroll">
@@ -985,6 +1056,47 @@ body.dark .rbac-table th{background:#1a1d26}
         <div class="panel-header">💳 振込データ一覧 <span id="transferSummary" style="font-size:0.72rem;color:var(--muted);margin-left:0.5rem"></span></div>
         <div class="panel-body" style="padding:0">
           <div id="transferList" style="padding:0.75rem"><p style="font-size:0.8rem;color:var(--muted)">「振込データ作成」ボタンで確定済み給与から自動生成します</p></div>
+        </div>
+      </div>
+    </div>
+    <!-- ══ 社保届出ページ（Sprint 9） ══ -->
+    <div class="page" id="pageShahou">
+      <div class="period-bar">
+        <div class="period-bar-left">
+          <label class="period-label">基準年月</label>
+          <select id="shahouPeriodSel" style="padding:0.4rem 0.65rem;border:1.5px solid var(--border);border-radius:var(--radius);font-family:var(--font-mono);font-size:0.82rem"></select>
+        </div>
+        <div style="flex:1"></div>
+        <div class="btn-cluster">
+          <span class="cluster-label">届出生成</span>
+          <button class="btn btn-sm btn-blue" id="btnShahouCheck">🔍 月額変更チェック</button>
+          <button class="btn btn-sm btn-secondary" id="btnSanteiGen">📄 算定基礎届</button>
+          <button class="btn btn-sm btn-secondary" id="btnGetsugakuPDF">🖨 月額変更届PDF</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <!-- 月額変更対象者 -->
+        <div class="panel">
+          <div class="panel-header">📊 月額変更届 対象者チェック</div>
+          <div class="panel-body" id="shahouChangeList">
+            <p style="font-size:0.8rem;color:var(--muted)">「月額変更チェック」ボタンで直近3ヶ月の給与履歴を分析します</p>
+          </div>
+        </div>
+        <!-- 算定基礎届 -->
+        <div class="panel">
+          <div class="panel-header">📋 算定基礎届（4〜6月平均）</div>
+          <div class="panel-body" id="santeiList">
+            <p style="font-size:0.8rem;color:var(--muted)">「算定基礎届」ボタンで4〜6月の平均報酬月額を集計します</p>
+          </div>
+        </div>
+      </div>
+      <!-- 等級テーブル参照 -->
+      <div class="panel" style="margin-top:1rem">
+        <div class="panel-header" style="cursor:pointer" onclick="toggleAcc('accHoshuTable')">
+          📖 標準報酬月額 等級表（クリックで展開） <span id="accHoshuTableArrow">▼</span>
+        </div>
+        <div id="accHoshuTable" style="display:none">
+          <div class="panel-body" id="hoshuTableBody"></div>
         </div>
       </div>
     </div>
@@ -1336,6 +1448,7 @@ async function initApp(){
   buildAttPeriodSelector();
   buildYearendYearSelector();
   buildTransferPeriodSelector();
+  buildShahouPeriodSelector();
   showScreen('appScreen');showPage('dashboard');initDarkMode();
 }
 
@@ -2104,84 +2217,6 @@ function parseImportRows(rows){
     });
 }
 
-function renderDashboard(){
-  const tG=employees.reduce((a,e)=>a+e.gross,0),tN=employees.reduce((a,e)=>a+e.monthlyNet,0);
-  const tI=employees.reduce((a,e)=>a+e.insurance,0),tT=employees.reduce((a,e)=>a+e.tax+(e.municipal||0),0);
-  $('dashStats').innerHTML=`
-    <div class="stat-card"><div class="stat-label">従業員数</div><div class="stat-value blue">${employees.length}名</div><div class="stat-sub">${currentPeriod}</div></div>
-    <div class="stat-card"><div class="stat-label">支給額合計</div><div class="stat-value">${fmtY(tG)}</div></div>
-    <div class="stat-card"><div class="stat-label">手取り合計</div><div class="stat-value green">${fmtY(tN)}</div></div>
-    <div class="stat-card"><div class="stat-label">社会保険合計</div><div class="stat-value accent">${fmtY(tI)}</div></div>
-    <div class="stat-card"><div class="stat-label">税金合計</div><div class="stat-value accent">${fmtY(tT)}</div></div>`;
-  const budget=currentCompany.budget||0;
-  if(budget>0){
-    const pct=Math.min(tG/budget*100,100),cls=pct>=95?'over':pct>=80?'warn':'ok';
-    $('dashBudget').innerHTML=`
-      <div style="font-size:0.75rem;margin-bottom:0.65rem">月次人件費予算：<b>${fmtY(budget)}</b></div>
-      <div style="font-size:0.72rem;display:flex;justify-content:space-between;margin-bottom:0.3rem">
-        <span>支給額合計</span><span style="font-family:var(--font-mono)">${fmtY(tG)}（${Math.round(pct)}%）</span>
-      </div>
-      <div class="budget-progress"><div class="budget-bar-fill ${cls}" style="width:${pct}%"></div></div>
-      ${pct>=95?'<div style="font-size:0.7rem;color:var(--accent);margin-top:0.5rem">⚠ 予算超過の恐れがあります</div>':''}`;
-  }else{$('dashBudget').innerHTML='<p style="font-size:0.78rem;color:var(--muted)">会社設定から予算を設定してください</p>';}
-  const wallEmps=employees.filter(e=>e.dep>0||e.spDed>0);
-  if(wallEmps.length>0){
-    $('dashWall').innerHTML=wallEmps.map(e=>{
-      const ae=(e.gross||0)*12,pct=Math.min(ae/1030000*100,100),cls=ae>=1030000?'over':pct>=80?'warn':'ok';
-      return`<div style="margin-bottom:0.75rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border)">
-        <div style="font-size:0.78rem;font-weight:700;margin-bottom:0.2rem">${e.name}</div>
-        <div style="font-size:0.68rem;color:var(--muted);font-family:var(--font-mono);margin-bottom:0.3rem">
-          年収見込：${fmtY(ae)}&nbsp;
-          ${ae>=1300000?'<span style="color:var(--accent);font-weight:700">⚠ 130万の壁超過</span>':
-            ae>=1030000?'<span style="color:var(--gold);font-weight:700">⚠ 103万の壁超過</span>':
-            `103万まであと${fmtY(Math.max(0,1030000-ae))}`}
-        </div>
-        <div class="budget-progress"><div class="budget-bar-fill ${cls}" style="width:${pct}%"></div></div>
-      </div>`;
-    }).join('');
-  }else{$('dashWall').innerHTML='<p style="font-size:0.78rem;color:var(--muted)">扶養家族のいる従業員がいません</p>';}
-  // チャートはUIをブロックしないよう非同期で呼び出し
-  requestAnimationFrame(()=>renderTrendChart());
-}
-
-async function renderTrendChart(){
-  if(!currentCompany)return;
-  try{
-    const rows=await dbGetAll('payroll_snapshots',{company_id:currentCompany.id});
-    rows.sort((a,b)=>a.period.localeCompare(b.period));
-    const recent=rows.slice(-6);
-    const canvas=$('trendChart');
-    // canvasがDOMにない場合（ページ遷移で消えた等）は何もしない
-    if(!canvas)return;
-    const msg=$('trendChartMsg');
-    if(recent.length<2){
-      canvas.style.display='none';
-      if(msg)msg.style.display='block';
-      return;
-    }
-    canvas.style.display='block';
-    if(msg)msg.style.display='none';
-    const isDark=document.body.classList.contains('dark');
-    const gc=isDark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)',tc=isDark?'#5a5650':'#7a7469';
-    if(trendChartObj){trendChartObj.destroy();trendChartObj=null;}
-    trendChartObj=new Chart(canvas,{
-      type:'bar',
-      data:{
-        labels:recent.map(r=>r.period.replace('-','/')),
-        datasets:[
-          {label:'支給額',data:recent.map(r=>r.tot_gross),backgroundColor:'rgba(26,58,92,0.5)',borderColor:'#1a3a5c',borderWidth:1,borderRadius:2},
-          {label:'手取り',data:recent.map(r=>r.tot_net),backgroundColor:'rgba(42,122,80,0.6)',borderColor:'#2a7a50',borderWidth:1,borderRadius:2},
-        ]
-      },
-      options:{
-        responsive:true,maintainAspectRatio:true,
-        plugins:{legend:{labels:{color:tc,font:{size:10},boxWidth:10}},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmtY(ctx.parsed.y)}`}}},
-        scales:{x:{ticks:{color:tc,font:{size:10}},grid:{color:gc}},y:{ticks:{color:tc,callback:v=>'¥'+(v/10000).toFixed(0)+'万',font:{size:10}},grid:{color:gc}}}
-      }
-    });
-  }catch(e){console.warn('[PA] trendChart',e.message);}
-}
-
 async function renderUserList(){
   const wrap=$('userListWrap');
   const users=await dbGetAll('company_users',{company_id:currentCompany.id});
@@ -2267,7 +2302,11 @@ $('btnDarkMode').addEventListener('click',()=>{
   const on=document.body.classList.contains('dark');
   $('btnDarkMode').textContent=on?'☀️':'🌙';
   localStorage.setItem('pa_dark',on?'1':'0');
-  if(trendChartObj){trendChartObj.destroy();trendChartObj=null;renderTrendChart();}
+  if(trendChartObj){trendChartObj.destroy();trendChartObj=null;}
+  if(deptDonutObj){deptDonutObj.destroy();deptDonutObj=null;}
+  if(drilldownChartObj){drilldownChartObj.destroy();drilldownChartObj=null;}
+  renderTrendChart();
+  renderDeptDonut();
 });
 
 function showPage(id){
@@ -2276,10 +2315,10 @@ function showPage(id){
   const pageEl=$('page'+id.charAt(0).toUpperCase()+id.slice(1));
   if(pageEl)pageEl.classList.add('active');
   document.querySelector(`[data-page="${id}"]`)?.classList.add('active');
-  // ページ固有の初期化
   if(id==='attendance')renderAttCalendar();
   if(id==='yearend')renderYearendList();
   if(id==='transfer')renderTransferList();
+  if(id==='shahou'){renderHoshuTable();checkShahouChanges();}
 }
 
 /* ══════════════════════════════════════
@@ -3052,6 +3091,23 @@ $('btnYearendPDF').addEventListener('click',()=>{
 $('btnYearendCSV').addEventListener('click',exportYearendCSV);
 $('btnYearendConfirm').addEventListener('click',confirmAllYearend);
 
+// ══ 社保届出（Sprint 9） ══
+$('btnShahouCheck').addEventListener('click', checkShahouChanges);
+$('btnSanteiGen').addEventListener('click', generateSanteiKisho);
+$('btnGetsugakuPDF').addEventListener('click', generateGetsugakuPDF);
+$('shahouPeriodSel').addEventListener('change', checkShahouChanges);
+
+// ══ ダッシュボード強化（Sprint 10） ══
+$('btnChartModeToggle').addEventListener('click',()=>{
+  trendChartMode = trendChartMode==='yoy' ? 'normal' : 'yoy';
+  $('btnChartModeToggle').textContent = trendChartMode==='yoy' ? '通常表示' : '前年比表示';
+  renderTrendChart();
+});
+$('btnDashExport').addEventListener('click', exportDashboardReport);
+$('drilldownEmpSel').addEventListener('change', e=>{
+  renderDrilldownChart(e.target.value);
+});
+
 // ══ 振込管理 ══
 $('btnTransferLoad').addEventListener('click',()=>{
   showModal('振込データ作成',`<b>${transferPeriod}</b>の確定済み給与から振込データを作成します。`,
@@ -3151,11 +3207,635 @@ window.__PA_AUTH_UNSUB = () => subscription.unsubscribe();
 
 // ── onclick属性から呼ぶ関数をグローバルに公開 ──
 // IIFEスコープ内の関数はHTML onclick=""から直接参照できないため window に登録
+/* ══════════════════════════════════════════════════════════
+   ⑦ 社会保険自動化 — Sprint 9
+   標準報酬月額等級表・月額変更検出・算定基礎届・届出PDF生成
+══════════════════════════════════════════════════════════ */
+
+// 標準報酬月額 等級表（2024年度・健康保険 全国平均）
+// [等級, 報酬月額下限, 報酬月額上限, 標準報酬月額]
+const HOSHU_GRADES = [
+  [ 1,      0,   63000,   58000],[ 2,  63000,   73000,   68000],
+  [ 3,  73000,   83000,   78000],[ 4,  83000,   93000,   88000],
+  [ 5,  93000,  101000,   98000],[ 6, 101000,  107000,  104000],
+  [ 7, 107000,  114000,  110000],[ 8, 114000,  122000,  118000],
+  [ 9, 122000,  130000,  126000],[10, 130000,  138000,  134000],
+  [11, 138000,  146000,  142000],[12, 146000,  155000,  150000],
+  [13, 155000,  165000,  160000],[14, 165000,  175000,  170000],
+  [15, 175000,  185000,  180000],[16, 185000,  195000,  190000],
+  [17, 195000,  210000,  200000],[18, 210000,  230000,  220000],
+  [19, 230000,  250000,  240000],[20, 250000,  270000,  260000],
+  [21, 270000,  290000,  280000],[22, 290000,  310000,  300000],
+  [23, 310000,  330000,  320000],[24, 330000,  350000,  340000],
+  [25, 350000,  370000,  360000],[26, 370000,  395000,  380000],
+  [27, 395000,  425000,  410000],[28, 425000,  455000,  440000],
+  [29, 455000,  485000,  470000],[30, 485000,  515000,  500000],
+  [31, 515000,  545000,  530000],[32, 545000,  575000,  560000],
+  [33, 575000,  605000,  590000],[34, 605000,  635000,  620000],
+  [35, 635000,  665000,  650000],[36, 665000,  695000,  680000],
+  [37, 695000,  730000,  710000],[38, 730000,  770000,  750000],
+  [39, 770000,  810000,  790000],[40, 810000,  855000,  830000],
+  [41, 855000,  905000,  880000],[42, 905000,  955000,  930000],
+  [43, 955000, 1005000,  980000],[44,1005000, 1055000, 1030000],
+  [45,1055000, 1115000, 1090000],[46,1115000, 1175000, 1150000],
+  [47,1175000, 1235000, 1210000],[48,1235000, 1295000, 1270000],
+  [49,1295000, 1355000, 1330000],[50,1355000,Infinity,1390000],
+];
+
+function getHoshuGrade(monthlyPay){
+  for(const [grade, low, high, standard] of HOSHU_GRADES){
+    if(monthlyPay >= low && monthlyPay < high) return {grade, standard};
+  }
+  return {grade:50, standard:1390000};
+}
+
+function buildShahouPeriodSelector(){
+  const sel=$('shahouPeriodSel');
+  if(!sel)return;
+  const now=new Date();
+  sel.innerHTML='';
+  for(let i=0;i<=5;i++){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    const v=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const o=document.createElement('option');
+    o.value=v; o.textContent=v.replace('-','年')+'月';
+    sel.appendChild(o);
+  }
+}
+
+async function checkShahouChanges(){
+  const wrap=$('shahouChangeList');
+  wrap.innerHTML='<p style="font-size:0.8rem;color:var(--muted)">分析中...</p>';
+
+  // 直近4ヶ月分の給与履歴を取得（変更月＋前3ヶ月）
+  const allRows = await dbGetAll('payroll_history',{company_id:currentCompany.id});
+  allRows.sort((a,b)=>b.period.localeCompare(a.period));
+  const recent4 = allRows.slice(0,4);
+
+  if(recent4.length < 4){
+    wrap.innerHTML=`<p style="font-size:0.8rem;color:var(--muted)">月額変更チェックには4ヶ月以上の確定履歴が必要です（現在${recent4.length}ヶ月分）</p>`;
+    return;
+  }
+
+  // 従業員ごとに3ヶ月平均固定的賃金を計算して変動チェック
+  const baseMonth  = recent4[3]; // 4ヶ月前（変更前基準月）
+  const checkMonths= recent4.slice(0,3); // 直近3ヶ月
+
+  const changes = [];
+  (baseMonth.employees||[]).forEach(baseEmp=>{
+    // 直近3ヶ月のデータを取得
+    const monthlyData = checkMonths.map(m=>{
+      const e=(m.employees||[]).find(x=>x.id===baseEmp.id||x.name===baseEmp.name);
+      return e ? e.base : null;
+    }).filter(v=>v!==null);
+
+    if(monthlyData.length < 3) return; // データ不足はスキップ
+
+    const avg3 = Math.round(monthlyData.reduce((s,v)=>s+v,0)/3);
+    const baseGrade = getHoshuGrade(baseEmp.base);
+    const newGrade  = getHoshuGrade(avg3);
+    const gradeDiff = Math.abs(newGrade.grade - baseGrade.grade);
+
+    if(gradeDiff >= 2){
+      changes.push({
+        name: baseEmp.name,
+        dept: baseEmp.dept||'—',
+        basePay: baseEmp.base,
+        baseGrade: baseGrade.grade,
+        avgPay: avg3,
+        newGrade: newGrade.grade,
+        gradeDiff,
+        direction: newGrade.grade > baseGrade.grade ? 'up' : 'down',
+        months: checkMonths.map(m=>m.period),
+      });
+    }
+  });
+
+  // 社保アラートパネル（ダッシュボード用）
+  const alertPanel = $('shahoAlertPanel');
+  const alertBody  = $('shahoAlertBody');
+  if(alertPanel && alertBody){
+    if(changes.length > 0){
+      alertPanel.style.display='';
+      alertBody.innerHTML = changes.map(c=>`
+        <div class="shahou-alert-row">
+          <div style="flex:1">
+            <strong>${esc(c.name)}</strong>
+            <span style="font-size:0.7rem;color:var(--muted);margin-left:0.5rem">${esc(c.dept)}</span>
+          </div>
+          <div class="shahou-grade-change">
+            <span class="grade-badge">${c.baseGrade}級</span>
+            <span style="color:var(--muted)">→</span>
+            <span class="grade-badge changed">${c.newGrade}級</span>
+            <span class="${c.direction==='up'?'shahou-grade-up':'shahou-grade-down'}">
+              ${c.direction==='up'?'▲':'▼'}${c.gradeDiff}等級
+            </span>
+          </div>
+          <div style="font-size:0.7rem;color:var(--muted);font-family:var(--font-mono)">
+            ${fmtY(c.basePay)} → ${fmtY(c.avgPay)}
+          </div>
+        </div>`).join('');
+    } else {
+      alertPanel.style.display='none';
+    }
+  }
+
+  if(!changes.length){
+    wrap.innerHTML='<p style="font-size:0.8rem;color:var(--green)">✅ 月額変更届の対象者はいません（全従業員の等級変動が2等級未満）</p>';
+    return;
+  }
+
+  wrap.innerHTML=`
+    <p style="font-size:0.72rem;color:var(--muted);margin-bottom:0.75rem">
+      ⚠ 下記${changes.length}名は固定的賃金が3ヶ月平均で <strong>2等級以上</strong> 変動しています。月額変更届（随時改定）が必要です。
+    </p>
+    <table class="shahou-tbl">
+      <thead><tr>
+        <th>氏名</th><th>部署</th>
+        <th>変更前基本給</th><th>3ヶ月平均</th>
+        <th>等級変動</th><th>方向</th>
+      </tr></thead>
+      <tbody>
+        ${changes.map(c=>`<tr>
+          <td style="text-align:left;font-weight:600">${esc(c.name)}</td>
+          <td style="text-align:left;font-size:0.7rem;color:var(--muted)">${esc(c.dept)}</td>
+          <td style="font-family:var(--font-mono)">${fmtY(c.basePay)}<br><span class="grade-badge">${c.baseGrade}級</span></td>
+          <td style="font-family:var(--font-mono)">${fmtY(c.avgPay)}<br><span class="grade-badge changed">${c.newGrade}級</span></td>
+          <td><span class="grade-badge changed">${c.gradeDiff}等級</span></td>
+          <td class="${c.direction==='up'?'shahou-grade-up':'shahou-grade-down'}">${c.direction==='up'?'▲ 増加':'▼ 減少'}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    <div style="margin-top:0.75rem;font-size:0.7rem;color:var(--muted)">
+      ※ 月額変更届の提出期限：変動が確認された月の翌月末日（健康保険法第43条）
+    </div>`;
+}
+
+async function generateSanteiKisho(){
+  const wrap=$('santeiList');
+  wrap.innerHTML='<p style="font-size:0.8rem;color:var(--muted)">集計中...</p>';
+
+  // 対象年の4・5・6月の給与履歴を取得
+  const year = new Date().getFullYear();
+  const periods = [`${year}-04`,`${year}-05`,`${year}-06`];
+  const rows = await Promise.all(
+    periods.map(p=>dbGet('payroll_history',{company_id:currentCompany.id,period:p}))
+  );
+  const available = rows.filter(Boolean);
+
+  if(available.length === 0){
+    wrap.innerHTML=`<p style="font-size:0.8rem;color:var(--muted)">${year}年4〜6月の確定済み給与データが見つかりません</p>`;
+    return;
+  }
+
+  // 従業員ごとに4-6月平均を計算
+  const empMap={};
+  available.forEach(row=>{
+    (row.employees||[]).forEach(e=>{
+      if(!empMap[e.id||e.name]) empMap[e.id||e.name]={name:e.name,dept:e.dept||'—',pays:[],count:0};
+      empMap[e.id||e.name].pays.push(e.gross||e.base||0);
+      empMap[e.id||e.name].count++;
+    });
+  });
+
+  const santeiData = Object.values(empMap).map(e=>{
+    const avg = Math.round(e.pays.reduce((s,v)=>s+v,0)/e.pays.length);
+    const {grade, standard} = getHoshuGrade(avg);
+    return {...e, avg, grade, standard};
+  }).sort((a,b)=>b.avg-a.avg);
+
+  wrap.innerHTML=`
+    <p style="font-size:0.72rem;color:var(--muted);margin-bottom:0.65rem">
+      ${year}年4〜6月（${available.length}ヶ月分）の平均報酬月額。9月からの標準報酬月額として適用されます。
+    </p>
+    <table class="shahou-tbl">
+      <thead><tr>
+        <th>氏名</th><th>部署</th>
+        <th>4月</th><th>5月</th><th>6月</th>
+        <th>平均報酬</th><th>等級</th><th>標準報酬</th>
+      </tr></thead>
+      <tbody>
+        ${santeiData.map(e=>{
+          const [p4,p5,p6]=[e.pays[0]||0,e.pays[1]||0,e.pays[2]||0];
+          return `<tr>
+            <td style="text-align:left;font-weight:600">${esc(e.name)}</td>
+            <td style="text-align:left;font-size:0.7rem;color:var(--muted)">${esc(e.dept)}</td>
+            <td style="font-family:var(--font-mono)">${fmtY(p4)}</td>
+            <td style="font-family:var(--font-mono)">${fmtY(p5)}</td>
+            <td style="font-family:var(--font-mono)">${fmtY(p6)}</td>
+            <td style="font-family:var(--font-mono);font-weight:700">${fmtY(e.avg)}</td>
+            <td><span class="grade-badge">${e.grade}級</span></td>
+            <td style="font-family:var(--font-mono);color:var(--blue);font-weight:700">${fmtY(e.standard)}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+async function generateGetsugakuPDF(){
+  // 月額変更届PDF生成（法定様式準拠）
+  const allRows=await dbGetAll('payroll_history',{company_id:currentCompany.id});
+  allRows.sort((a,b)=>b.period.localeCompare(a.period));
+  const recent4=allRows.slice(0,4);
+  if(recent4.length<4){showToast('4ヶ月以上の給与履歴が必要です','error');return;}
+
+  const now=new Date();
+  const html=`
+  <div style="font-family:'Noto Sans JP',sans-serif;padding:20px;width:600px;font-size:9pt">
+    <h2 style="text-align:center;font-size:13pt;border-bottom:2px solid #333;padding-bottom:8px;margin-bottom:12px">
+      健康保険・厚生年金保険 被保険者報酬月額変更届
+    </h2>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:8pt">
+      <tr>
+        <td style="border:1px solid #999;padding:5px;background:#f5f5f5;font-weight:700;width:30%">事業所名称</td>
+        <td style="border:1px solid #999;padding:5px">${esc(currentCompany.name)}</td>
+        <td style="border:1px solid #999;padding:5px;background:#f5f5f5;font-weight:700;width:20%">提出年月日</td>
+        <td style="border:1px solid #999;padding:5px">${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #999;padding:5px;background:#f5f5f5;font-weight:700">事業所所在地</td>
+        <td colspan="3" style="border:1px solid #999;padding:5px">${esc(currentCompany.address||'（未設定）')}</td>
+      </tr>
+    </table>
+    <table style="width:100%;border-collapse:collapse;font-size:8pt">
+      <thead>
+        <tr style="background:#e8e8e8">
+          <th style="border:1px solid #999;padding:4px">氏名</th>
+          <th style="border:1px solid #999;padding:4px">変更前<br>標準報酬</th>
+          <th style="border:1px solid #999;padding:4px">1月目</th>
+          <th style="border:1px solid #999;padding:4px">2月目</th>
+          <th style="border:1px solid #999;padding:4px">3月目</th>
+          <th style="border:1px solid #999;padding:4px">3ヶ月平均</th>
+          <th style="border:1px solid #999;padding:4px">変更後<br>標準報酬</th>
+          <th style="border:1px solid #999;padding:4px">改定月</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${(recent4[3].employees||[]).map(baseEmp=>{
+          const months=recent4.slice(0,3).map(m=>(m.employees||[]).find(x=>x.id===baseEmp.id||x.name===baseEmp.name));
+          const pays=months.map(e=>e?e.base:0);
+          const avg=Math.round(pays.reduce((s,v)=>s+v,0)/3);
+          const bg=getHoshuGrade(baseEmp.base);
+          const ng=getHoshuGrade(avg);
+          if(Math.abs(ng.grade-bg.grade)<2)return '';
+          const [y,m]=recent4[0].period.split('-');
+          const kaiteMonth=`${y}年${parseInt(m)+1}月`;
+          return `<tr>
+            <td style="border:1px solid #999;padding:4px;font-weight:600">${esc(baseEmp.name)}</td>
+            <td style="border:1px solid #999;padding:4px;text-align:center">${bg.grade}級<br><small>${fmtY(bg.standard)}</small></td>
+            <td style="border:1px solid #999;padding:4px;text-align:right;font-family:monospace">${fmtY(pays[2]||0)}</td>
+            <td style="border:1px solid #999;padding:4px;text-align:right;font-family:monospace">${fmtY(pays[1]||0)}</td>
+            <td style="border:1px solid #999;padding:4px;text-align:right;font-family:monospace">${fmtY(pays[0]||0)}</td>
+            <td style="border:1px solid #999;padding:4px;text-align:right;font-family:monospace;font-weight:700">${fmtY(avg)}</td>
+            <td style="border:1px solid #999;padding:4px;text-align:center;background:#fff3f0;font-weight:700">${ng.grade}級<br><small>${fmtY(ng.standard)}</small></td>
+            <td style="border:1px solid #999;padding:4px;text-align:center">${kaiteMonth}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+    <p style="font-size:7pt;color:#888;margin-top:8px">
+      ※ 本届出書はシステム出力です。提出前に日本年金機構の最新様式と内容を照合してください。（健康保険法第43条）
+    </p>
+  </div>`;
+
+  const div=document.createElement('div');
+  div.style.cssText='position:fixed;left:-9999px;top:0;z-index:-1;background:#fff';
+  div.innerHTML=html;
+  document.body.appendChild(div);
+  try{
+    if(!window.html2canvas||!window.jspdf){showToast('PDFライブラリ読み込み中です','error');return;}
+    const canvas=await html2canvas(div,{scale:2,backgroundColor:'#ffffff',useCORS:true});
+    const{jsPDF}=window.jspdf;
+    const pdf=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+    const imgData=canvas.toDataURL('image/jpeg',0.88);
+    const ratio=canvas.height/canvas.width;
+    pdf.addImage(imgData,'JPEG',10,10,277,277*ratio);
+    pdf.save(`月額変更届_${currentCompany.name}_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}.pdf`);
+    showToast('月額変更届PDFを生成しました','success');
+  }finally{document.body.removeChild(div);}
+}
+
+function renderHoshuTable(){
+  const body=$('hoshuTableBody');
+  if(!body)return;
+  body.innerHTML=`
+    <div style="max-height:320px;overflow-y:auto">
+      <table class="hoshu-tbl">
+        <thead><tr>
+          <th>等級</th><th>報酬月額（下限）</th><th>報酬月額（上限）</th><th>標準報酬月額</th>
+          <th>健保保険料（5%目安）</th><th>厚年保険料（9.15%）</th>
+        </tr></thead>
+        <tbody>
+          ${HOSHU_GRADES.map(([g,low,high,std])=>`<tr>
+            <td><span class="grade-badge">${g}級</span></td>
+            <td style="font-family:var(--font-mono)">${fmtY(low)}</td>
+            <td style="font-family:var(--font-mono)">${high===Infinity?'上限なし':fmtY(high)}</td>
+            <td style="font-family:var(--font-mono);font-weight:700">${fmtY(std)}</td>
+            <td style="font-family:var(--font-mono);color:var(--accent)">${fmtY(Math.round(std*0.05))}</td>
+            <td style="font-family:var(--font-mono);color:var(--blue)">${fmtY(Math.round(std*0.0915))}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+/* ══════════════════════════════════════════════════════════
+   ⑩ ダッシュボード強化 — Sprint 10
+   YoY比較・部署別ドーナツ・従業員ドリルダウン・レポートPDF/Excel
+══════════════════════════════════════════════════════════ */
+
+let deptDonutObj=null, drilldownChartObj=null, trendChartMode='normal';
+
+// カラーパレット（部署別ドーナツ用）
+const DEPT_COLORS=['#1a3a5c','#c0422a','#1e6e45','#a8882e','#6b3fa0','#2563eb','#d97706','#059669','#dc2626','#7c3aed'];
+
+async function renderDashboard(){
+  const tG=employees.reduce((a,e)=>a+(e.gross||0),0);
+  const tN=employees.reduce((a,e)=>a+(e.monthlyNet||0),0);
+  const tI=employees.reduce((a,e)=>a+(e.insurance||0),0);
+  const tT=employees.reduce((a,e)=>a+(e.tax||0)+(e.municipal||0),0);
+
+  // 前月データ取得（差分バッジ用）
+  const allHist=await dbGetAll('payroll_history',{company_id:currentCompany.id});
+  allHist.sort((a,b)=>b.period.localeCompare(a.period));
+  const prevRow=allHist[0];
+  const prevG=prevRow?.tot_gross||prevRow?.summary?.totGross||0;
+  const prevN=prevRow?.tot_net||prevRow?.summary?.totNet||0;
+
+  function diffBadge(cur,prev){
+    if(!prev||prev===0)return '';
+    const d=cur-prev,p=Math.round(d/prev*100);
+    const cls=d>0?'diff-up':d<0?'diff-down':'diff-flat';
+    const sym=d>0?'▲':d<0?'▼':'—';
+    return `<span class="diff-badge ${cls}">${sym}${Math.abs(p)}%</span>`;
+  }
+
+  $('dashStats').innerHTML=`
+    <div class="stat-card"><div class="stat-label">従業員数</div><div class="stat-value blue">${employees.length}名</div><div class="stat-sub">${currentPeriod}</div></div>
+    <div class="stat-card"><div class="stat-label">支給額合計</div><div class="stat-value">${fmtY(tG)} ${diffBadge(tG,prevG)}</div></div>
+    <div class="stat-card"><div class="stat-label">手取り合計</div><div class="stat-value green">${fmtY(tN)} ${diffBadge(tN,prevN)}</div></div>
+    <div class="stat-card"><div class="stat-label">社会保険合計</div><div class="stat-value accent">${fmtY(tI)}</div></div>
+    <div class="stat-card"><div class="stat-label">税金合計</div><div class="stat-value accent">${fmtY(tT)}</div></div>`;
+
+  const budget=currentCompany.budget||0;
+  if(budget>0){
+    const pct=Math.min(tG/budget*100,100),cls=pct>=95?'over':pct>=80?'warn':'ok';
+    $('dashBudget').innerHTML=`
+      <div style="font-size:0.75rem;margin-bottom:0.65rem">月次人件費予算：<b>${fmtY(budget)}</b></div>
+      <div style="font-size:0.72rem;display:flex;justify-content:space-between;margin-bottom:0.3rem">
+        <span>支給額合計</span><span style="font-family:var(--font-mono)">${fmtY(tG)}（${Math.round(pct)}%）</span>
+      </div>
+      <div class="budget-progress"><div class="budget-bar-fill ${cls}" style="width:${pct}%"></div></div>
+      ${pct>=95?'<div style="font-size:0.7rem;color:var(--accent);margin-top:0.5rem">⚠ 予算超過の恐れがあります</div>':''}`;
+  }else{$('dashBudget').innerHTML='<p style="font-size:0.78rem;color:var(--muted)">会社設定から予算を設定してください</p>';}
+
+  const wallEmps=employees.filter(e=>e.dep>0||e.spDed>0);
+  if(wallEmps.length>0){
+    $('dashWall').innerHTML=wallEmps.map(e=>{
+      const ae=(e.gross||0)*12,pct=Math.min(ae/1030000*100,100),cls=ae>=1030000?'over':pct>=80?'warn':'ok';
+      return`<div style="margin-bottom:0.75rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border)">
+        <div style="font-size:0.78rem;font-weight:700;margin-bottom:0.2rem">${esc(e.name)}</div>
+        <div style="font-size:0.68rem;color:var(--muted);font-family:var(--font-mono);margin-bottom:0.3rem">
+          年収見込：${fmtY(ae)}&nbsp;
+          ${ae>=1300000?'<span style="color:var(--accent);font-weight:700">⚠ 130万の壁超過</span>':
+            ae>=1030000?'<span style="color:var(--gold);font-weight:700">⚠ 103万の壁超過</span>':
+            `103万まであと${fmtY(Math.max(0,1030000-ae))}`}
+        </div>
+        <div class="budget-progress"><div class="budget-bar-fill ${cls}" style="width:${pct}%"></div></div>
+      </div>`;
+    }).join('');
+  }else{$('dashWall').innerHTML='<p style="font-size:0.78rem;color:var(--muted)">扶養家族のいる従業員がいません</p>';}
+
+  // ドリルダウン従業員セレクタを更新
+  const ddSel=$('drilldownEmpSel');
+  if(ddSel){
+    const cur=ddSel.value;
+    ddSel.innerHTML='<option value="">— 従業員を選択 —</option>'+
+      employees.map(e=>`<option value="${e.id||e.name}" ${(e.id||e.name)==cur?'selected':''}>${esc(e.name)}</option>`).join('');
+    if(cur)renderDrilldownChart(cur);
+  }
+
+  requestAnimationFrame(()=>{
+    renderTrendChart();
+    renderDeptDonut();
+  });
+}
+
+async function renderTrendChart(){
+  if(!currentCompany)return;
+  try{
+    const rows=await dbGetAll('payroll_history',{company_id:currentCompany.id});
+    rows.sort((a,b)=>a.period.localeCompare(b.period));
+    const recent=rows.slice(-13); // 最大13ヶ月（YoY用に前年同月も）
+    const canvas=$('trendChart');
+    if(!canvas)return;
+    const msg=$('trendChartMsg');
+    if(recent.length<2){
+      canvas.style.display='none';
+      if(msg)msg.style.display='block';
+      return;
+    }
+    canvas.style.display='block';
+    if(msg)msg.style.display='none';
+    const isDark=document.body.classList.contains('dark');
+    const gc=isDark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)';
+    const tc=isDark?'#5a5650':'#7a7469';
+    if(trendChartObj){trendChartObj.destroy();trendChartObj=null;}
+
+    // 表示モード切替（通常 / YoY比較）
+    const display = trendChartMode==='yoy' ? recent.slice(-7) : recent.slice(-6);
+    const datasets=[
+      {label:'支給額',data:display.map(r=>r.tot_gross||r.summary?.totGross||0),backgroundColor:'rgba(26,58,92,0.5)',borderColor:'#1a3a5c',borderWidth:1,borderRadius:3,type:'bar'},
+      {label:'手取り',data:display.map(r=>r.tot_net||r.summary?.totNet||0),backgroundColor:'rgba(30,110,69,0.55)',borderColor:'#1e6e45',borderWidth:1,borderRadius:3,type:'bar'},
+    ];
+    // YoYモード時は前年同月を折れ線で重ねる
+    if(trendChartMode==='yoy' && rows.length>=13){
+      const yoyData=display.map(r=>{
+        const prevYear=String(parseInt(r.period.slice(0,4))-1)+r.period.slice(4);
+        const prev=rows.find(x=>x.period===prevYear);
+        return prev?(prev.tot_gross||prev.summary?.totGross||0):null;
+      });
+      datasets.push({
+        label:'前年支給額',data:yoyData,type:'line',
+        borderColor:'rgba(192,66,42,0.7)',backgroundColor:'transparent',
+        borderWidth:2,borderDash:[4,3],pointRadius:3,pointBackgroundColor:'rgba(192,66,42,0.8)',
+        tension:0.3,
+      });
+    }
+    trendChartObj=new Chart(canvas,{
+      type:'bar',
+      data:{labels:display.map(r=>r.period.replace('-','/')),datasets},
+      options:{
+        responsive:true,maintainAspectRatio:true,
+        plugins:{
+          legend:{labels:{color:tc,font:{size:10},boxWidth:10}},
+          tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmtY(ctx.parsed.y)}`}},
+        },
+        scales:{
+          x:{ticks:{color:tc,font:{size:10}},grid:{color:gc}},
+          y:{ticks:{color:tc,callback:v=>'¥'+(v/10000).toFixed(0)+'万',font:{size:10}},grid:{color:gc}},
+        }
+      }
+    });
+  }catch(e){console.warn('[PA] trendChart',e.message);}
+}
+
+function renderDeptDonut(){
+  const canvas=$('deptDonutChart');
+  const legend=$('deptDonutLegend');
+  if(!canvas||!legend||!employees.length)return;
+  try{
+    // 部署別集計
+    const deptMap={};
+    employees.forEach(e=>{
+      const d=e.dept||'未分類';
+      deptMap[d]=(deptMap[d]||0)+(e.gross||0);
+    });
+    const labels=Object.keys(deptMap);
+    const data=Object.values(deptMap);
+    const total=data.reduce((s,v)=>s+v,0);
+    const colors=labels.map((_,i)=>DEPT_COLORS[i%DEPT_COLORS.length]);
+    const isDark=document.body.classList.contains('dark');
+    const tc=isDark?'#5a5650':'#7a7469';
+    if(deptDonutObj){deptDonutObj.destroy();deptDonutObj=null;}
+    deptDonutObj=new Chart(canvas,{
+      type:'doughnut',
+      data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:2,borderColor:isDark?'#161920':'#fff',hoverOffset:6}]},
+      options:{
+        responsive:false,
+        plugins:{
+          legend:{display:false},
+          tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${fmtY(ctx.parsed)} (${Math.round(ctx.parsed/total*100)}%)`}},
+        },
+        cutout:'62%',
+      }
+    });
+    legend.innerHTML=labels.map((l,i)=>{
+      const pct=Math.round(data[i]/total*100);
+      return `<div class="dept-legend-row">
+        <div class="dept-legend-dot" style="background:${colors[i]}"></div>
+        <div class="dept-legend-name">${esc(l)}</div>
+        <div class="dept-legend-val">${pct}% <span style="color:var(--muted);font-size:0.65rem">${fmtY(data[i])}</span></div>
+      </div>`;
+    }).join('');
+  }catch(e){console.warn('[PA] deptDonut',e.message);}
+}
+
+async function renderDrilldownChart(empIdOrName){
+  const canvas=$('drilldownChart');
+  const msg=$('drilldownMsg');
+  if(!canvas)return;
+  if(!empIdOrName){
+    canvas.style.display='none';
+    if(msg)msg.style.display='block';
+    return;
+  }
+  const allRows=await dbGetAll('payroll_history',{company_id:currentCompany.id});
+  allRows.sort((a,b)=>a.period.localeCompare(b.period));
+  const recent=allRows.slice(-12);
+  const netData=recent.map(row=>{
+    const e=(row.employees||[]).find(x=>String(x.id)===String(empIdOrName)||x.name===empIdOrName);
+    return e?(e.monthlyNet||0):null;
+  });
+  const grossData=recent.map(row=>{
+    const e=(row.employees||[]).find(x=>String(x.id)===String(empIdOrName)||x.name===empIdOrName);
+    return e?(e.gross||0):null;
+  });
+  if(netData.every(v=>v===null)){
+    canvas.style.display='none';
+    if(msg){msg.style.display='block';msg.textContent='この従業員の履歴データが見つかりません';}
+    return;
+  }
+  canvas.style.display='block';
+  if(msg)msg.style.display='none';
+  const isDark=document.body.classList.contains('dark');
+  const gc=isDark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)';
+  const tc=isDark?'#5a5650':'#7a7469';
+  if(drilldownChartObj){drilldownChartObj.destroy();drilldownChartObj=null;}
+  drilldownChartObj=new Chart(canvas,{
+    type:'line',
+    data:{
+      labels:recent.map(r=>r.period.replace('-','/')),
+      datasets:[
+        {label:'支給額',data:grossData,borderColor:'rgba(26,58,92,0.7)',backgroundColor:'rgba(26,58,92,0.08)',fill:true,tension:0.35,borderWidth:2,pointRadius:3,spanGaps:true},
+        {label:'手取り',data:netData,borderColor:'#1e6e45',backgroundColor:'rgba(30,110,69,0.1)',fill:true,tension:0.35,borderWidth:2,pointRadius:3,spanGaps:true},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:true,
+      plugins:{
+        legend:{labels:{color:tc,font:{size:10},boxWidth:10}},
+        tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmtY(ctx.parsed.y)}`}},
+      },
+      scales:{
+        x:{ticks:{color:tc,font:{size:10}},grid:{color:gc}},
+        y:{ticks:{color:tc,callback:v=>'¥'+(v/10000).toFixed(0)+'万',font:{size:10}},grid:{color:gc}},
+      }
+    }
+  });
+}
+
+async function exportDashboardReport(){
+  showToast('レポートを生成中...','');
+  const allRows=await dbGetAll('payroll_history',{company_id:currentCompany.id});
+  allRows.sort((a,b)=>a.period.localeCompare(b.period));
+  if(!window.XLSX){showToast('ライブラリ読み込み中です','error');return;}
+
+  const wb=XLSX.utils.book_new();
+
+  // Sheet1: 月次サマリー
+  const summaryData=[['年月','従業員数','支給総額','手取総額','社保合計','税金合計']];
+  allRows.forEach(r=>{
+    summaryData.push([
+      r.period,
+      r.emp_count||r.summary?.count||0,
+      r.tot_gross||r.summary?.totGross||0,
+      r.tot_net||r.summary?.totNet||0,
+      r.tot_insurance||0,
+      r.tot_tax||0,
+    ]);
+  });
+  const ws1=XLSX.utils.aoa_to_sheet(summaryData);
+  ws1['!cols']=[{wch:10},{wch:10},{wch:14},{wch:14},{wch:14},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,ws1,'月次サマリー');
+
+  // Sheet2: 当月従業員別明細
+  const empData=[['氏名','部署','役職','基本給','支給額','社保','所得税','住民税','手取り']];
+  employees.forEach(e=>{
+    empData.push([e.name,e.dept||'',e.pos||'',e.base,e.gross,e.insurance,e.tax||0,e.municipal||0,e.monthlyNet]);
+  });
+  const ws2=XLSX.utils.aoa_to_sheet(empData);
+  ws2['!cols']=[{wch:14},{wch:10},{wch:8},{wch:12},{wch:12},{wch:12},{wch:10},{wch:10},{wch:12}];
+  XLSX.utils.book_append_sheet(wb,ws2,`${currentPeriod}従業員明細`);
+
+  // Sheet3: 部署別集計
+  const deptMap={};
+  employees.forEach(e=>{
+    const d=e.dept||'未分類';
+    if(!deptMap[d])deptMap[d]={count:0,gross:0,net:0,ins:0};
+    deptMap[d].count++;deptMap[d].gross+=e.gross||0;
+    deptMap[d].net+=e.monthlyNet||0;deptMap[d].ins+=e.insurance||0;
+  });
+  const deptData=[['部署','人数','支給総額','手取総額','社保合計','支給比率(%)']];
+  const totalG=employees.reduce((s,e)=>s+(e.gross||0),0);
+  Object.entries(deptMap).forEach(([dept,d])=>{
+    deptData.push([dept,d.count,d.gross,d.net,d.ins,totalG?Math.round(d.gross/totalG*1000)/10:0]);
+  });
+  const ws3=XLSX.utils.aoa_to_sheet(deptData);
+  XLSX.utils.book_append_sheet(wb,ws3,'部署別集計');
+
+  const now=new Date();
+  XLSX.writeFile(wb,`人件費レポート_${currentCompany.name}_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}.xlsx`);
+  showToast('レポートを出力しました 📊','success');
+}
+
 window.showPage          = showPage;
 window.calcYearend       = calcYearend;
 window.saveYearend       = saveYearend;
 window.genWithholdingPDF = genWithholdingPDF;
 window.toggleAcc         = toggleAcc;
+window.renderDrilldownChart = renderDrilldownChart;
+window.checkShahouChanges   = checkShahouChanges;
 
 })();
 </script>
