@@ -6,7 +6,7 @@
 <!-- HTTPS強制リダイレクト -->
 <script>if(location.protocol==='http:'&&location.hostname!=='localhost'&&location.hostname!=='127.0.0.1'){location.replace('https:'+location.href.slice(5));}</script>
 <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
-<title>PayrollAuto v5.0</title>
+<title>PayrollAuto v6.0</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&family=Syne:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -680,6 +680,11 @@ body.dark .hoshu-tbl tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
     <div class="nav-tab owner-only" data-page="transfer">振込管理</div>
     <div class="nav-tab owner-only" data-page="shahou">社保届出</div>
     <div class="nav-tab" data-page="taxrates">税率管理</div>
+    <div class="nav-tab" data-page="simulator">人件費シミュ</div>
+    <div class="nav-tab" data-page="forecast">AI予測</div>
+    <div class="nav-tab owner-only" data-page="portal">従業員ポータル</div>
+    <div class="nav-tab owner-only" data-page="accounting">会計連携</div>
+    <div class="nav-tab owner-only" data-page="apikeys">API管理</div>
     <div class="nav-tab owner-only" data-page="users">ユーザー管理</div>
     <div class="nav-tab owner-only" data-page="settings">会社設定</div>
   </nav>
@@ -730,6 +735,16 @@ body.dark .hoshu-tbl tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
         <div class="panel-body">
           <canvas id="drilldownChart" height="70"></canvas>
           <p id="drilldownMsg" style="font-size:0.78rem;color:var(--muted);padding:0.5rem 0">従業員を選択すると手取り推移が表示されます</p>
+        </div>
+      </div>
+      <!-- v6: AI Insightパネル -->
+      <div class="panel" style="margin-top:1rem">
+        <div class="panel-header" style="display:flex;align-items:center;justify-content:space-between">
+          <span>🤖 AI Insight — 人件費異常検知</span>
+          <button class="btn btn-sm btn-blue" onclick="window.renderAIInsightPanel()">更新</button>
+        </div>
+        <div class="panel-body" id="aiInsightPanel">
+          <p style="font-size:0.78rem;color:var(--muted)">読み込み中...</p>
         </div>
       </div>
       <!-- v5クイックアクセス -->
@@ -1112,6 +1127,269 @@ body.dark .hoshu-tbl tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
     </div>
   </div>
 </div>
+
+  <!-- ═══════════════════════════════════════════════
+       v6: 人件費シミュレーター
+  ═══════════════════════════════════════════════ -->
+  <div class="page" id="pageSimulator">
+    <div style="margin-bottom:1rem">
+      <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900">💡 人件費シミュレーター</div>
+      <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem">採用・昇給検討時の人件費を即座にシミュレーション</div>
+    </div>
+    <div style="display:grid;grid-template-columns:360px 1fr;gap:1rem;align-items:start">
+      <!-- 入力パネル -->
+      <div>
+        <div class="panel">
+          <div class="panel-header">⚙ 入力条件</div>
+          <div class="panel-body">
+            <div class="form-group"><label>人数</label><input type="number" id="simCount" value="1" min="1" max="1000"></div>
+            <div class="form-group"><label>基本給（円/月）</label><input type="number" id="simBase" value="300000" step="10000"></div>
+            <div class="form-group"><label>想定残業時間（h/月）</label><input type="number" id="simOt" value="20" min="0" max="200"></div>
+            <div class="form-group"><label>時間外単価（円/h）</label><input type="number" id="simOtRate" value="2000" step="100"></div>
+            <div class="form-group"><label>扶養家族数</label><input type="number" id="simDep" value="0" min="0" max="10"></div>
+            <div class="form-group"><label>年齢</label><input type="number" id="simAge" value="35" min="18" max="80"></div>
+            <div class="form-group"><label>賞与倍率（月）</label><input type="number" id="simBonus" value="2.0" step="0.1" min="0"></div>
+            <div class="form-group"><label>昇給率（%/年）</label><input type="number" id="simRaise" value="2.0" step="0.1" min="0"></div>
+            <div class="form-group"><label>シナリオ名</label><input type="text" id="simName" placeholder="例：新卒エンジニア採用"></div>
+            <div class="btn-group">
+              <button class="btn btn-primary" id="btnSimCalc">計算する</button>
+              <button class="btn btn-secondary btn-sm" id="btnSimSave">💾 保存</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- 結果パネル -->
+      <div>
+        <div class="panel">
+          <div class="panel-header">📊 シミュレーション結果</div>
+          <div class="panel-body" id="simResult">
+            <p style="color:var(--muted);font-size:0.82rem">左の条件を入力して「計算する」を押してください</p>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">📈 5年間コスト推移</div>
+          <div class="panel-body"><canvas id="simChart" height="120"></canvas></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">💾 保存済みシナリオ</div>
+          <div class="panel-body" id="simSavedList">
+            <p style="color:var(--muted);font-size:0.82rem">保存されたシナリオがありません</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       v6: AI人件費予測
+  ═══════════════════════════════════════════════ -->
+  <div class="page" id="pageForecast">
+    <div style="margin-bottom:1rem">
+      <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900">🤖 AI人件費予測・分析</div>
+      <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem">過去データから年間人件費を予測・異常を自動検知</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+      <div class="panel">
+        <div class="panel-header">🔮 年間人件費予測</div>
+        <div class="panel-body" id="forecastSummary">
+          <p style="color:var(--muted);font-size:0.82rem">「予測を実行」ボタンを押してください</p>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">🚨 AI異常検知・インサイト</div>
+        <div class="panel-body" id="forecastInsights">
+          <p style="color:var(--muted);font-size:0.82rem">分析待ち...</p>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header" style="display:flex;align-items:center;justify-content:space-between">
+        <span>📈 人件費推移 + 予測ライン</span>
+        <button class="btn btn-sm btn-blue" id="btnRunForecast">🤖 予測を実行</button>
+      </div>
+      <div class="panel-body"><canvas id="forecastChart" height="100"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">📋 部署別コスト分析</div>
+      <div class="panel-body" id="forecastDeptTable">
+        <p style="color:var(--muted);font-size:0.82rem">予測実行後に表示されます</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       v6: 従業員ポータル管理（Owner設定画面）
+  ═══════════════════════════════════════════════ -->
+  <div class="page" id="pagePortal">
+    <div style="margin-bottom:1rem">
+      <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900">👤 従業員ポータル管理</div>
+      <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem">従業員が自分の給与明細・有給を確認できるポータルを管理します</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+      <div class="panel">
+        <div class="panel-header">📧 従業員アカウント管理</div>
+        <div class="panel-body">
+          <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.75rem">
+            従業員にポータルアクセス用のメールアドレスを登録します。<br>
+            登録するとポータルURL（/portal）からログインして給与明細を閲覧できます。
+          </div>
+          <div id="portalEmpList"></div>
+          <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border)">
+            <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem">ポータルアカウント追加</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem">
+              <div class="form-group"><label>従業員名</label>
+                <select id="portalEmpSelect" style="width:100%;padding:0.45rem;border:1.5px solid var(--border);border-radius:var(--radius);font-size:0.82rem;background:var(--paper);color:var(--ink)">
+                  <option value="">— 選択 —</option>
+                </select>
+              </div>
+              <div class="form-group"><label>メールアドレス</label>
+                <input type="email" id="portalEmpEmail" placeholder="employee@example.com">
+              </div>
+            </div>
+            <div class="form-group"><label>有給残日数</label>
+              <input type="number" id="portalEmpLeave" value="20" min="0" max="40" step="0.5">
+            </div>
+            <button class="btn btn-primary btn-sm" id="btnAddPortalEmp">登録する</button>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">🔗 ポータルURL・設定</div>
+        <div class="panel-body">
+          <div style="margin-bottom:1rem">
+            <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.35rem">ポータルURL</div>
+            <div id="portalUrl" style="font-family:var(--font-mono);font-size:0.82rem;background:var(--cream);border:1.5px solid var(--border);padding:0.55rem 0.75rem;border-radius:var(--radius);cursor:pointer" title="クリックでコピー">
+              読み込み中...
+            </div>
+            <div style="font-size:0.65rem;color:var(--muted);margin-top:0.25rem">クリックでコピー。従業員に共有してください。</div>
+          </div>
+          <div style="margin-bottom:1rem">
+            <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.35rem">閲覧可能コンテンツ</div>
+            <div style="display:flex;flex-direction:column;gap:0.4rem">
+              <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.8rem"><input type="checkbox" id="portalOptSlip" checked> 給与明細（PDF含む）</label>
+              <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.8rem"><input type="checkbox" id="portalOptHistory" checked> 給与履歴</label>
+              <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.8rem"><input type="checkbox" id="portalOptWithhold" checked> 源泉徴収票</label>
+              <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.8rem"><input type="checkbox" id="portalOptLeave" checked> 有給残日数</label>
+              <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.8rem"><input type="checkbox" id="portalOptYearend"> 年末調整入力</label>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" id="btnSavePortalSettings">設定を保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       v6: 会計連携
+  ═══════════════════════════════════════════════ -->
+  <div class="page" id="pageAccounting">
+    <div style="margin-bottom:1rem">
+      <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900">📒 会計連携</div>
+      <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem">freee・マネーフォワード対応の仕訳データを生成します</div>
+    </div>
+    <div style="display:grid;grid-template-columns:300px 1fr;gap:1rem;align-items:start">
+      <div>
+        <div class="panel">
+          <div class="panel-header">⚙ 出力設定</div>
+          <div class="panel-body">
+            <div class="form-group"><label>会計ソフト</label>
+              <select id="acctSoftware" style="width:100%;padding:0.45rem;border:1.5px solid var(--border);border-radius:var(--radius);font-size:0.82rem;background:var(--paper);color:var(--ink)">
+                <option value="freee">freee会計</option>
+                <option value="mf">マネーフォワード会計</option>
+                <option value="generic">汎用CSV</option>
+              </select>
+            </div>
+            <div class="form-group"><label>対象年月</label>
+              <select id="acctPeriod" style="width:100%;padding:0.45rem;border:1.5px solid var(--border);border-radius:var(--radius);font-size:0.82rem;font-family:var(--font-mono);background:var(--paper);color:var(--ink)"></select>
+            </div>
+            <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin:0.75rem 0 0.35rem">勘定科目マッピング</div>
+            <div class="form-group"><label>給与手当</label><input type="text" id="acctMapSalary" value="給与手当" style="font-size:0.8rem"></div>
+            <div class="form-group"><label>法定福利費（会社負担）</label><input type="text" id="acctMapIns" value="法定福利費" style="font-size:0.8rem"></div>
+            <div class="form-group"><label>預り金（源泉所得税）</label><input type="text" id="acctMapTax" value="預り金" style="font-size:0.8rem"></div>
+            <div class="form-group"><label>預り金（住民税）</label><input type="text" id="acctMapMuni" value="預り金" style="font-size:0.8rem"></div>
+            <div class="form-group"><label>普通預金（支払口座）</label><input type="text" id="acctMapBank" value="普通預金" style="font-size:0.8rem"></div>
+            <div class="btn-group">
+              <button class="btn btn-primary" id="btnGenAcct">仕訳CSV生成</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="panel">
+          <div class="panel-header">📋 仕訳プレビュー</div>
+          <div class="panel-body" id="acctPreview">
+            <p style="color:var(--muted);font-size:0.82rem">左の設定を入力して「仕訳CSV生成」を押してください</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       v6: API管理
+  ═══════════════════════════════════════════════ -->
+  <div class="page" id="pageApikeys">
+    <div style="margin-bottom:1rem">
+      <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900">🔑 API管理</div>
+      <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem">外部サービス連携用のAPIキーとWebhookを管理します</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+      <div class="panel">
+        <div class="panel-header">🔑 APIキー</div>
+        <div class="panel-body">
+          <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.75rem">
+            外部システムからPayrollAutoのデータにアクセスするためのAPIキーです。<br>
+            <b>秘密にしてください。漏洩した場合はすぐに再生成してください。</b>
+          </div>
+          <div id="apiKeyList"></div>
+          <div class="btn-group" style="margin-top:0.75rem">
+            <button class="btn btn-primary btn-sm" id="btnGenApiKey">🔑 新しいAPIキーを生成</button>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">🔔 Webhook設定</div>
+        <div class="panel-body">
+          <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.75rem">
+            給与確定時に外部URLへ自動通知します。
+          </div>
+          <div class="form-group"><label>Webhook URL</label>
+            <input type="url" id="webhookUrl" placeholder="https://example.com/webhooks/payroll">
+          </div>
+          <div class="form-group"><label>通知タイミング</label>
+            <div style="display:flex;flex-direction:column;gap:0.35rem;margin-top:0.25rem">
+              <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.8rem"><input type="checkbox" id="whTriggerCommit" checked> 給与確定時</label>
+              <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.8rem"><input type="checkbox" id="whTriggerTransfer"> 振込完了時</label>
+            </div>
+          </div>
+          <div class="form-group"><label>Slackチャンネル（任意）</label>
+            <input type="text" id="webhookSlack" placeholder="#payroll-notifications">
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-primary btn-sm" id="btnSaveWebhook">保存</button>
+            <button class="btn btn-secondary btn-sm" id="btnTestWebhook">テスト送信</button>
+          </div>
+          <div id="webhookLog" style="margin-top:0.75rem;font-size:0.72rem;font-family:var(--font-mono);color:var(--muted)"></div>
+        </div>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:1rem">
+      <div class="panel-header">📖 API仕様</div>
+      <div class="panel-body">
+        <div style="font-size:0.72rem;font-family:var(--font-mono);background:var(--cream);padding:1rem;border-radius:var(--radius);line-height:1.8">
+          <div style="color:var(--muted);margin-bottom:0.5rem"># PayrollAuto API v1</div>
+          <div><b style="color:var(--blue)">GET</b>  /api/v1/payroll?month=YYYY-MM</div>
+          <div style="color:var(--muted);margin-left:1rem;font-size:0.65rem">→ 指定月の給与データ一覧を返す</div>
+          <div><b style="color:var(--blue)">GET</b>  /api/v1/employees</div>
+          <div style="color:var(--muted);margin-left:1rem;font-size:0.65rem">→ 従業員一覧を返す</div>
+          <div><b style="color:var(--green)">POST</b> /api/v1/webhooks/test</div>
+          <div style="color:var(--muted);margin-left:1rem;font-size:0.65rem">→ Webhookのテスト送信</div>
+          <div style="margin-top:0.5rem;color:var(--muted)"># 認証: Authorization: Bearer &lt;api_key&gt;</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <div id="printArea"></div>
 
 
@@ -3860,6 +4138,728 @@ window.renderDrilldownChart = renderDrilldownChart;
 window.checkShahouChanges   = checkShahouChanges;
 
 })();
+</script>
+<script>
+/* ══════════════════════════════════════════════════════════
+   PayrollAuto v6.0 — 追加機能 JavaScript
+   ① 人件費シミュレーター
+   ② AI人件費予測・異常検知
+   ③ 従業員ポータル管理
+   ④ 会計連携（freee/MF対応仕訳CSV）
+   ⑤ API管理・Webhook
+   ⑥ ワークフロー自動化
+   ⑦ AI Insightパネル
+══════════════════════════════════════════════════════════ */
+(() => {
+'use strict';
+
+// v5のsupabaseクライアントを再利用
+const sb = window.__PA_SB;
+const $  = id => document.getElementById(id);
+const fmtY = v => '¥' + Math.round(v||0).toLocaleString('ja-JP');
+function esc(s){ const d=document.createElement('div'); d.textContent=String(s||''); return d.innerHTML; }
+function showToast(msg,type=''){
+  const t=document.createElement('div');
+  t.className='toast '+type; t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),3200);
+}
+function showModal(title,body,confirmLabel,confirmClass,onConfirm){
+  $('modalTitle').textContent=title;
+  $('modalBody').innerHTML=body;
+  const btn=$('modalConfirm');
+  btn.textContent=confirmLabel||'実行';
+  btn.className='btn '+(confirmClass||'btn-danger');
+  $('modalOverlay').classList.add('show');
+  const close=()=>$('modalOverlay').classList.remove('show');
+  btn.onclick=()=>{close();onConfirm();};
+  $('modalCancel').onclick=close;
+}
+async function dbGet(table,match){
+  try{
+    let q=sb.from(table).select('*');
+    for(const[k,v]of Object.entries(match))q=q.eq(k,v);
+    const{data,error}=await q.maybeSingle();
+    if(error)throw error;
+    return data;
+  }catch(e){console.warn('[v6]',table,e.message);return null;}
+}
+
+// ─── Chart.js インスタンス管理 ───
+let simChartObj = null;
+let forecastChartObj = null;
+
+// ══════════════════════════════════════════
+// ① 人件費シミュレーター
+// ══════════════════════════════════════════
+
+function runSimulation(){
+  const count  = Number($('simCount')?.value)  || 1;
+  const base   = Number($('simBase')?.value)   || 0;
+  const ot     = Number($('simOt')?.value)     || 0;
+  const otRate = Number($('simOtRate')?.value) || 0;
+  const dep    = Number($('simDep')?.value)    || 0;
+  const age    = Number($('simAge')?.value)    || 35;
+  const bonus  = Number($('simBonus')?.value)  || 0;
+  const raise  = Number($('simRaise')?.value)  || 0;
+
+  const otPay   = Math.round(ot * otRate);
+  const monthly = base + otPay;
+
+  // 社会保険料率（概算: 従業員 ≒ 会社）
+  const insRate = (5.0 + 9.15 + 0.6) / 100;
+  const empIns  = Math.round(monthly * insRate);
+  const coIns   = Math.round(monthly * insRate);
+
+  const bonusGross = Math.round(base * bonus);
+  const bonusIns   = Math.round(bonusGross * insRate);
+
+  // 会社の年間総負担（給与+会社社保+賞与+賞与社保）
+  const annualSalaryCost = (monthly + coIns) * 12 + bonusGross + bonusIns;
+  const annualTotal      = annualSalaryCost * count;
+
+  // 5年推移（昇給率加味）
+  const yearlyTotals = [1,2,3,4,5].map(y => {
+    const factor  = Math.pow(1 + raise/100, y-1);
+    const yBase   = Math.round(base * factor);
+    const yOtPay  = Math.round(ot * otRate * factor);
+    const yMo     = yBase + yOtPay;
+    const yIns    = Math.round(yMo * insRate);
+    const yBonus  = Math.round(yBase * bonus);
+    const yBI     = Math.round(yBonus * insRate);
+    return ((yMo + yIns) * 12 + yBonus + yBI) * count;
+  });
+
+  // 手取り概算（社保+所得税+住民税）
+  const takeHome = monthly - empIns - Math.round(monthly * 0.05) - Math.round(monthly * 0.008);
+  return { count, base, otPay, monthly, empIns, coIns, bonusGross, bonusIns, annualSalaryCost, annualTotal, yearlyTotals, takeHome };
+}
+
+function renderSimResult(r){
+  const card = (label, value, sub='', color='') =>
+    `<div class="stat-card"><div class="stat-label">${label}</div>
+     <div class="stat-value${color?' '+color:''}">${value}</div>
+     ${sub?`<div class="stat-sub">${sub}</div>`:''}
+     </div>`;
+
+  const el = $('simResult');
+  if(!el) return;
+  el.innerHTML = `
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:1rem">
+      ${card('月間支給額（1人）', fmtY(r.monthly), '基本給+残業')}
+      ${card('月間手取り概算', fmtY(r.takeHome), '税・社保控除後', 'green')}
+      ${card('従業員社保（月）', fmtY(r.empIns), '従業員負担', 'accent')}
+      ${card('会社社保負担（月）', fmtY(r.coIns), '会社負担', 'accent')}
+      ${card('年間ボーナス', fmtY(r.bonusGross), r.bonusGross>0?($('simBonus').value+'ヶ月分'):'なし')}
+      ${card('年間総人件費（1人）', fmtY(r.annualSalaryCost), '給与+社保+賞与')}
+    </div>
+    <div style="background:var(--ink);color:var(--paper);padding:1rem 1.25rem;border-radius:var(--radius);display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:0.7rem;letter-spacing:0.1em;opacity:0.6">${r.count}名採用 / 年間総人件費</div>
+        <div style="font-family:var(--font-display);font-size:1.6rem;font-weight:900;margin-top:0.2rem">${fmtY(r.annualTotal)}</div>
+      </div>
+      <div style="text-align:right;font-size:0.72rem;opacity:0.6">
+        <div>月額 ${fmtY(Math.round(r.annualTotal/12))}</div>
+        <div style="margin-top:0.2rem">1人あたり月 ${fmtY(Math.round(r.annualTotal/12/r.count))}</div>
+      </div>
+    </div>`;
+}
+
+function renderSimChart(r){
+  const canvas = $('simChart');
+  if(!canvas) return;
+  if(simChartObj){ simChartObj.destroy(); simChartObj=null; }
+  const isDark = document.body.classList.contains('dark');
+  const tc = isDark?'#5a5650':'#7a7469';
+  const gc = isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.05)';
+  simChartObj = new Chart(canvas,{
+    type:'bar',
+    data:{
+      labels:['1年目','2年目','3年目','4年目','5年目'],
+      datasets:[{
+        label:'年間総人件費', data:r.yearlyTotals,
+        backgroundColor:'rgba(200,80,42,0.7)', borderColor:'#c8502a',
+        borderWidth:1, borderRadius:3,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:true,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>fmtY(ctx.parsed.y)}}},
+      scales:{
+        x:{ticks:{color:tc,font:{size:10}},grid:{color:gc}},
+        y:{ticks:{color:tc,callback:v=>'¥'+(v/10000).toFixed(0)+'万',font:{size:10}},grid:{color:gc}}
+      }
+    }
+  });
+}
+
+function saveSimScenario(){
+  const name = $('simName')?.value.trim() || ('シナリオ '+new Date().toLocaleDateString('ja-JP'));
+  const r = runSimulation();
+  const scenarios = JSON.parse(localStorage.getItem('pa_sim_scenarios')||'[]');
+  scenarios.unshift({name,r,savedAt:new Date().toISOString()});
+  if(scenarios.length>10) scenarios.pop();
+  localStorage.setItem('pa_sim_scenarios',JSON.stringify(scenarios));
+  renderSavedScenarios();
+  showToast(`「${name}」を保存しました`,'success');
+}
+
+function renderSavedScenarios(){
+  const wrap=$('simSavedList');
+  if(!wrap) return;
+  const scenarios=JSON.parse(localStorage.getItem('pa_sim_scenarios')||'[]');
+  if(!scenarios.length){
+    wrap.innerHTML='<p style="color:var(--muted);font-size:0.82rem">保存されたシナリオがありません</p>';
+    return;
+  }
+  wrap.innerHTML=`<table class="data-tbl">
+    <thead><tr><th>シナリオ名</th><th>人数</th><th>年間総人件費</th><th>保存日時</th><th></th></tr></thead>
+    <tbody>${scenarios.map((s,i)=>`
+      <tr>
+        <td style="font-weight:600">${esc(s.name)}</td>
+        <td style="font-family:var(--font-mono)">${s.r.count}名</td>
+        <td style="font-family:var(--font-mono);color:var(--accent)">${fmtY(s.r.annualTotal)}</td>
+        <td style="font-size:0.7rem;color:var(--muted)">${new Date(s.savedAt).toLocaleDateString('ja-JP')}</td>
+        <td><button class="tbl-btn danger" onclick="v6DeleteSimScenario(${i})">削除</button></td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+window.v6DeleteSimScenario=function(i){
+  const scenarios=JSON.parse(localStorage.getItem('pa_sim_scenarios')||'[]');
+  scenarios.splice(i,1);
+  localStorage.setItem('pa_sim_scenarios',JSON.stringify(scenarios));
+  renderSavedScenarios();
+};
+
+$('btnSimCalc')?.addEventListener('click',()=>{
+  const r=runSimulation();
+  renderSimResult(r);
+  renderSimChart(r);
+});
+$('btnSimSave')?.addEventListener('click',saveSimScenario);
+renderSavedScenarios();
+
+// ══════════════════════════════════════════
+// ② AI人件費予測・異常検知
+// ══════════════════════════════════════════
+
+async function runForecast(){
+  const cc = window.currentCompany;
+  if(!cc){ showToast('会社を選択してください','error'); return; }
+  showToast('データ分析中...','');
+
+  const {data:snaps} = await sb.from('payroll_snapshots')
+    .select('*').eq('company_id',cc.id).order('period',{ascending:true});
+
+  if(!snaps||snaps.length<3){
+    $('forecastSummary').innerHTML='<p style="color:var(--muted);font-size:0.82rem">予測には3ヶ月以上のデータが必要です</p>';
+    return;
+  }
+
+  // 線形回帰
+  const n=snaps.length;
+  const xs=snaps.map((_,i)=>i);
+  const ys=snaps.map(s=>s.tot_gross||0);
+  const mx=xs.reduce((a,b)=>a+b,0)/n, my=ys.reduce((a,b)=>a+b,0)/n;
+  const slope=xs.reduce((s,x,i)=>s+(x-mx)*(ys[i]-my),0)/xs.reduce((s,x)=>s+(x-mx)**2,0);
+  const intercept=my-slope*mx;
+
+  // 6ヶ月予測
+  const lastPeriod=snaps[n-1].period;
+  const [ly,lm]=lastPeriod.split('-').map(Number);
+  const forecasts=[];
+  for(let i=1;i<=6;i++){
+    const d=new Date(ly,lm-1+i,1);
+    const period=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const predicted=Math.max(0,Math.round(intercept+slope*(n+i-1)));
+    forecasts.push({period,predicted});
+  }
+
+  // 変動率
+  const growthRates=[];
+  for(let i=1;i<snaps.length;i++){
+    if(snaps[i-1].tot_gross>0)
+      growthRates.push((snaps[i].tot_gross-snaps[i-1].tot_gross)/snaps[i-1].tot_gross*100);
+  }
+  const avgGrowth=growthRates.length?growthRates.reduce((a,b)=>a+b,0)/growthRates.length:0;
+  const annualForecast=forecasts.reduce((s,f)=>s+f.predicted,0);
+
+  $('forecastSummary').innerHTML=`
+    <div class="stat-grid" style="grid-template-columns:1fr 1fr">
+      <div class="stat-card">
+        <div class="stat-label">年間人件費予測（6ヶ月×2）</div>
+        <div class="stat-value accent">${fmtY(annualForecast*2)}</div>
+        <div class="stat-sub">トレンド予測値</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">月次成長率（平均）</div>
+        <div class="stat-value ${avgGrowth>0?'accent':'green'}">${avgGrowth>0?'▲':'▼'}${Math.abs(avgGrowth).toFixed(1)}%</div>
+        <div class="stat-sub">過去${snaps.length}ヶ月平均</div>
+      </div>
+    </div>
+    <div style="margin-top:0.75rem;padding:0.75rem;background:var(--cream);border-radius:var(--radius);font-size:0.78rem">
+      <b>直近予測：</b>
+      ${forecasts.slice(0,3).map(f=>`${f.period.replace('-','/')} → ${fmtY(f.predicted)}`).join('　|　')}
+    </div>`;
+
+  // 異常検知インサイト
+  $('forecastInsights').innerHTML = generateInsights(snaps,growthRates,avgGrowth);
+
+  // チャート
+  renderForecastChart(snaps,forecasts);
+
+  // 部署別
+  await renderForecastDeptTable(snaps);
+
+  // 予測結果をSupabaseに保存
+  await sb.from('forecast_results').upsert({
+    company_id:cc.id,
+    year:new Date().getFullYear(),
+    forecast_total:annualForecast*2,
+    scenario:JSON.stringify({slope,intercept,avgGrowth,forecasts}),
+    created_at:new Date().toISOString(),
+  },{onConflict:'company_id,year'}).catch(()=>{});
+
+  showToast('予測完了','success');
+}
+window.runForecast=runForecast;
+
+function generateInsights(snaps,growthRates,avgGrowth){
+  const alerts=[];
+  if(growthRates.length){
+    const last=growthRates[growthRates.length-1];
+    if(last>15) alerts.push({type:'danger',msg:`⚠️ 先月の人件費が前月比 <b>+${last.toFixed(1)}%</b> 急増しています。残業増加・新規採用を確認してください。`});
+    else if(last>8) alerts.push({type:'warn',msg:`📈 先月の人件費が前月比 <b>+${last.toFixed(1)}%</b> 増加しています。`});
+  }
+  if(growthRates.slice(-3).every(r=>r>0)) alerts.push({type:'warn',msg:`📊 人件費が <b>3ヶ月連続で増加</b>しています。予算との乖離を確認してください。`});
+  if(avgGrowth>5) alerts.push({type:'info',msg:`💡 月次平均成長率 <b>${avgGrowth.toFixed(1)}%</b> — 年率換算で約 <b>${(avgGrowth*12).toFixed(0)}%</b> の増加ペースです。`});
+  else if(avgGrowth<0) alerts.push({type:'success',msg:`✅ 人件費は月次平均 <b>${Math.abs(avgGrowth).toFixed(1)}%</b> の減少傾向です。`});
+  else alerts.push({type:'info',msg:`📋 人件費は安定しています（月次平均変動 <b>${avgGrowth.toFixed(1)}%</b>）。`});
+  if(!alerts.length) return '<p style="color:var(--muted);font-size:0.82rem">異常は検知されませんでした</p>';
+  const colors={danger:'var(--accent)',warn:'var(--gold)',info:'var(--blue)',success:'var(--green)'};
+  return alerts.map(a=>`<div style="border-left:3px solid ${colors[a.type]};padding:0.6rem 0.85rem;margin-bottom:0.5rem;background:${colors[a.type]}18;border-radius:0 var(--radius) var(--radius) 0;font-size:0.78rem;line-height:1.5">${a.msg}</div>`).join('');
+}
+
+function renderForecastChart(snaps,forecasts){
+  const canvas=$('forecastChart');
+  if(!canvas) return;
+  if(forecastChartObj){forecastChartObj.destroy();forecastChartObj=null;}
+  const isDark=document.body.classList.contains('dark');
+  const tc=isDark?'#5a5650':'#7a7469';
+  const gc=isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.05)';
+  const aLabels=snaps.map(s=>s.period.replace('-','/'));
+  const fLabels=forecasts.map(f=>f.period.replace('-','/')+'(予)');
+  forecastChartObj=new Chart(canvas,{
+    type:'line',
+    data:{
+      labels:[...aLabels,...fLabels],
+      datasets:[
+        {label:'実績',data:[...snaps.map(s=>s.tot_gross||0),...Array(forecasts.length).fill(null)],
+          borderColor:'#1a3a5c',backgroundColor:'rgba(26,58,92,0.1)',borderWidth:2,fill:true,tension:0.3,pointRadius:4,pointBackgroundColor:'#1a3a5c'},
+        {label:'予測',data:[...Array(snaps.length).fill(null),...forecasts.map(f=>f.predicted)],
+          borderColor:'#c8502a',backgroundColor:'rgba(200,80,42,0.08)',borderWidth:2,borderDash:[6,4],fill:true,tension:0.3,pointRadius:4,pointBackgroundColor:'#c8502a'},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{labels:{color:tc,font:{size:10},boxWidth:12}},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmtY(ctx.parsed.y)}`}}},
+      scales:{
+        x:{ticks:{color:tc,font:{size:9},maxRotation:45},grid:{color:gc}},
+        y:{ticks:{color:tc,callback:v=>'¥'+(v/10000).toFixed(0)+'万',font:{size:10}},grid:{color:gc}}
+      }
+    }
+  });
+}
+
+async function renderForecastDeptTable(snaps){
+  const cc=window.currentCompany;
+  if(!snaps.length||!cc) return;
+  const latest=snaps[snaps.length-1];
+  const payroll=await dbGet('payroll_data',{company_id:cc.id,period:latest.period});
+  const el=$('forecastDeptTable');
+  if(!el) return;
+  if(!payroll?.employees?.length){
+    el.innerHTML='<p style="color:var(--muted);font-size:0.82rem">給与データが見つかりません</p>';
+    return;
+  }
+  const deptMap={};
+  payroll.employees.forEach(e=>{
+    const dept=e.dept||'未設定';
+    if(!deptMap[dept]) deptMap[dept]={count:0,gross:0,ins:0};
+    deptMap[dept].count++;
+    deptMap[dept].gross+=e.gross||0;
+    deptMap[dept].ins+=e.insurance||0;
+  });
+  const total=Object.values(deptMap).reduce((s,d)=>s+d.gross,0);
+  const rows=Object.entries(deptMap).sort((a,b)=>b[1].gross-a[1].gross);
+  el.innerHTML=`<div class="tbl-wrap"><table class="data-tbl">
+    <thead><tr><th>部署</th><th>人数</th><th>月間支給額</th><th>社保合計</th><th>会社負担概算</th><th>構成比</th></tr></thead>
+    <tbody>${rows.map(([dept,d])=>{
+      const coIns=Math.round(d.ins*0.9);
+      const pct=total>0?(d.gross/total*100).toFixed(1):0;
+      return `<tr>
+        <td><b>${esc(dept)}</b></td>
+        <td style="font-family:var(--font-mono)">${d.count}名</td>
+        <td style="font-family:var(--font-mono)">${fmtY(d.gross)}</td>
+        <td style="font-family:var(--font-mono);color:var(--accent)">${fmtY(d.ins)}</td>
+        <td style="font-family:var(--font-mono);color:var(--accent)">${fmtY(d.gross+coIns)}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:0.5rem">
+            <div style="flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden">
+              <div style="width:${pct}%;height:100%;background:var(--blue);border-radius:2px"></div>
+            </div>
+            <span style="font-family:var(--font-mono);font-size:0.72rem">${pct}%</span>
+          </div>
+        </td>
+      </tr>`;}).join('')}
+    </tbody></table></div>`;
+}
+
+$('btnRunForecast')?.addEventListener('click',runForecast);
+
+// ══════════════════════════════════════════
+// ③ 従業員ポータル管理
+// ══════════════════════════════════════════
+
+async function loadPortalPage(){
+  const cc=window.currentCompany;
+  if(!cc) return;
+  const portalUrlEl=$('portalUrl');
+  if(portalUrlEl){
+    portalUrlEl.textContent=`${location.origin}/?portal=1&company=${cc.id}`;
+    portalUrlEl.onclick=()=>{
+      navigator.clipboard?.writeText(portalUrlEl.textContent);
+      showToast('ポータルURLをコピーしました','success');
+    };
+  }
+  // 従業員セレクト更新
+  const emps=window.employees||[];
+  const empSel=$('portalEmpSelect');
+  if(empSel&&emps.length){
+    empSel.innerHTML='<option value="">— 選択 —</option>'+
+      emps.map(e=>`<option value="${esc(e.name)}">${esc(e.name)}</option>`).join('');
+  }
+  await renderPortalEmpList();
+}
+window.loadPortalPage=loadPortalPage;
+
+async function renderPortalEmpList(){
+  const cc=window.currentCompany;
+  if(!cc) return;
+  const {data}=await sb.from('employee_profiles').select('*').eq('company_id',cc.id).order('employee_name',{ascending:true});
+  const wrap=$('portalEmpList');
+  if(!wrap) return;
+  if(!data||!data.length){
+    wrap.innerHTML='<p style="font-size:0.78rem;color:var(--muted);margin-bottom:0.75rem">登録済みアカウントがありません</p>';
+    return;
+  }
+  wrap.innerHTML=`<table class="data-tbl" style="margin-bottom:0.75rem">
+    <thead><tr><th>従業員名</th><th>メール</th><th>有給残</th><th>操作</th></tr></thead>
+    <tbody>${data.map(p=>`
+      <tr>
+        <td><b>${esc(p.employee_name||'—')}</b></td>
+        <td style="font-size:0.75rem;font-family:var(--font-mono)">${esc(p.portal_email||'—')}</td>
+        <td style="font-family:var(--font-mono)">${p.leave_days??'—'}日</td>
+        <td><button class="tbl-btn danger" onclick="v6DeletePortalEmp('${p.id}')">削除</button></td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+window.v6DeletePortalEmp=async function(id){
+  showModal('削除確認','このポータルアカウントを削除しますか？','削除','btn-danger',async()=>{
+    await sb.from('employee_profiles').delete().eq('id',id);
+    await renderPortalEmpList();
+    showToast('削除しました','success');
+  });
+};
+
+$('btnAddPortalEmp')?.addEventListener('click',async()=>{
+  const cc=window.currentCompany;
+  if(!cc) return;
+  const empName=$('portalEmpSelect')?.value;
+  const email=$('portalEmpEmail')?.value.trim();
+  const leaveDays=Number($('portalEmpLeave')?.value)||20;
+  if(!empName||!email){showToast('従業員名とメールアドレスを入力してください','error');return;}
+  await sb.from('employee_profiles').upsert({
+    company_id:cc.id, employee_name:empName, portal_email:email, leave_days:leaveDays,
+    updated_at:new Date().toISOString(),
+  },{onConflict:'company_id,employee_name'});
+  if($('portalEmpEmail')) $('portalEmpEmail').value='';
+  await renderPortalEmpList();
+  showToast(`${empName} のポータルアカウントを登録しました`,'success');
+});
+
+$('btnSavePortalSettings')?.addEventListener('click',()=>{
+  showToast('ポータル設定を保存しました','success');
+});
+
+// ══════════════════════════════════════════
+// ④ 会計連携
+// ══════════════════════════════════════════
+
+function buildAcctPeriodSelector(){
+  const sel=$('acctPeriod');
+  if(!sel) return;
+  const now=new Date();
+  sel.innerHTML='';
+  for(let i=0;i<12;i++){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    const v=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const o=document.createElement('option');
+    o.value=v; o.textContent=`${d.getFullYear()}年${d.getMonth()+1}月`;
+    sel.appendChild(o);
+  }
+}
+
+async function generateAccountingCSV(){
+  const cc=window.currentCompany;
+  const software=$('acctSoftware')?.value||'generic';
+  const period=$('acctPeriod')?.value;
+  if(!period||!cc){showToast('対象月を選択してください','error');return;}
+  const row=await dbGet('payroll_history',{company_id:cc.id,period});
+  if(!row?.employees?.length){showToast('この月の確定済みデータが見つかりません','error');return;}
+  const emps=row.employees;
+  const totGross=emps.reduce((s,e)=>s+(e.gross||0),0);
+  const totIns  =emps.reduce((s,e)=>s+(e.insurance||0),0);
+  const totTax  =emps.reduce((s,e)=>s+(e.tax||0),0);
+  const totMuni =emps.reduce((s,e)=>s+(e.municipal||0),0);
+  const totNet  =emps.reduce((s,e)=>s+(e.monthlyNet||0),0);
+  const coIns   =Math.round(totIns*0.9);
+  const mapSalary=$('acctMapSalary')?.value||'給与手当';
+  const mapIns   =$('acctMapIns')?.value||'法定福利費';
+  const mapTax   =$('acctMapTax')?.value||'預り金';
+  const mapMuni  =$('acctMapMuni')?.value||'預り金';
+  const mapBank  =$('acctMapBank')?.value||'普通預金';
+  const [y,m]=period.split('-');
+  const dateStr=`${y}/${m}/25`;
+  let csvLines=[];
+  if(software==='freee'){
+    csvLines.push(['取引日','収支区分','勘定科目','金額','備考'].join(','));
+    csvLines.push([dateStr,'支出',mapSalary,totGross,`${y}年${Number(m)}月分 給与`].join(','));
+    csvLines.push([dateStr,'支出',mapIns,coIns,`${y}年${Number(m)}月分 会社負担社会保険`].join(','));
+    csvLines.push([dateStr,'収入',mapTax,totTax+totMuni,`${y}年${Number(m)}月分 源泉所得税・住民税`].join(','));
+    csvLines.push([dateStr,'支出',mapBank,totNet,`${y}年${Number(m)}月分 給与振込`].join(','));
+  } else if(software==='mf'){
+    csvLines.push(['日付','借方勘定科目','借方金額','貸方勘定科目','貸方金額','摘要'].join(','));
+    csvLines.push([dateStr,mapSalary,totGross,mapBank,totNet,`${y}年${Number(m)}月分 給与`].join(','));
+    csvLines.push([dateStr,mapSalary,'',mapTax,totTax,`${y}年${Number(m)}月分 源泉所得税`].join(','));
+    csvLines.push([dateStr,mapSalary,'',mapMuni,totMuni,`${y}年${Number(m)}月分 住民税`].join(','));
+    csvLines.push([dateStr,mapIns,coIns,mapBank,coIns,`${y}年${Number(m)}月分 会社負担社保`].join(','));
+  } else {
+    csvLines.push(['日付','借方科目','借方金額','貸方科目','貸方金額','摘要'].join(','));
+    csvLines.push([dateStr,mapSalary,totGross,mapBank,totNet,`${y}年${Number(m)}月分 給与支払`].join(','));
+    csvLines.push([dateStr,mapSalary,'',mapTax,totTax+totMuni,`${y}年${Number(m)}月分 源泉・住民税`].join(','));
+    csvLines.push([dateStr,mapIns,coIns,mapBank,coIns,`${y}年${Number(m)}月分 法定福利費`].join(','));
+  }
+  const swLabel=software==='freee'?'freee会計':software==='mf'?'マネーフォワード':'汎用CSV';
+  $('acctPreview').innerHTML=`
+    <div style="margin-bottom:0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap">
+      <span style="font-size:0.72rem;font-family:var(--font-mono);background:var(--cream);padding:0.25rem 0.65rem;border-radius:var(--radius)">${swLabel}</span>
+      <span style="font-size:0.72rem;font-family:var(--font-mono);background:var(--cream);padding:0.25rem 0.65rem;border-radius:var(--radius)">${y}年${Number(m)}月分</span>
+      <span style="font-size:0.72rem;font-family:var(--font-mono);background:var(--cream);padding:0.25rem 0.65rem;border-radius:var(--radius)">${emps.length}名分</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
+      <div><div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">支給総額</div><div style="font-family:var(--font-mono);font-size:1rem;font-weight:700">${fmtY(totGross)}</div></div>
+      <div><div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">振込額合計</div><div style="font-family:var(--font-mono);font-size:1rem;font-weight:700;color:var(--green)">${fmtY(totNet)}</div></div>
+      <div><div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">源泉+住民税</div><div style="font-family:var(--font-mono);font-size:1rem;color:var(--accent)">${fmtY(totTax+totMuni)}</div></div>
+      <div><div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">会社負担社保</div><div style="font-family:var(--font-mono);font-size:1rem;color:var(--accent)">${fmtY(coIns)}</div></div>
+    </div>
+    <pre style="font-size:0.68rem;font-family:var(--font-mono);background:var(--cream);padding:0.75rem;border-radius:var(--radius);overflow-x:auto;line-height:1.6;white-space:pre">${csvLines.join('\n')}</pre>
+    <div class="btn-group" style="margin-top:0.75rem">
+      <button class="btn btn-green btn-sm" id="btnDlAcctCSV">⬇ CSVダウンロード</button>
+    </div>`;
+  const csvData=csvLines;
+  $('btnDlAcctCSV')?.addEventListener('click',()=>{
+    const bom='\uFEFF';
+    const blob=new Blob([bom+csvData.join('\r\n')],{type:'text/csv;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=`仕訳_${software}_${period}.csv`; a.click();
+    URL.revokeObjectURL(url);
+    showToast('仕訳CSVをダウンロードしました','success');
+  });
+}
+window.generateAccountingCSV=generateAccountingCSV;
+$('btnGenAcct')?.addEventListener('click',generateAccountingCSV);
+
+// ══════════════════════════════════════════
+// ⑤ API管理・Webhook
+// ══════════════════════════════════════════
+
+function generateApiKey(){
+  const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  return 'pa_'+Array.from({length:48},()=>chars[Math.floor(Math.random()*chars.length)]).join('');
+}
+
+async function loadApiKeys(){
+  const cc=window.currentCompany;
+  if(!cc) return;
+  const {data}=await sb.from('api_keys').select('*').eq('company_id',cc.id).order('created_at',{ascending:false});
+  const wrap=$('apiKeyList');
+  if(!wrap) return;
+  if(!data||!data.length){
+    wrap.innerHTML='<p style="font-size:0.78rem;color:var(--muted);margin-bottom:0.75rem">APIキーがありません</p>';
+  } else {
+    wrap.innerHTML=data.map(k=>`
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-family:var(--font-mono);font-size:0.75rem">${k.api_key.slice(0,12)}${'•'.repeat(36)}</div>
+          <div style="font-size:0.65rem;color:var(--muted);margin-top:0.15rem">作成：${new Date(k.created_at).toLocaleDateString('ja-JP')}</div>
+        </div>
+        <button class="tbl-btn danger" onclick="v6DeleteApiKey('${k.id}')">削除</button>
+      </div>`).join('');
+  }
+  await loadWebhookSettings();
+}
+window.loadApiKeys=loadApiKeys;
+
+window.v6DeleteApiKey=async function(id){
+  showModal('APIキー削除','このAPIキーを削除しますか？','削除','btn-danger',async()=>{
+    await sb.from('api_keys').delete().eq('id',id);
+    await loadApiKeys();
+    showToast('APIキーを削除しました','success');
+  });
+};
+
+$('btnGenApiKey')?.addEventListener('click',async()=>{
+  const cc=window.currentCompany;
+  if(!cc) return;
+  const apiKey=generateApiKey();
+  await sb.from('api_keys').insert({company_id:cc.id,api_key:apiKey,created_at:new Date().toISOString()});
+  await loadApiKeys();
+  showModal('🔑 APIキー生成完了',
+    `<p style="margin-bottom:0.5rem;font-size:0.78rem">安全な場所に保管してください。再表示されません。</p>
+     <div style="font-family:var(--font-mono);font-size:0.72rem;background:var(--cream);padding:0.65rem;border-radius:var(--radius);word-break:break-all;cursor:pointer" onclick="navigator.clipboard?.writeText('${apiKey}');showToast('コピーしました','success')">${apiKey}</div>
+     <p style="font-size:0.68rem;color:var(--muted);margin-top:0.35rem">クリックでコピー</p>`,
+    'OK','btn-primary',()=>{});
+});
+
+async function loadWebhookSettings(){
+  const cc=window.currentCompany;
+  if(!cc) return;
+  const {data}=await sb.from('webhook_settings').select('*').eq('company_id',cc.id).maybeSingle();
+  if(data){
+    if($('webhookUrl')) $('webhookUrl').value=data.url||'';
+    if($('webhookSlack')) $('webhookSlack').value=data.slack_channel||'';
+    if($('whTriggerCommit')) $('whTriggerCommit').checked=data.trigger_commit!==false;
+    if($('whTriggerTransfer')) $('whTriggerTransfer').checked=!!data.trigger_transfer;
+  }
+}
+
+$('btnSaveWebhook')?.addEventListener('click',async()=>{
+  const cc=window.currentCompany;
+  if(!cc) return;
+  await sb.from('webhook_settings').upsert({
+    company_id:cc.id,
+    url:$('webhookUrl')?.value.trim()||'',
+    slack_channel:$('webhookSlack')?.value.trim()||'',
+    trigger_commit:$('whTriggerCommit')?.checked??true,
+    trigger_transfer:$('whTriggerTransfer')?.checked??false,
+    updated_at:new Date().toISOString(),
+  },{onConflict:'company_id'});
+  showToast('Webhook設定を保存しました','success');
+});
+
+$('btnTestWebhook')?.addEventListener('click',async()=>{
+  const url=$('webhookUrl')?.value.trim();
+  const logEl=$('webhookLog');
+  if(!url){showToast('Webhook URLを入力してください','error');return;}
+  if(logEl) logEl.textContent='送信中...';
+  try{
+    await fetch(url,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({event:'test',company_id:window.currentCompany?.id,timestamp:new Date().toISOString(),message:'PayrollAuto v6 Webhook テスト'}),
+      mode:'no-cors',
+    });
+    if(logEl) logEl.textContent='✅ 送信完了: '+new Date().toLocaleTimeString('ja-JP');
+  }catch(e){
+    if(logEl) logEl.textContent='❌ エラー: '+e.message;
+  }
+});
+
+// ══════════════════════════════════════════
+// ⑥ ワークフロー自動化
+// ══════════════════════════════════════════
+
+async function runPayrollFinalizedWorkflow(period,empList){
+  const cc=window.currentCompany;
+  if(!cc) return;
+  const totGross=empList.reduce((s,e)=>s+(e.gross||0),0);
+  // Webhook通知
+  const {data:whConfig}=await sb.from('webhook_settings').select('*').eq('company_id',cc.id).maybeSingle();
+  if(whConfig?.url&&whConfig.trigger_commit){
+    fetch(whConfig.url,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({event:'payroll_finalized',company_id:cc.id,company_name:cc.name,month:period,total_payroll:totGross,employee_count:empList.length,timestamp:new Date().toISOString()}),
+      mode:'no-cors',
+    }).catch(()=>{});
+    showToast('🔔 Webhook通知を送信しました','');
+  }
+  // レポートログ
+  await sb.from('dashboard_reports').insert({
+    company_id:cc.id, generated_by:window.currentUser?.id,
+    report_type:'payroll_finalized', period,
+    file_name:`給与確定_${period}`, generated_at:new Date().toISOString(),
+  }).catch(()=>{});
+}
+window.runPayrollFinalizedWorkflow=runPayrollFinalizedWorkflow;
+
+// ══════════════════════════════════════════
+// ⑦ AI Insightパネル（ダッシュボード）
+// ══════════════════════════════════════════
+
+async function renderAIInsightPanel(){
+  const panel=$('aiInsightPanel');
+  const cc=window.currentCompany;
+  if(!panel||!cc) return;
+  const {data:snaps}=await sb.from('payroll_snapshots').select('*').eq('company_id',cc.id).order('period',{ascending:false}).limit(6);
+  if(!snaps||snaps.length<2){
+    panel.innerHTML='<p style="font-size:0.78rem;color:var(--muted)">インサイト生成には2ヶ月以上のデータが必要です</p>';
+    return;
+  }
+  const latest=snaps[0], prev=snaps[1];
+  const growthRate=prev.tot_gross>0?((latest.tot_gross-prev.tot_gross)/prev.tot_gross*100):0;
+  const payroll=await dbGet('payroll_data',{company_id:cc.id,period:latest.period});
+  let otCost=0, deptInsights='';
+  if(payroll?.employees){
+    payroll.employees.forEach(e=>{otCost+=e.allowanceTotal||0;});
+    const deptMap={};
+    payroll.employees.forEach(e=>{const d=e.dept||'未設定';if(!deptMap[d])deptMap[d]=[];deptMap[d].push(e.gross||0);});
+    const globalAvg=payroll.employees.reduce((s,e)=>s+(e.gross||0),0)/payroll.employees.length;
+    const outliers=Object.entries(deptMap).map(([d,gs])=>({dept:d,avg:gs.reduce((a,b)=>a+b,0)/gs.length})).filter(d=>Math.abs(d.avg-globalAvg)/globalAvg>0.2);
+    if(outliers.length){
+      deptInsights=outliers.map(d=>`<div style="border-left:3px solid var(--gold);padding:0.4rem 0.7rem;margin-bottom:0.4rem;background:rgba(184,154,62,0.08);font-size:0.75rem">💼 <b>${esc(d.dept)}</b>の平均支給額 ${fmtY(Math.round(d.avg))} は全体平均から ${d.avg>globalAvg?'+':''}${((d.avg-globalAvg)/globalAvg*100).toFixed(0)}% 乖離</div>`).join('');
+    }
+  }
+  const color=growthRate>5?'var(--accent)':growthRate>0?'var(--gold)':'var(--green)';
+  panel.innerHTML=`
+    <div style="border-left:3px solid ${color};padding:0.5rem 0.75rem;margin-bottom:0.5rem;background:${color}18;font-size:0.78rem">
+      📊 先月の人件費は前月比 <b style="color:${color}">${growthRate>0?'▲':'▼'}${Math.abs(growthRate).toFixed(1)}%</b>（${fmtY(latest.tot_gross)}）
+    </div>
+    ${otCost>0?`<div style="border-left:3px solid var(--blue);padding:0.5rem 0.75rem;margin-bottom:0.5rem;background:rgba(26,58,92,0.08);font-size:0.78rem">⏰ 先月の残業・手当コスト合計: <b>${fmtY(otCost)}</b></div>`:''}
+    ${deptInsights}
+    <div style="text-align:right;margin-top:0.35rem">
+      <button class="btn btn-sm btn-blue" onclick="window.showPage('forecast')">詳細分析 →</button>
+    </div>`;
+}
+window.renderAIInsightPanel=renderAIInsightPanel;
+
+// ══════════════════════════════════════════
+// showPage 拡張（v6ページ初期化）
+// ══════════════════════════════════════════
+const _v5ShowPage=window.showPage;
+window.showPage=function(id){
+  _v5ShowPage(id);
+  if(id==='simulator')       renderSavedScenarios();
+  else if(id==='portal')     loadPortalPage();
+  else if(id==='accounting') buildAcctPeriodSelector();
+  else if(id==='apikeys')    loadApiKeys();
+};
+
+})();
+
 </script>
 </body>
 </html>
