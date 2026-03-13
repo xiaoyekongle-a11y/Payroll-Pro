@@ -6,7 +6,7 @@
 <!-- HTTPS強制リダイレクト -->
 <script>if(location.protocol==='http:'&&location.hostname!=='localhost'&&location.hostname!=='127.0.0.1'){location.replace('https:'+location.href.slice(5));}</script>
 <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
-<title>PayrollAuto v7.0</title>
+<title>Salario</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&family=Syne:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -960,7 +960,7 @@ body.dark .hoshu-tbl tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
 <!-- AUTH SCREEN -->
 <div class="screen active" id="authScreen">
   <div class="auth-logo">Payroll<span>Auto</span></div>
-  <div class="auth-tagline">Multi-Company Payroll SaaS — v4.0</div>
+  <div class="auth-tagline">人件費経営プラットフォーム</div>
   <div class="auth-card">
     <div class="auth-tabs">
       <div class="auth-tab active" data-tab="login">ログイン</div>
@@ -1022,7 +1022,7 @@ body.dark .hoshu-tbl tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
 <!-- APP SCREEN -->
 <div class="screen" id="appScreen">
   <header class="app-header">
-    <div class="app-logo">Payroll<span>Auto</span> <span style="font-size:0.5em;font-weight:400;opacity:0.5;letter-spacing:0.05em">v5.0</span></div>
+    <div class="app-logo">Sala<span>rio</span></div>
     <div class="app-company" id="headerCompanyName">—</div>
     <div class="header-spacer"></div>
     <span class="header-role-badge" id="headerRoleBadge"></span>
@@ -2366,7 +2366,7 @@ async function buildSlipElement(emp, period) {
     </div>
 
     <div style="border-top:1px solid #eee;padding-top:12px;font-size:10px;color:#aaa;display:flex;justify-content:space-between">
-      <span>※本明細はPayrollAutoにより自動計算されたものです。</span>
+      <span>※本明細はSalarioにより自動計算されたものです。</span>
       <span>${co.name||''}</span>
     </div>`;
   return el;
