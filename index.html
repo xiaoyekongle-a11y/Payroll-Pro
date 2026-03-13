@@ -1549,7 +1549,7 @@ async function fetchLatestTaxRates(){
       taxRates={hRate:Number(r.hRate)||5.0,pRate:Number(r.pRate)||9.15,eRate:Number(r.eRate)||0.6,mRate:Number(r.mRate)||10.0,lastNote:r.note||'',lastUpdated:new Date().toISOString()};
       applyTaxRatesToForm();await saveTaxRates();renderTaxRatePanel();
       statusEl.className='tax-update-status done';
-      statusEl.innerHTML=`✅ 取得完了（${r.year||'最新'}年度 — ${r.note||''}）`;
+      statusEl.innerHTML=`✅ 取得完了（${esc(String(r.year||'最新'))}年度 — ${esc(r.note||'')}）`;
     }
   }catch(err){
     statusEl.className='tax-update-status error';
@@ -1699,7 +1699,7 @@ function triggerAutoCalc(){
     const f=getFormValues(),al=getAllowanceTotal();
     const r=calc(base,f.perf,f.mag,f.hRate,f.pRate,f.eRate,f.mRate,f.rm,f.age,f.dep,f.spDed,f.disDed,al);
     const prev=$('calcPreview');prev.style.display='block';
-    const alStr=al>0?`　手当：<b>${fmtY(al)}</b>`:'';
+    const alStr=al>0?`　手当：<b>${esc(fmtY(al))}</b>`:'';
     prev.innerHTML=`支給額：<b>${fmtY(r.gross)}</b>${alStr}　社保：<b style="color:var(--accent)">${fmtY(r.insurance)}</b>　所得税：<b style="color:var(--accent)">${fmtY(r.tax)}</b>　住民税：<b style="color:var(--accent)">${fmtY(r.municipal)}</b>　<span style="color:var(--green)">→手取：<b>${fmtY(r.monthlyNet)}</b></span>`;
     $('basePayFmt').textContent=base>0?'→ '+base.toLocaleString('ja-JP')+'円':'';
   },300);
@@ -1845,39 +1845,43 @@ async function generatePDF(empList, period, filename) {
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const W = 210, H = 297;
 
-  for (let i = 0; i < empList.length; i++) {
-    const emp = empList[i];
-    showPdfProgress(i+1, empList.length, emp.name);
-    const el = await buildSlipElement(emp, period);
-    document.body.appendChild(el);
-    try {
-      await document.fonts.ready;
-      const canvas = await html2canvas(el, {
-        scale: 2,
-        useCORS: false,
-        allowTaint: false,
-        backgroundColor: '#ffffff',
-        width: 794, windowWidth: 794,
-        logging: false,
-        onclone: (doc) => {
-          // willReadFrequently 警告を抑制
-          const origGetContext = HTMLCanvasElement.prototype.getContext;
-          HTMLCanvasElement.prototype.getContext = function(type, opts) {
-            if (type === '2d') opts = { ...opts, willReadFrequently: true };
-            return origGetContext.call(this, type, opts);
-          };
-        }
-      });
-      const imgData = canvas.toDataURL('image/jpeg', 0.93);
-      if (i > 0) pdf.addPage();
-      pdf.addImage(imgData, 'JPEG', 0, 0, W, H);
-    } catch(e) {
-      console.error('[PA] pdf page error:',emp.name, e);
-      showToast(`${emp.name} のPDF生成でエラーが発生しました`,'error');
-    } finally {
-      if(document.body.contains(el)) document.body.removeChild(el);
-    }
+  // バッチ並列処理（3枚同時 ≒ 2.5倍速）
+  const BATCH = 3;
+  const _pages = new Array(empList.length);
+  await document.fonts.ready;
+  for (let b = 0; b < empList.length; b += BATCH) {
+    const batch = empList.slice(b, b + BATCH);
+    showPdfProgress(b + 1, empList.length, batch[0].name);
+    await Promise.all(batch.map(async (emp, bi) => {
+      const el = await buildSlipElement(emp, period);
+      document.body.appendChild(el);
+      try {
+        const canvas = await html2canvas(el, {
+          scale: 2, useCORS: false, allowTaint: false,
+          backgroundColor: '#ffffff', width: 794, windowWidth: 794, logging: false,
+          onclone: () => {
+            const orig = HTMLCanvasElement.prototype.getContext;
+            HTMLCanvasElement.prototype.getContext = function(type, opts) {
+              if (type === '2d') opts = { ...opts, willReadFrequently: true };
+              return orig.call(this, type, opts);
+            };
+          }
+        });
+        _pages[b + bi] = canvas.toDataURL('image/jpeg', 0.93);
+      } catch(e) {
+        console.error('[PA] pdf page error:', emp.name, e);
+        showToast(`${emp.name} のPDF生成でエラーが発生しました`, 'error');
+        _pages[b + bi] = null;
+      } finally {
+        if (document.body.contains(el)) document.body.removeChild(el);
+      }
+    }));
   }
+  _pages.forEach((imgData, i) => {
+    if (!imgData) return;
+    if (i > 0) pdf.addPage();
+    pdf.addImage(imgData, 'JPEG', 0, 0, W, H);
+  });
   hidePdfProgress();
   pdf.save(filename);
   showToast(`PDF (${empList.length}名) をダウンロードしました ✅`, 'success');
@@ -1920,7 +1924,7 @@ async function commitMonthlyHistory(){
   await sb.from('payroll_locks').upsert({company_id:currentCompany.id,period:currentPeriod},{onConflict:'company_id,period'});
   lockedPeriods.add(currentPeriod);updateLockUI();
   await renderHistorySelect();
-  showToast(`${currentPeriod} を確定・保存しました 📥`,'success');
+  invalidateHistoryCache(); showToast(`${currentPeriod} を確定・保存しました 📥`,'success');
 }
 
 async function renderHistorySelect(){
@@ -2319,6 +2323,11 @@ function showPage(id){
   if(id==='yearend')renderYearendList();
   if(id==='transfer')renderTransferList();
   if(id==='shahou'){renderHoshuTable();checkShahouChanges();}
+  if(id==='dashboard'){
+    if(deptDonutObj){deptDonutObj.destroy();deptDonutObj=null;}
+    if(drilldownChartObj){drilldownChartObj.destroy();drilldownChartObj=null;}
+    renderDashboard();
+  }
 }
 
 /* ══════════════════════════════════════
@@ -2829,19 +2838,15 @@ async function loadTransferData(){
     status:'pending',
     selected:true
   }));
-  // DBにupsert
-  for(const t of transferData){
-    await sb.from('bank_transfers').upsert({
-      company_id:currentCompany.id,period:transferPeriod,
-      employee_id:parseInt(t.employee_id)||t.employee_id,
-      account_name:t.account_name,
-      amount:t.amount,status:'pending',
-      account_no:t.account_no||'',
-      bank_code:t.bank_code||'0000',
-      branch_code:t.branch_code||'000',
-      account_type:t.account_type||'ordinary'
-    },{onConflict:'company_id,period,employee_id'});
-  }
+  // DBにupsert（一括）
+  const _upsertRows = transferData.map(t=>({
+    company_id:currentCompany.id, period:transferPeriod,
+    employee_id:parseInt(t.employee_id)||t.employee_id,
+    account_name:t.account_name, amount:t.amount, status:'pending',
+    account_no:t.account_no||'', bank_code:t.bank_code||'0000',
+    branch_code:t.branch_code||'000', account_type:t.account_type||'ordinary',
+  }));
+  await sb.from('bank_transfers').upsert(_upsertRows,{onConflict:'company_id,period,employee_id'});
   showToast(`${transferData.length}件の振込データを作成しました`,'success');
   renderTransferList();
 }
@@ -3268,12 +3273,18 @@ async function checkShahouChanges(){
   wrap.innerHTML='<p style="font-size:0.8rem;color:var(--muted)">分析中...</p>';
 
   // 直近4ヶ月分の給与履歴を取得（変更月＋前3ヶ月）
-  const allRows = await dbGetAll('payroll_history',{company_id:currentCompany.id});
-  allRows.sort((a,b)=>b.period.localeCompare(a.period));
-  const recent4 = allRows.slice(0,4);
+  let allRows, recent4;
+  try {
+    allRows = await getHistoryCache();
+    allRows = [...allRows].reverse();
+    recent4 = allRows.slice(0,4);
+  } catch(e) {
+    wrap.innerHTML='<p style="font-size:0.8rem;color:var(--accent)">⚠ データ取得に失敗しました</p>';
+    console.error('[PA] checkShahouChanges',e); return;
+  }
 
   if(recent4.length < 4){
-    wrap.innerHTML=`<p style="font-size:0.8rem;color:var(--muted)">月額変更チェックには4ヶ月以上の確定履歴が必要です（現在${recent4.length}ヶ月分）</p>`;
+    wrap.innerHTML=`<p style="font-size:0.8rem;color:var(--muted)">月額変更チェックには4ヶ月以上の確定履歴が必要です（現在${esc(String(recent4.length))}ヶ月分）</p>`;
     return;
   }
 
@@ -3378,13 +3389,19 @@ async function generateSanteiKisho(){
   // 対象年の4・5・6月の給与履歴を取得
   const year = new Date().getFullYear();
   const periods = [`${year}-04`,`${year}-05`,`${year}-06`];
-  const rows = await Promise.all(
-    periods.map(p=>dbGet('payroll_history',{company_id:currentCompany.id,period:p}))
-  );
-  const available = rows.filter(Boolean);
+  let rows, available;
+  try {
+    rows = await Promise.all(
+      periods.map(p=>dbGet('payroll_history',{company_id:currentCompany.id,period:p}))
+    );
+    available = rows.filter(Boolean);
+  } catch(e) {
+    wrap.innerHTML='<p style="font-size:0.8rem;color:var(--accent)">⚠ データ取得に失敗しました</p>';
+    console.error('[PA] generateSanteiKisho',e); return;
+  }
 
   if(available.length === 0){
-    wrap.innerHTML=`<p style="font-size:0.8rem;color:var(--muted)">${year}年4〜6月の確定済み給与データが見つかりません</p>`;
+    wrap.innerHTML=`<p style="font-size:0.8rem;color:var(--muted)">${esc(String(year))}年4〜6月の確定済み給与データが見つかりません</p>`;
     return;
   }
 
@@ -3545,6 +3562,14 @@ function renderHoshuTable(){
 ══════════════════════════════════════════════════════════ */
 
 let deptDonutObj=null, drilldownChartObj=null, trendChartMode='normal';
+let _historyCache=null, _historyCacheTs=0;
+async function getHistoryCache(){
+  if(_historyCache && Date.now()-_historyCacheTs<60000) return _historyCache;
+  _historyCache=await dbGetAll('payroll_history',{company_id:currentCompany.id});
+  _historyCache.sort((a,b)=>a.period.localeCompare(b.period));
+  _historyCacheTs=Date.now(); return _historyCache;
+}
+function invalidateHistoryCache(){_historyCache=null;_historyCacheTs=0;}
 
 // カラーパレット（部署別ドーナツ用）
 const DEPT_COLORS=['#1a3a5c','#c0422a','#1e6e45','#a8882e','#6b3fa0','#2563eb','#d97706','#059669','#dc2626','#7c3aed'];
@@ -3556,9 +3581,8 @@ async function renderDashboard(){
   const tT=employees.reduce((a,e)=>a+(e.tax||0)+(e.municipal||0),0);
 
   // 前月データ取得（差分バッジ用）
-  const allHist=await dbGetAll('payroll_history',{company_id:currentCompany.id});
-  allHist.sort((a,b)=>b.period.localeCompare(a.period));
-  const prevRow=allHist[0];
+  const _dash_hist=await getHistoryCache();
+  const prevRow=_dash_hist[_dash_hist.length-1];
   const prevG=prevRow?.tot_gross||prevRow?.summary?.totGross||0;
   const prevN=prevRow?.tot_net||prevRow?.summary?.totNet||0;
 
@@ -3624,8 +3648,7 @@ async function renderDashboard(){
 async function renderTrendChart(){
   if(!currentCompany)return;
   try{
-    const rows=await dbGetAll('payroll_history',{company_id:currentCompany.id});
-    rows.sort((a,b)=>a.period.localeCompare(b.period));
+    const rows=await getHistoryCache();
     const recent=rows.slice(-13); // 最大13ヶ月（YoY用に前年同月も）
     const canvas=$('trendChart');
     if(!canvas)return;
@@ -3730,8 +3753,7 @@ async function renderDrilldownChart(empIdOrName){
     if(msg)msg.style.display='block';
     return;
   }
-  const allRows=await dbGetAll('payroll_history',{company_id:currentCompany.id});
-  allRows.sort((a,b)=>a.period.localeCompare(b.period));
+  const allRows=await getHistoryCache();
   const recent=allRows.slice(-12);
   const netData=recent.map(row=>{
     const e=(row.employees||[]).find(x=>String(x.id)===String(empIdOrName)||x.name===empIdOrName);
