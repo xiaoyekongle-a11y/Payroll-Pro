@@ -522,6 +522,7 @@ body.dark .tax-rate-card{background:#0d0f14}
         <button class="btn btn-sm btn-secondary" id="btnLock">🔒 ロック</button>
         <button class="btn btn-sm btn-danger" id="btnUnlock" style="display:none">🔓 解除</button>
         <button class="btn btn-sm btn-blue" id="btnPDF">🖨 PDF</button>
+        <button class="btn btn-sm btn-secondary" id="btnCSV">📊 CSV</button>
       </div>
       <div style="display:grid;grid-template-columns:340px 1fr;gap:1rem;align-items:start">
         <div>
@@ -625,6 +626,7 @@ body.dark .tax-rate-card{background:#0d0f14}
               <option value="">— 年月を選択 —</option>
             </select>
             <button class="btn btn-sm btn-danger" id="btnHistoryPDF" style="display:none">🖨 PDF再発行</button>
+            <button class="btn btn-sm btn-secondary" id="btnHistoryCSV" style="display:none">📊 CSV</button>
           </div>
           <div id="historyContent"><p style="font-size:0.8rem;color:var(--muted)">年月を選択すると過去データが表示されます</p></div>
         </div>
@@ -722,6 +724,11 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 const $ = id => document.getElementById(id);
+
+// XSS対策：ユーザー入力をHTMLにインサートする前にエスケープ
+function esc(str){
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
 function showToast(msg, type='') {
   const t = document.createElement('div');
@@ -825,6 +832,8 @@ function fmtY(v){return'¥'+Math.round(v||0).toLocaleString('ja-JP');}
 let currentUser=null,currentCompany=null,employees=[],lockedPeriods=new Set();
 let taxRates={hRate:5.0,pRate:9.15,eRate:0.6,mRate:10.0};
 let currentPeriod='',editingId=null,allowances=[],trendChartObj=null;
+// onAuthStateChange の二重発火・競合防止フラグ
+let _authHandling=false;
 
 function generateInviteCode(){
   const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -846,16 +855,23 @@ function showAuthErr(id,msg){
 }
 
 $('btnLogin').addEventListener('click',async()=>{
+  const btn=$('btnLogin');
+  btn.disabled=true;btn.textContent='ログイン中...';
   const{error}=await sb.auth.signInWithPassword({email:$('loginEmail').value.trim(),password:$('loginPass').value});
-  if(error)showAuthErr('loginErr',error.message);
+  btn.disabled=false;btn.textContent='ログイン';
+  if(error)showAuthErr('loginErr',error.message==='Invalid login credentials'?'メールアドレスまたはパスワードが正しくありません':error.message);
 });
 
 $('btnRegister').addEventListener('click',async()=>{
   const cName=$('regCompanyName').value.trim(),uName=$('regUserName').value.trim()||'Owner';
   const email=$('regEmail').value.trim(),pass=$('regPass').value;
   if(!cName){showAuthErr('regErr','会社名を入力してください');return;}
+  if(!email){showAuthErr('regErr','メールアドレスを入力してください');return;}
   if(pass.length<6){showAuthErr('regErr','パスワードは6文字以上にしてください');return;}
+  const btn=$('btnRegister');
+  btn.disabled=true;btn.textContent='登録中...';
   const{data,error}=await sb.auth.signUp({email,password:pass,options:{data:{name:uName}}});
+  btn.disabled=false;btn.textContent='会社アカウントを作成';
   if(error){showAuthErr('regErr',error.message);return;}
   const uid=data.user?.id;
   if(!uid){showAuthErr('regErr','ユーザー登録に失敗しました');return;}
@@ -867,14 +883,19 @@ $('btnJoin').addEventListener('click',async()=>{
   const email=$('joinEmail').value.trim(),pass=$('joinPass').value;
   const code=$('joinCode').value.trim().toUpperCase();
   if(!code){showAuthErr('joinErr','招待コードを入力してください');return;}
+  if(!email){showAuthErr('joinErr','メールアドレスを入力してください');return;}
+  if(pass.length<6){showAuthErr('joinErr','パスワードは6文字以上にしてください');return;}
+  const btn=$('btnJoin');
+  btn.disabled=true;btn.textContent='参加中...';
   const company=await dbGet('companies',{invite_code:code});
-  if(!company){showAuthErr('joinErr','招待コードが無効です');return;}
+  if(!company){btn.disabled=false;btn.textContent='参加する';showAuthErr('joinErr','招待コードが無効です');return;}
   const{data,error}=await sb.auth.signUp({email,password:pass,options:{data:{name:uName}}});
+  btn.disabled=false;btn.textContent='参加する';
   if(error){showAuthErr('joinErr',error.message);return;}
   const uid=data.user?.id;
   if(!uid){showAuthErr('joinErr','ユーザー登録に失敗しました');return;}
   const ex=await dbGet('company_users',{company_id:company.id,user_id:uid});
-  if(!ex)await sb.from('company_users').insert({company_id:company.id,user_id:uid,name:uName,role:'editor'});
+  if(!ex)await sb.from('company_users').insert({company_id:company.id,user_id:uid,name:uName,role:'editor',joined_at:new Date().toISOString()});
   showToast(`「${company.name}」に参加しました`,'success');
 });
 
@@ -897,21 +918,26 @@ function showScreen(id){
 
 async function loadCompanyList(uid){
   const members=await dbGetAll('company_users',{user_id:uid});
-  if(!members.length){showScreen('setupScreen');return;}
-  const companies=[];
-  for(const m of members){
-    const c=await dbGet('companies',{id:m.company_id});
-    if(c)companies.push({...c,role:m.role});
-  }
+  if(!members.length){_authHandling=false;showScreen('setupScreen');return;}
+  // 一括で会社情報を取得（N+1回避）
+  const cids=members.map(m=>m.company_id);
+  let companiesRaw=[];
+  try{
+    const{data,error}=await sb.from('companies').select('*').in('id',cids);
+    if(error)throw error;
+    companiesRaw=data||[];
+  }catch(e){console.warn('[PA] companies fetch',e.message);}
+  const companyMap=Object.fromEntries(companiesRaw.map(c=>[c.id,c]));
+  const companies=members.map(m=>{const c=companyMap[m.company_id];return c?{...c,role:m.role}:null;}).filter(Boolean);
   const wrap=$('companyListWrap');
   wrap.innerHTML=companies.map(c=>`
-    <div class="company-card" data-cid="${c.id}">
-      <div class="company-avatar">${c.name.charAt(0).toUpperCase()}</div>
+    <div class="company-card" data-cid="${esc(c.id)}">
+      <div class="company-avatar">${esc(c.name.charAt(0).toUpperCase())}</div>
       <div class="company-info">
-        <div class="company-name">${c.name}</div>
-        <div class="company-meta">${c.id}</div>
+        <div class="company-name">${esc(c.name)}</div>
+        <div class="company-meta">${esc(c.id)}</div>
       </div>
-      <span class="company-role role-${c.role}">${c.role.toUpperCase()}</span>
+      <span class="company-role role-${esc(c.role)}">${esc(c.role.toUpperCase())}</span>
     </div>`).join('');
   wrap.querySelectorAll('.company-card').forEach(card=>{
     card.addEventListener('click',async()=>{
@@ -920,6 +946,7 @@ async function loadCompanyList(uid){
     });
   });
   showScreen('companySelectScreen');
+  _authHandling=false;
 }
 
 async function openCompany(company){
@@ -932,6 +959,7 @@ async function openCompany(company){
     address:company.address||'',phone:company.phone||'',logo_url:company.logo_url||''
   };
   await initApp();
+  _authHandling=false; // initApp完了後にリセット
 }
 
 async function initApp(){
@@ -986,17 +1014,24 @@ async function loadEmployees(){
   employees=row?.employees||[];
 }
 async function saveEmployees(){
-  await sb.from('payroll_data').upsert({
-    company_id:currentCompany.id,period:currentPeriod,
-    employees,updated_at:new Date().toISOString()
-  },{onConflict:'company_id,period'});
-  await sb.from('payroll_snapshots').upsert({
-    company_id:currentCompany.id,period:currentPeriod,
-    tot_gross:employees.reduce((a,e)=>a+(e.gross||0),0),
-    tot_net:employees.reduce((a,e)=>a+(e.monthlyNet||0),0),
-    tot_ins:employees.reduce((a,e)=>a+(e.insurance||0),0),
-    emp_count:employees.length,saved_at:new Date().toISOString()
-  },{onConflict:'company_id,period'});
+  try{
+    const{error:e1}=await sb.from('payroll_data').upsert({
+      company_id:currentCompany.id,period:currentPeriod,
+      employees,updated_at:new Date().toISOString()
+    },{onConflict:'company_id,period'});
+    if(e1)throw e1;
+    // スナップショットはベストエフォート（失敗しても給与データは保存済み）
+    sb.from('payroll_snapshots').upsert({
+      company_id:currentCompany.id,period:currentPeriod,
+      tot_gross:employees.reduce((a,e)=>a+(e.gross||0),0),
+      tot_net:employees.reduce((a,e)=>a+(e.monthlyNet||0),0),
+      tot_ins:employees.reduce((a,e)=>a+(e.insurance||0),0),
+      emp_count:employees.length,saved_at:new Date().toISOString()
+    },{onConflict:'company_id,period'}).then(({error})=>{if(error)console.warn('[PA] snapshot',error.message);});
+  }catch(e){
+    console.error('[PA] saveEmployees',e);
+    showToast('保存に失敗しました。ネットワークを確認してください','error');
+  }
 }
 
 async function loadLocks(){
@@ -1092,15 +1127,15 @@ function renderPayrollTable(){
   const canEdit=!isLocked()&&currentCompany.role!=='viewer';
   tbody.innerHTML=employees.map(emp=>`
     <tr>
-      <td><b>${emp.name}</b>${emp.allowanceTotal>0?`<br><small style="color:var(--muted);font-family:var(--font-mono);font-size:0.62rem">手当 ${fmtY(emp.allowanceTotal)}</small>`:''}
-      <td style="font-size:0.75rem">${emp.dept||'—'}<br><span style="color:var(--muted)">${emp.pos||'—'}</span></td>
+      <td><b>${esc(emp.name)}</b>${emp.allowanceTotal>0?`<br><small style="color:var(--muted);font-family:var(--font-mono);font-size:0.62rem">手当 ${fmtY(emp.allowanceTotal)}</small>`:''}
+      <td style="font-size:0.75rem">${esc(emp.dept||'—')}<br><span style="color:var(--muted)">${esc(emp.pos||'—')}</span></td>
       <td style="font-family:var(--font-mono)">${fmtY(emp.base)}</td>
       <td style="font-family:var(--font-mono)">${fmtY(emp.gross)}</td>
       <td style="font-family:var(--font-mono);color:var(--green);font-weight:700">${fmtY(emp.monthlyNet)}</td>
-      <td><span class="badge badge-${emp.status||'calc'}">${emp.status==='pdf'?'PDF済':'計算済'}</span></td>
+      <td><span class="badge badge-${emp.status==='pdf'?'pdf':'calc'}">${emp.status==='pdf'?'PDF済':'計算済'}</span></td>
       <td><div class="tbl-actions">
         ${canEdit?`<button class="tbl-btn" data-id="${emp.id}" data-act="edit">編集</button>`:''}
-        <button class="tbl-btn" data-id="${emp.id}" data-act="slip">🖨 印刷</button>
+        <button class="tbl-btn" data-id="${emp.id}" data-act="slip">🖨 明細PDF</button>
         ${canEdit?`<button class="tbl-btn danger" data-id="${emp.id}" data-act="del">削除</button>`:''}
       </div></td>
     </tr>`).join('');
@@ -1220,10 +1255,33 @@ function renderAllowanceList(){
   list.querySelectorAll('[data-del]').forEach(btn=>{btn.onclick=()=>{allowances.splice(Number(btn.dataset.del),1);renderAllowanceList();triggerAutoCalc();};});
 }
 
+/* ══ PDFプログレスオーバーレイ ══ */
+function showPdfProgress(current,total,name){
+  let ov=$('pdfProgressOverlay');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='pdfProgressOverlay';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10000';
+    ov.innerHTML=`<div style="background:#fff;border-radius:6px;padding:2rem 2.5rem;width:320px;box-shadow:8px 8px 0 rgba(0,0,0,0.3);text-align:center">
+      <div style="font-family:var(--font-display);font-weight:900;font-size:1rem;margin-bottom:0.5rem">PDF生成中...</div>
+      <div id="pdfProgressName" style="font-size:0.78rem;color:var(--muted);font-family:var(--font-mono);margin-bottom:0.85rem;min-height:1.2em"></div>
+      <div style="background:var(--border);border-radius:3px;height:6px;overflow:hidden">
+        <div id="pdfProgressBar" style="height:100%;background:var(--accent);border-radius:3px;transition:width 0.3s"></div>
+      </div>
+      <div id="pdfProgressCount" style="font-size:0.7rem;color:var(--muted);margin-top:0.5rem;font-family:var(--font-mono)"></div>
+    </div>`;
+    document.body.appendChild(ov);
+  }
+  ov.style.display='flex';
+  $('pdfProgressBar').style.width=`${Math.round((current/total)*100)}%`;
+  $('pdfProgressName').textContent=name||'';
+  $('pdfProgressCount').textContent=`${current} / ${total} ページ`;
+}
+function hidePdfProgress(){const ov=$('pdfProgressOverlay');if(ov)ov.style.display='none';}
+
 /* ══ PDF生成（html2canvas + jsPDF） ══ */
 function buildSlipElement(emp, period) {
   const [y, m] = period.split('-');
-  const title = `給与明細書　${y}年${Number(m)}月分`;
   const dateStr = new Date().toLocaleDateString('ja-JP');
   const co = currentCompany || {};
   const iT = (emp.hRate||0)+(emp.pRate||0)+(emp.eRate||0)||1;
@@ -1237,9 +1295,8 @@ function buildSlipElement(emp, period) {
     : `<div style="width:48px;height:48px;background:#0d0f14;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:18px">${(co.name||'P').charAt(0)}</div>`;
 
   const el = document.createElement('div');
-  el.style.cssText = 'width:794px;min-height:1123px;padding:48px;background:#fff;font-family:"Noto Sans JP",sans-serif;box-sizing:border-box;position:absolute;left:-9999px;top:0';
+  el.style.cssText = 'width:794px;min-height:1123px;padding:48px;background:#fff;font-family:"Noto Sans JP",sans-serif;box-sizing:border-box;position:fixed;left:-9999px;top:0;z-index:-1';
   el.innerHTML = `
-    <!-- ヘッダー -->
     <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0d0f14;padding-bottom:16px;margin-bottom:24px">
       <div style="display:flex;align-items:center;gap:14px">
         ${logoHtml}
@@ -1256,7 +1313,6 @@ function buildSlipElement(emp, period) {
       </div>
     </div>
 
-    <!-- 従業員情報 -->
     <div style="background:#f8f7f4;border-radius:4px;padding:14px 18px;margin-bottom:20px;display:flex;gap:32px">
       <div>
         <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;color:#888;text-transform:uppercase;margin-bottom:4px">氏名</div>
@@ -1270,9 +1326,7 @@ function buildSlipElement(emp, period) {
       </div>
     </div>
 
-    <!-- 支給・控除テーブル（横並び） -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
-      <!-- 支給項目 -->
       <div>
         <div style="background:#0d0f14;color:#fff;padding:6px 10px;font-size:11px;font-weight:700;letter-spacing:0.1em">支 給 項 目</div>
         <table style="width:100%;border-collapse:collapse">
@@ -1282,7 +1336,6 @@ function buildSlipElement(emp, period) {
           ${row('<b>支給額合計</b>', `<b>${fmtY(emp.gross)}</b>`, true)}
         </table>
       </div>
-      <!-- 控除項目 -->
       <div>
         <div style="background:#0d0f14;color:#fff;padding:6px 10px;font-size:11px;font-weight:700;letter-spacing:0.1em">控 除 項 目</div>
         <table style="width:100%;border-collapse:collapse">
@@ -1296,19 +1349,16 @@ function buildSlipElement(emp, period) {
       </div>
     </div>
 
-    <!-- 差引支給額 -->
     <div style="background:#0d0f14;color:#fff;padding:16px 20px;border-radius:4px;display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
       <div style="font-size:13px;font-weight:700;letter-spacing:0.08em">差 引 支 給 額（手 取 り）</div>
       <div style="font-size:28px;font-weight:900;font-family:monospace;letter-spacing:0.04em">${fmtY(emp.monthlyNet)}</div>
     </div>
 
-    <!-- 税率情報 -->
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px">
       ${[['健康保険率',`${emp.hRate}%`],['厚生年金率',`${emp.pRate}%`],['雇用保険率',`${emp.eRate}%`],['住民税率',`${emp.mRate||10}%`]]
         .map(([l,v])=>`<div style="background:#f0f0ef;border-radius:3px;padding:4px 10px;font-size:10px;color:#666">${l}：<b style="color:#333">${v}</b></div>`).join('')}
     </div>
 
-    <!-- フッター -->
     <div style="border-top:1px solid #eee;padding-top:12px;font-size:10px;color:#aaa;display:flex;justify-content:space-between">
       <span>※本明細はPayrollAutoにより自動計算されたものです。</span>
       <span>${co.name||''}</span>
@@ -1317,27 +1367,36 @@ function buildSlipElement(emp, period) {
 }
 
 async function generatePDF(empList, period, filename) {
-  showToast('PDF生成中...', '');
+  if(!empList||empList.length===0){showToast('対象データがありません','error');return;}
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const W = 210, H = 297;
 
   for (let i = 0; i < empList.length; i++) {
     const emp = empList[i];
+    showPdfProgress(i+1, empList.length, emp.name);
     const el = buildSlipElement(emp, period);
     document.body.appendChild(el);
     try {
+      // フォント読み込み完了を待つ
+      await document.fonts.ready;
       const canvas = await html2canvas(el, {
-        scale: 2, useCORS: true, backgroundColor: '#ffffff',
+        scale: 2, useCORS: true, allowTaint: false,
+        backgroundColor: '#ffffff',
         width: 794, windowWidth: 794,
+        logging: false,
       });
-      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+      const imgData = canvas.toDataURL('image/jpeg', 0.93);
       if (i > 0) pdf.addPage();
       pdf.addImage(imgData, 'JPEG', 0, 0, W, H);
+    } catch(e) {
+      console.error('[PA] pdf page error:',emp.name, e);
+      showToast(`${emp.name} のPDF生成でエラーが発生しました`,'error');
     } finally {
-      document.body.removeChild(el);
+      if(document.body.contains(el)) document.body.removeChild(el);
     }
   }
+  hidePdfProgress();
   pdf.save(filename);
   showToast(`PDF (${empList.length}名) をダウンロードしました ✅`, 'success');
 }
@@ -1382,6 +1441,7 @@ async function showHistoryData(period){
   const wrap=$('historyContent');
   if(!row){wrap.innerHTML='<p style="color:var(--muted);font-size:0.8rem">データが見つかりません</p>';return;}
   $('btnHistoryPDF').style.display='inline-flex';
+  $('btnHistoryCSV').style.display='inline-flex';
   const rows=(row.employees||[]).map(e=>`
     <tr>
       <td>${e.name}</td><td>${e.dept||'—'}</td><td>${e.pos||'—'}</td>
@@ -1410,6 +1470,29 @@ async function exportHistoryPDF(period){
   if(!row||!row.employees){showToast('データが見つかりません','error');return;}
   const[y,m]=period.split('-');
   await generatePDF(row.employees, period, `給与明細一括_${y}${m}_再発行.pdf`);
+}
+
+/* ══ CSVエクスポート ══ */
+function exportCSV(empList, period){
+  if(!empList||empList.length===0){showToast('エクスポートするデータがありません','error');return;}
+  const headers=['氏名','部署','役職','年齢','扶養家族数','基本給','支給額','健康保険','厚生年金','雇用保険','所得税','住民税','手取り','ボーナス支給','ボーナス手取り','業績係数'];
+  const rows=empList.map(e=>[
+    e.name,e.dept||'',e.pos||'',e.age||'',e.dep||0,
+    e.base,e.gross,
+    Math.round(e.insurance*(e.hRate/((e.hRate||0)+(e.pRate||0)+(e.eRate||0)||1))),
+    Math.round(e.insurance*(e.pRate/((e.hRate||0)+(e.pRate||0)+(e.eRate||0)||1))),
+    Math.round(e.insurance*(e.eRate/((e.hRate||0)+(e.pRate||0)+(e.eRate||0)||1))),
+    e.tax,e.municipal||0,e.monthlyNet,
+    e.bonusGross||0,e.bonusNet||0,e.perf||1
+  ].map(v=>typeof v==='string'&&v.includes(',')?`"${v}"`:v));
+  const csv='\uFEFF'+[headers,...rows].map(r=>r.join(',')).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const[y,m]=period.split('-');
+  a.href=url;a.download=`給与データ_${y}${m}.csv`;
+  a.click();URL.revokeObjectURL(url);
+  showToast(`CSVをダウンロードしました（${empList.length}名）`,'success');
 }
 
 function renderDashboard(){
@@ -1448,31 +1531,41 @@ function renderDashboard(){
       </div>`;
     }).join('');
   }else{$('dashWall').innerHTML='<p style="font-size:0.78rem;color:var(--muted)">扶養家族のいる従業員がいません</p>';}
-  renderTrendChart();
+  // チャートはUIをブロックしないよう非同期で呼び出し
+  requestAnimationFrame(()=>renderTrendChart());
 }
 
 async function renderTrendChart(){
-  const rows=await dbGetAll('payroll_snapshots',{company_id:currentCompany.id});
-  rows.sort((a,b)=>a.period.localeCompare(b.period));
-  const recent=rows.slice(-6);if(recent.length<2)return;
-  const isDark=document.body.classList.contains('dark');
-  const gc=isDark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)',tc=isDark?'#5a5650':'#7a7469';
-  if(trendChartObj){trendChartObj.destroy();trendChartObj=null;}
-  trendChartObj=new Chart($('trendChart'),{
-    type:'bar',
-    data:{
-      labels:recent.map(r=>r.period.replace('-','/')),
-      datasets:[
-        {label:'支給額',data:recent.map(r=>r.tot_gross),backgroundColor:'rgba(26,58,92,0.5)',borderColor:'#1a3a5c',borderWidth:1,borderRadius:2},
-        {label:'手取り',data:recent.map(r=>r.tot_net),backgroundColor:'rgba(42,122,80,0.6)',borderColor:'#2a7a50',borderWidth:1,borderRadius:2},
-      ]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:true,
-      plugins:{legend:{labels:{color:tc,font:{size:10},boxWidth:10}},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmtY(ctx.parsed.y)}`}}},
-      scales:{x:{ticks:{color:tc,font:{size:10}},grid:{color:gc}},y:{ticks:{color:tc,callback:v=>'¥'+(v/10000).toFixed(0)+'万',font:{size:10}},grid:{color:gc}}}
+  if(!currentCompany)return;
+  try{
+    const rows=await dbGetAll('payroll_snapshots',{company_id:currentCompany.id});
+    rows.sort((a,b)=>a.period.localeCompare(b.period));
+    const recent=rows.slice(-6);
+    if(recent.length<2){
+      $('trendChart').parentElement.innerHTML='<p style="font-size:0.78rem;color:var(--muted);padding:0.5rem 0">2ヶ月以上のデータが揃うとグラフが表示されます</p>';
+      return;
     }
-  });
+    const isDark=document.body.classList.contains('dark');
+    const gc=isDark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)',tc=isDark?'#5a5650':'#7a7469';
+    if(trendChartObj){trendChartObj.destroy();trendChartObj=null;}
+    const canvas=$('trendChart');
+    if(!canvas)return;
+    trendChartObj=new Chart(canvas,{
+      type:'bar',
+      data:{
+        labels:recent.map(r=>r.period.replace('-','/')),
+        datasets:[
+          {label:'支給額',data:recent.map(r=>r.tot_gross),backgroundColor:'rgba(26,58,92,0.5)',borderColor:'#1a3a5c',borderWidth:1,borderRadius:2},
+          {label:'手取り',data:recent.map(r=>r.tot_net),backgroundColor:'rgba(42,122,80,0.6)',borderColor:'#2a7a50',borderWidth:1,borderRadius:2},
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:true,
+        plugins:{legend:{labels:{color:tc,font:{size:10},boxWidth:10}},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmtY(ctx.parsed.y)}`}}},
+        scales:{x:{ticks:{color:tc,font:{size:10}},grid:{color:gc}},y:{ticks:{color:tc,callback:v=>'¥'+(v/10000).toFixed(0)+'万',font:{size:10}},grid:{color:gc}}}
+      }
+    });
+  }catch(e){console.warn('[PA] trendChart',e.message);}
 }
 
 async function renderUserList(){
@@ -1593,16 +1686,26 @@ $('btnCommit').addEventListener('click',()=>{
   showModal('月次確定保存',`<b>${currentPeriod}</b>（${employees.length}名）を確定保存します。`,'確定保存','btn-green',commitMonthlyHistory);
 });
 $('btnPDF').addEventListener('click',exportAllPDF);
+$('btnCSV').addEventListener('click',()=>{
+  if(employees.length===0){showToast('データがありません','error');return;}
+  exportCSV(employees,currentPeriod);
+});
 $('historyPeriodSel').addEventListener('change',e=>{_historyPeriod=e.target.value;showHistoryData(e.target.value);});
 $('btnHistoryPDF').addEventListener('click',()=>{if(_historyPeriod)exportHistoryPDF(_historyPeriod);});
+$('btnHistoryCSV').addEventListener('click',async()=>{
+  if(!_historyPeriod)return;
+  const row=await dbGet('payroll_history',{company_id:currentCompany.id,period:_historyPeriod});
+  if(row?.employees)exportCSV(row.employees,_historyPeriod);
+  else showToast('データが見つかりません','error');
+});
 $('btnFetchTaxRates').addEventListener('click',fetchLatestTaxRates);
 $('btnSaveTaxRates').addEventListener('click',()=>{
   ['hRate','pRate','eRate','mRate'].forEach(k=>{const el=$('tr_'+k);if(el)taxRates[k]=Number(el.value);});
   applyTaxRatesToForm();saveTaxRates();
 });
 $('btnSwitchCompany').addEventListener('click',()=>loadCompanyList(currentUser.id));
-$('btnSignOut').addEventListener('click',async()=>{await sb.auth.signOut();location.reload();});
-$('btnSignOutFromSelect').addEventListener('click',async()=>{await sb.auth.signOut();showScreen('authScreen');});
+$('btnSignOut').addEventListener('click',async()=>{_authHandling=false;await sb.auth.signOut();location.reload();});
+$('btnSignOutFromSelect').addEventListener('click',async()=>{_authHandling=false;await sb.auth.signOut();showScreen('authScreen');});
 $('btnNewCompany').addEventListener('click',()=>showScreen('setupScreen'));
 $('btnCreateCompany').addEventListener('click',async()=>{
   const name=$('setupCompanyName').value.trim();
@@ -1636,10 +1739,24 @@ $('inviteCodeBox').addEventListener('click',()=>{
 });
 
 sb.auth.onAuthStateChange(async(event,session)=>{
-  if(!session){showScreen('authScreen');return;}
-  const user=session.user;
-  currentUser={id:user.id,email:user.email,name:user.user_metadata?.name||user.email};
-  await loadCompanyList(user.id);
+  // ログアウト時は即ログイン画面へ
+  if(!session){
+    _authHandling=false;
+    currentUser=null;currentCompany=null;
+    showScreen('authScreen');
+    return;
+  }
+  // TOKEN_REFRESHED等の重複イベントをスキップして lock 競合を防ぐ
+  if(_authHandling&&(event==='TOKEN_REFRESHED'||event==='INITIAL_SESSION'))return;
+  _authHandling=true;
+  try{
+    const user=session.user;
+    currentUser={id:user.id,email:user.email,name:user.user_metadata?.name||user.email};
+    await loadCompanyList(user.id);
+  }catch(e){
+    console.error('[PA] auth handler error:',e);
+    _authHandling=false;
+  }
 });
 
 })();
