@@ -6,33 +6,69 @@
 <!-- HTTPS強制リダイレクト -->
 <script>if(location.protocol==='http:'&&location.hostname!=='localhost'&&location.hostname!=='127.0.0.1'){location.replace('https:'+location.href.slice(5));}</script>
 <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
-<title>PayrollAuto v6.0</title>
+<title>PayrollAuto v7.0</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&family=Syne:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --ink:#111318;--paper:#f7f6f2;--cream:#eeeae2;
-  --accent:#c0422a;--gold:#a8882e;--green:#1e6e45;--blue:#183562;
-  --muted:#7a756e;--border:#d8d4cc;
+  /* ── カラーシステム ── */
+  --ink:#111318;
+  --paper:#f4f2ee;
+  --cream:#edeae3;
   --surface:#ffffff;
+  --accent:#c0422a;
+  --accent-light:rgba(192,66,42,0.08);
+  --accent-mid:rgba(192,66,42,0.15);
+  --gold:#9a7e28;
+  --green:#1a6640;
+  --green-light:rgba(26,102,64,0.08);
+  --blue:#173060;
+  --blue-light:rgba(23,48,96,0.08);
+  --muted:#7a756e;
+  --border:#ddd9d0;
+  --border-light:#e8e4db;
+
+  /* ── タイポグラフィ ── */
   --font-display:'Syne',sans-serif;
   --font-body:'Noto Sans JP',sans-serif;
   --font-mono:'DM Mono',monospace;
-  --radius:5px;
-  --shadow:0 1px 3px rgba(0,0,0,0.07),0 4px 12px rgba(0,0,0,0.05);
-  --shadow-lg:0 2px 8px rgba(0,0,0,0.08),0 12px 28px rgba(0,0,0,0.08);
-  --transition:0.18s cubic-bezier(0.4,0,0.2,1);
+
+  /* ── スペーシング ── */
+  --radius:6px;
+  --radius-lg:10px;
+  --radius-full:999px;
+
+  /* ── エレベーション ── */
+  --shadow-xs:0 1px 2px rgba(0,0,0,0.05);
+  --shadow:0 1px 3px rgba(0,0,0,0.06),0 3px 10px rgba(0,0,0,0.04);
+  --shadow-md:0 2px 6px rgba(0,0,0,0.07),0 8px 20px rgba(0,0,0,0.06);
+  --shadow-lg:0 4px 12px rgba(0,0,0,0.08),0 16px 36px rgba(0,0,0,0.08);
+
+  /* ── アニメーション ── */
+  --transition:0.16s cubic-bezier(0.4,0,0.2,1);
+  --transition-slow:0.28s cubic-bezier(0.4,0,0.2,1);
+
+  /* ── サイドバー幅（将来拡張用） ── */
+  --header-h:52px;
+  --nav-h:44px;
 }
 html{font-size:15px}
 body{font-family:var(--font-body);background:var(--paper);color:var(--ink);min-height:100vh}
 
 /* ===== DARK MODE ===== */
 body.dark{
-  --ink:#e6e2d8;--paper:#0e1016;--cream:#181b24;--surface:#161920;
-  --border:#272c3a;--muted:#545048;--shadow:0 1px 3px rgba(0,0,0,0.3),0 4px 12px rgba(0,0,0,0.2);
+  --ink:#e8e4da;--paper:#0c0e14;--cream:#161921;--surface:#13151c;
+  --border:#252832;--border-light:#1e2129;--muted:#52504a;
+  --accent-light:rgba(192,66,42,0.12);--accent-mid:rgba(192,66,42,0.2);
+  --green-light:rgba(26,102,64,0.12);--blue-light:rgba(23,48,96,0.12);
+  --shadow:0 1px 3px rgba(0,0,0,0.35),0 4px 12px rgba(0,0,0,0.25);
+  --shadow-md:0 2px 8px rgba(0,0,0,0.4),0 8px 20px rgba(0,0,0,0.3);
+  --shadow-lg:0 4px 16px rgba(0,0,0,0.45),0 16px 40px rgba(0,0,0,0.35);
 }
-body.dark input,body.dark select,body.dark textarea{background:#0e1016;color:#e6e2d8;border-color:#272c3a}
+body.dark input,body.dark select,body.dark textarea{
+  background:#0c0e14;color:#e8e4da;border-color:#252832;
+}
 
 /* ===== SCREENS ===== */
 .screen{display:none;min-height:100vh}
@@ -184,100 +220,259 @@ body.dark .company-card{background:var(--surface)}
 /* ===== NAV TABS ===== */
 .nav-tabs{
   background:var(--surface);border-bottom:1px solid var(--border);
-  display:flex;padding:0 1.5rem;overflow-x:auto;
+  display:flex;padding:0 1rem;overflow-x:auto;
+  scrollbar-width:none;gap:0.1rem;
 }
+.nav-tabs::-webkit-scrollbar{display:none}
 body.dark .nav-tabs{background:var(--surface)}
 .nav-tab{
-  padding:0.85rem 1rem;font-size:0.68rem;font-weight:700;
-  letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;
+  padding:0.75rem 0.85rem;font-size:0.65rem;font-weight:700;
+  letter-spacing:0.07em;text-transform:uppercase;cursor:pointer;
   border-bottom:2px solid transparent;margin-bottom:-1px;
   white-space:nowrap;color:var(--muted);transition:all var(--transition);
+  border-radius:var(--radius) var(--radius) 0 0;
+  position:relative;
 }
-.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-.nav-tab:hover:not(.active){color:var(--ink)}
+.nav-tab.active{
+  color:var(--accent);border-bottom-color:var(--accent);
+  background:rgba(192,66,42,0.04);
+}
+.nav-tab:hover:not(.active){
+  color:var(--ink);background:var(--cream);
+}
+/* スクロール可能インジケーター */
+.nav-tabs::after{
+  content:'';position:absolute;right:0;top:0;bottom:0;width:32px;
+  background:linear-gradient(to left, var(--surface), transparent);
+  pointer-events:none;
+}
 
 /* ===== PAGE CONTENT ===== */
-.page{display:none;padding:1.5rem;max-width:1200px;margin:0 auto;width:100%}
-.page.active{display:block}
+.page{
+  display:none;padding:1.5rem;max-width:1240px;margin:0 auto;width:100%;
+}
+.page.active{
+  display:block;
+  animation:pageFadeIn 0.18s ease;
+}
+@keyframes pageFadeIn{
+  from{opacity:0;transform:translateY(4px)}
+  to{opacity:1;transform:translateY(0)}
+}
 
 /* ===== PANELS ===== */
-.panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);margin-bottom:1.25rem;overflow:hidden}
+.panel{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-lg);box-shadow:var(--shadow);
+  margin-bottom:1.1rem;overflow:hidden;
+  transition:box-shadow var(--transition);
+}
+.panel:hover{box-shadow:var(--shadow-md)}
 body.dark .panel{background:var(--surface)}
 .panel-header{
   background:var(--ink);color:var(--paper);
-  padding:0.6rem 1rem;font-family:var(--font-display);
-  font-size:0.68rem;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;
+  padding:0.55rem 1rem;font-family:var(--font-display);
+  font-size:0.65rem;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;
   display:flex;align-items:center;gap:0.5rem;
+  border-bottom:1px solid rgba(255,255,255,0.06);
 }
-.panel-body{padding:1.1rem}
+/* バリアント：ライトヘッダー */
+.panel-header.light{
+  background:var(--cream);color:var(--ink);border-bottom:1px solid var(--border);
+}
+body.dark .panel-header.light{background:#1a1d26;color:var(--ink)}
+.panel-body{padding:1rem}
+/* パネル内セパレーター */
+.panel-divider{height:1px;background:var(--border);margin:0.75rem -1rem}
 
 /* ===== FORMS ===== */
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem}
 .form-row.cols3{grid-template-columns:1fr 1fr 1fr}
-.form-group{margin-bottom:0.75rem}
+.form-row.cols4{grid-template-columns:1fr 1fr 1fr 1fr}
+.form-group{margin-bottom:0.7rem}
 .form-group:last-child{margin-bottom:0}
-.form-group label{display:block;font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem}
-.form-group label .req{color:var(--accent);margin-left:2px}
+.form-group label{
+  display:block;font-size:0.63rem;font-weight:700;letter-spacing:0.08em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem;
+  display:flex;align-items:center;gap:0.25rem;
+}
+.form-group label .req{color:var(--accent)}
+.form-group label .hint{
+  font-size:0.6rem;color:var(--muted);font-weight:400;letter-spacing:0;
+  text-transform:none;opacity:0.8;
+}
 .form-group input,.form-group select,.form-group textarea{
-  width:100%;padding:0.55rem 0.7rem;
-  border:1px solid var(--border);border-radius:var(--radius);
-  font-family:var(--font-body);font-size:0.85rem;
-  background:var(--surface);color:var(--ink);transition:border-color var(--transition),box-shadow var(--transition);
+  width:100%;padding:0.52rem 0.7rem;
+  border:1.5px solid var(--border);border-radius:var(--radius);
+  font-family:var(--font-body);font-size:0.84rem;
+  background:var(--surface);color:var(--ink);
+  transition:border-color var(--transition),box-shadow var(--transition),background var(--transition);
+  -webkit-appearance:none;appearance:none;
 }
-.form-group input:focus,.form-group select:focus{
-  outline:none;border-color:var(--accent);
-  box-shadow:0 0 0 3px rgba(192,66,42,0.08)
+.form-group select{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a756e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 0.7rem center;
+  padding-right:2rem;
 }
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{
+  outline:none;border-color:var(--accent);background:#fff;
+  box-shadow:0 0 0 3px rgba(192,66,42,0.1);
+}
+body.dark .form-group input:focus,body.dark .form-group select:focus{
+  background:#13151c;box-shadow:0 0 0 3px rgba(192,66,42,0.15);
+}
+.form-group input:hover:not(:focus),.form-group select:hover:not(:focus){
+  border-color:var(--muted);
+}
+/* エラー状態 */
+.form-group.error input,.form-group.error select{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(192,66,42,0.08);
+}
+.form-group .error-msg{
+  font-size:0.65rem;color:var(--accent);margin-top:0.25rem;
+  display:flex;align-items:center;gap:0.25rem;
+}
+/* 入力補助テキスト */
+.form-group .help-text{
+  font-size:0.63rem;color:var(--muted);margin-top:0.25rem;line-height:1.4;
+}
+/* 数値入力の右寄せ */
+.form-group input[type="number"]{text-align:right}
 
 /* ===== BUTTONS ===== */
 .btn{
-  display:inline-flex;align-items:center;gap:0.4rem;
-  padding:0.55rem 1rem;border-radius:var(--radius);
-  font-family:var(--font-display);font-size:0.72rem;font-weight:800;
-  letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;border:1px solid transparent;
+  display:inline-flex;align-items:center;gap:0.35rem;
+  padding:0.52rem 1rem;border-radius:var(--radius);
+  font-family:var(--font-display);font-size:0.7rem;font-weight:800;
+  letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;
+  border:1px solid transparent;
   transition:all var(--transition);white-space:nowrap;
+  position:relative;overflow:hidden;
+  user-select:none;-webkit-tap-highlight-color:transparent;
 }
-.btn:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(0,0,0,0.12)}
-.btn:active{transform:translateY(0)}
-.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 2px 6px rgba(192,66,42,0.3)}
-.btn-primary:hover{background:#a8361f;box-shadow:0 4px 14px rgba(192,66,42,0.4)}
-.btn-secondary{background:transparent;color:var(--ink);border-color:var(--border)}
-.btn-secondary:hover{background:var(--cream);border-color:var(--muted)}
-.btn-blue{background:var(--blue);color:#fff;border-color:var(--blue);box-shadow:0 2px 6px rgba(24,53,98,0.3)}
-.btn-blue:hover{box-shadow:0 4px 14px rgba(24,53,98,0.4)}
-.btn-green{background:var(--green);color:#fff;border-color:var(--green);box-shadow:0 2px 6px rgba(30,110,69,0.3)}
-.btn-green:hover{box-shadow:0 4px 14px rgba(30,110,69,0.4)}
-.btn-danger{background:#b03020;color:#fff;border-color:#b03020}
-.btn-sm{padding:0.3rem 0.6rem;font-size:0.62rem}
-.btn-group{display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.75rem}
-.btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none}
+/* リップルエフェクト */
+.btn::after{
+  content:'';position:absolute;inset:0;
+  background:rgba(255,255,255,0.15);
+  opacity:0;transition:opacity 0.1s;
+  border-radius:inherit;
+}
+.btn:active::after{opacity:1}
+.btn:hover:not(:disabled){transform:translateY(-1px)}
+.btn:active:not(:disabled){transform:translateY(0)}
+.btn-primary{
+  background:var(--accent);color:#fff;border-color:var(--accent);
+  box-shadow:0 1px 4px rgba(192,66,42,0.25),0 3px 8px rgba(192,66,42,0.15);
+}
+.btn-primary:hover:not(:disabled){
+  background:#b03a24;
+  box-shadow:0 2px 8px rgba(192,66,42,0.35),0 6px 16px rgba(192,66,42,0.2);
+}
+.btn-secondary{
+  background:var(--surface);color:var(--ink);border-color:var(--border);
+  box-shadow:var(--shadow-xs);
+}
+.btn-secondary:hover:not(:disabled){
+  background:var(--cream);border-color:var(--muted);
+  box-shadow:var(--shadow);
+}
+.btn-blue{
+  background:var(--blue);color:#fff;border-color:var(--blue);
+  box-shadow:0 1px 4px rgba(23,48,96,0.25),0 3px 8px rgba(23,48,96,0.15);
+}
+.btn-blue:hover:not(:disabled){
+  background:#122858;
+  box-shadow:0 2px 8px rgba(23,48,96,0.35),0 6px 16px rgba(23,48,96,0.2);
+}
+.btn-green{
+  background:var(--green);color:#fff;border-color:var(--green);
+  box-shadow:0 1px 4px rgba(26,102,64,0.25),0 3px 8px rgba(26,102,64,0.15);
+}
+.btn-green:hover:not(:disabled){
+  background:#155535;
+  box-shadow:0 2px 8px rgba(26,102,64,0.35),0 6px 16px rgba(26,102,64,0.2);
+}
+.btn-danger{
+  background:#a82a1c;color:#fff;border-color:#a82a1c;
+  box-shadow:0 1px 4px rgba(168,42,28,0.25);
+}
+.btn-danger:hover:not(:disabled){
+  background:#902418;box-shadow:0 2px 8px rgba(168,42,28,0.35);
+}
+.btn-ghost{
+  background:transparent;color:var(--muted);border-color:transparent;
+  box-shadow:none;
+}
+.btn-ghost:hover:not(:disabled){background:var(--cream);color:var(--ink)}
+.btn-sm{padding:0.28rem 0.6rem;font-size:0.6rem;letter-spacing:0.04em}
+.btn-lg{padding:0.75rem 1.4rem;font-size:0.8rem}
+.btn-icon{padding:0.52rem;gap:0;aspect-ratio:1}
+.btn-icon.btn-sm{padding:0.3rem}
+.btn-group{display:flex;gap:0.45rem;flex-wrap:wrap;margin-top:0.75rem}
+.btn:disabled{opacity:0.45;cursor:not-allowed;transform:none !important;box-shadow:none !important}
+/* ローディング状態 */
+.btn.loading{color:transparent !important;pointer-events:none}
+.btn.loading::before{
+  content:'';position:absolute;width:14px;height:14px;
+  border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;
+  border-radius:50%;animation:btnSpin 0.6s linear infinite;
+}
+@keyframes btnSpin{to{transform:rotate(360deg)}}
 
 /* ===== TABLES ===== */
-.tbl-wrap{overflow-x:auto}
-table.data-tbl{width:100%;border-collapse:collapse;font-size:0.8rem}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.data-tbl{
+  width:100%;border-collapse:collapse;font-size:0.8rem;
+  /* テーブルアニメーション */
+}
 table.data-tbl th{
   background:var(--cream);color:var(--muted);
-  padding:0.5rem 0.75rem;text-align:left;
-  font-family:var(--font-mono);font-size:0.62rem;font-weight:500;letter-spacing:0.06em;
-  white-space:nowrap;border-bottom:1px solid var(--border);
+  padding:0.48rem 0.75rem;text-align:left;
+  font-family:var(--font-mono);font-size:0.6rem;font-weight:600;letter-spacing:0.07em;
+  white-space:nowrap;border-bottom:1.5px solid var(--border);
+  position:sticky;top:0;z-index:1;
 }
-body.dark table.data-tbl th{background:#1a1d26;color:var(--muted)}
-table.data-tbl td{padding:0.65rem 0.75rem;border-bottom:1px solid var(--border);vertical-align:middle}
+body.dark table.data-tbl th{background:#171a23;color:var(--muted)}
+table.data-tbl td{
+  padding:0.6rem 0.75rem;border-bottom:1px solid var(--border-light);
+  vertical-align:middle;transition:background var(--transition);
+}
 table.data-tbl tr:last-child td{border-bottom:none}
-table.data-tbl tr:hover td{background:var(--cream);transition:background var(--transition)}
-body.dark table.data-tbl tr:hover td{background:#1a1d26}
-.tbl-actions{display:flex;gap:0.3rem;flex-wrap:wrap}
+table.data-tbl tbody tr:hover td{background:var(--cream)}
+body.dark table.data-tbl tbody tr:hover td{background:#191c25}
+/* ゼブラストライプ（任意で有効化） */
+table.data-tbl.striped tbody tr:nth-child(even) td{background:rgba(0,0,0,0.018)}
+/* 数値列は右寄せ */
+table.data-tbl td.num,table.data-tbl th.num{text-align:right;font-family:var(--font-mono)}
+/* 操作列 */
+.tbl-actions{display:flex;gap:0.25rem;flex-wrap:wrap}
 .tbl-btn{
-  padding:0.22rem 0.5rem;font-size:0.6rem;font-family:var(--font-mono);
-  border:1px solid var(--border);border-radius:3px;cursor:pointer;
-  background:var(--surface);color:var(--ink);white-space:nowrap;transition:all var(--transition);
+  padding:0.2rem 0.48rem;font-size:0.6rem;font-family:var(--font-mono);
+  border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;
+  background:var(--surface);color:var(--muted);white-space:nowrap;
+  transition:all var(--transition);line-height:1.4;
 }
-body.dark .tbl-btn{background:var(--cream);color:#e6e2d8}
-.tbl-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(192,66,42,0.05)}
-.tbl-btn.danger:hover{border-color:#b03020;color:#b03020;background:rgba(176,48,32,0.05)}
+body.dark .tbl-btn{background:var(--cream);color:#ccc8be}
+.tbl-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
+.tbl-btn.success:hover{border-color:var(--green);color:var(--green);background:var(--green-light)}
+.tbl-btn.info:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-light)}
+.tbl-btn.danger:hover{border-color:#a82a1c;color:#a82a1c;background:rgba(168,42,28,0.06)}
+/* 空テーブル */
+.tbl-empty{
+  text-align:center;padding:2.5rem 1rem;color:var(--muted);
+  font-size:0.82rem;
+}
+.tbl-empty .tbl-empty-icon{font-size:2rem;margin-bottom:0.5rem;opacity:0.4}
 
 /* ===== BADGES ===== */
-.badge{display:inline-flex;align-items:center;font-size:0.58rem;font-family:var(--font-mono);font-weight:700;padding:0.18em 0.55em;border-radius:3px;letter-spacing:0.04em;white-space:nowrap}
+.badge{
+  display:inline-flex;align-items:center;
+  font-size:0.58rem;font-family:var(--font-mono);font-weight:700;
+  padding:0.2em 0.65em;border-radius:var(--radius-full);
+  letter-spacing:0.04em;white-space:nowrap;
+  /* ソフトな外観をデフォルトに */
+}
 .badge-owner{background:var(--accent);color:#fff}
 .badge-editor{background:var(--blue);color:#fff}
 .badge-viewer{background:var(--muted);color:#fff}
@@ -296,9 +491,10 @@ body.dark .tbl-btn{background:var(--cream);color:#e6e2d8}
 
 /* ===== PERIOD BAR ===== */
 .period-bar{
-  background:var(--surface);border:1px solid var(--border);border-radius:8px;
-  padding:0.55rem 0.85rem;display:flex;align-items:center;gap:0.65rem;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:0.5rem 0.85rem;display:flex;align-items:center;gap:0.65rem;
   margin-bottom:1rem;flex-wrap:wrap;box-shadow:var(--shadow);
+  position:sticky;top:calc(var(--header-h) + var(--nav-h));z-index:10;
 }
 body.dark .period-bar{background:var(--surface)}
 .period-bar-left{display:flex;align-items:center;gap:0.5rem}
@@ -337,40 +533,92 @@ body.dark .btn-cluster{border-color:#272c3a;}
 body.dark .btn-cluster .btn{border-color:#272c3a;}
 
 /* ===== STAT CARDS ===== */
-.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0.75rem;margin-bottom:1.25rem}
-.stat-card{
-  background:var(--surface);border:1px solid var(--border);border-radius:8px;
-  padding:1rem;box-shadow:var(--shadow);transition:box-shadow var(--transition);
+.stat-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(155px,1fr));
+  gap:0.7rem;margin-bottom:1.1rem;
 }
-.stat-card:hover{box-shadow:var(--shadow-lg)}
+.stat-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:1rem 1.05rem;box-shadow:var(--shadow);
+  transition:all var(--transition);
+  position:relative;overflow:hidden;
+}
+.stat-card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
 body.dark .stat-card{background:var(--surface)}
-.stat-label{font-size:0.6rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:0.4rem}
-.stat-value{font-family:var(--font-mono);font-size:1.1rem;font-weight:500;color:var(--ink)}
+/* カラーバリアント */
+.stat-card.variant-accent{border-left:3px solid var(--accent);background:linear-gradient(135deg,var(--accent-light),var(--surface))}
+.stat-card.variant-green{border-left:3px solid var(--green);background:linear-gradient(135deg,var(--green-light),var(--surface))}
+.stat-card.variant-blue{border-left:3px solid var(--blue);background:linear-gradient(135deg,var(--blue-light),var(--surface))}
+.stat-label{
+  font-size:0.59rem;font-weight:700;letter-spacing:0.1em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:0.35rem;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.stat-value{
+  font-family:var(--font-mono);font-size:1.15rem;font-weight:500;
+  color:var(--ink);line-height:1.2;
+}
 .stat-value.accent{color:var(--accent)}
 .stat-value.green{color:var(--green)}
 .stat-value.blue{color:var(--blue)}
-.stat-sub{font-size:0.6rem;color:var(--muted);margin-top:0.25rem;font-family:var(--font-mono)}
+.stat-sub{
+  font-size:0.59rem;color:var(--muted);margin-top:0.25rem;
+  font-family:var(--font-mono);display:flex;align-items:center;gap:0.35rem;
+}
+/* トレンドバッジ */
+.stat-trend{
+  font-size:0.58rem;font-family:var(--font-mono);font-weight:700;
+  padding:0.12em 0.45em;border-radius:var(--radius-full);
+  display:inline-flex;align-items:center;gap:0.15em;
+}
+.stat-trend.up{background:rgba(192,66,42,0.1);color:var(--accent)}
+.stat-trend.down{background:rgba(26,102,64,0.1);color:var(--green)}
+.stat-trend.flat{background:var(--cream);color:var(--muted)}
 
 /* ===== MODAL ===== */
 .modal-overlay{
-  position:fixed;inset:0;background:rgba(0,0,0,0.55);
+  position:fixed;inset:0;
+  background:rgba(0,0,0,0.5);
   display:none;align-items:center;justify-content:center;
-  z-index:999;padding:1rem;backdrop-filter:blur(3px);
+  z-index:999;padding:1rem;
+  backdrop-filter:blur(6px) saturate(0.8);
+  -webkit-backdrop-filter:blur(6px) saturate(0.8);
 }
-.modal-overlay.show{display:flex;animation:fadeIn 0.15s ease}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal-overlay.show{display:flex;animation:overlayFadeIn 0.18s ease}
+@keyframes overlayFadeIn{from{opacity:0}to{opacity:1}}
 .modal{
-  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-lg);
   padding:1.75rem;width:100%;max-width:460px;
   box-shadow:var(--shadow-lg);
-  animation:slideUp 0.2s cubic-bezier(0.4,0,0.2,1);
+  animation:modalSlideUp 0.22s cubic-bezier(0.34,1.56,0.64,1);
 }
-body.dark .modal{background:var(--surface);color:#e6e2d8}
+@keyframes modalSlideUp{
+  from{opacity:0;transform:translateY(20px) scale(0.97)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+body.dark .modal{background:var(--surface);color:var(--ink)}
 .modal-lg{max-width:640px}
-.modal-xl{max-width:820px}
-.modal-title{font-family:var(--font-display);font-size:1rem;font-weight:900;margin-bottom:0.5rem}
-.modal-body{font-size:0.82rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.6}
-.modal-actions{display:flex;gap:0.5rem;justify-content:flex-end}
+.modal-xl{max-width:860px}
+.modal-header{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  margin-bottom:0.85rem;
+}
+.modal-title{
+  font-family:var(--font-display);font-size:1rem;font-weight:900;
+  color:var(--ink);line-height:1.2;
+}
+.modal-close{
+  background:none;border:none;cursor:pointer;
+  color:var(--muted);font-size:1.1rem;padding:0.1rem;
+  line-height:1;transition:color var(--transition);margin-left:0.5rem;
+}
+.modal-close:hover{color:var(--ink)}
+.modal-body{font-size:0.82rem;color:var(--muted);margin-bottom:1.4rem;line-height:1.65}
+.modal-actions{display:flex;gap:0.5rem;justify-content:flex-end;flex-wrap:wrap}
+/* モーダル内のセパレーター */
+.modal hr{border:none;border-top:1px solid var(--border);margin:1rem -1.75rem}
 
 /* ===== ACCORDION ===== */
 .accordion{border:1px solid var(--border);border-radius:8px;margin-bottom:0.65rem;overflow:hidden;box-shadow:var(--shadow)}
@@ -413,16 +661,31 @@ body.dark .allowance-row input{background:#0e1016;color:#e6e2d8;border-color:#27
 
 /* ===== TOAST ===== */
 .toast{
-  position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;
+  position:fixed;bottom:1.25rem;right:1.25rem;z-index:9999;
   background:var(--ink);color:var(--paper);
-  padding:0.75rem 1.1rem;border-radius:8px;
+  padding:0.7rem 1rem 0.7rem 0.85rem;border-radius:var(--radius-lg);
   font-size:0.76rem;font-family:var(--font-mono);
-  box-shadow:0 8px 24px rgba(0,0,0,0.25);
-  animation:slideUp 0.25s cubic-bezier(0.4,0,0.2,1);pointer-events:none;
-  max-width:320px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.15),0 12px 32px rgba(0,0,0,0.15);
+  animation:toastIn 0.28s cubic-bezier(0.34,1.4,0.64,1);
+  pointer-events:none;max-width:340px;min-width:200px;
+  display:flex;align-items:center;gap:0.6rem;
+  border:1px solid rgba(255,255,255,0.06);
 }
-.toast.success{border-left:3px solid var(--green)}
-.toast.error{border-left:3px solid var(--accent)}
+.toast::before{
+  content:'';width:3px;height:100%;border-radius:99px;
+  position:absolute;left:0;top:0;background:var(--muted);
+}
+.toast.success{border-left:none}
+.toast.success::before{background:var(--green)}
+.toast.error{border-left:none}
+.toast.error::before{background:var(--accent)}
+.toast.warning::before{background:var(--gold)}
+.toast-icon{font-size:0.9rem;flex-shrink:0}
+.toast-msg{flex:1;line-height:1.4}
+@keyframes toastIn{
+  from{opacity:0;transform:translateX(20px) scale(0.96)}
+  to{opacity:1;transform:translateX(0) scale(1)}
+}
 @keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 
 /* ===== TAX RATES PANEL ===== */
@@ -479,24 +742,121 @@ body.dark .tax-rate-card{background:#1a1d26}
   .slip-footer{font-size:7pt;color:#888;margin-top:10pt}
 }
 
-/* ===== RESPONSIVE ===== */
+
+/* ===== SKELETON LOADING ===== */
+.skeleton{
+  background:linear-gradient(90deg,var(--cream) 25%,var(--border-light) 50%,var(--cream) 75%);
+  background-size:200% 100%;
+  animation:skeletonShimmer 1.4s infinite;
+  border-radius:var(--radius);
+}
+@keyframes skeletonShimmer{
+  from{background-position:200% 0}
+  to{background-position:-200% 0}
+}
+.skeleton-text{height:0.85rem;margin-bottom:0.4rem}
+.skeleton-text.sm{height:0.65rem}
+.skeleton-text.lg{height:1.1rem}
+.skeleton-card{height:80px;border-radius:var(--radius-lg)}
+
+/* ===== EMPTY STATE ===== */
+.empty-state{
+  text-align:center;padding:3rem 1rem;
+  display:flex;flex-direction:column;align-items:center;gap:0.75rem;
+}
+.empty-state-icon{font-size:2.5rem;opacity:0.3}
+.empty-state-title{font-size:0.95rem;font-weight:700;color:var(--ink)}
+.empty-state-body{font-size:0.8rem;color:var(--muted);max-width:280px;line-height:1.5}
+
+/* ===== SECTION TITLE ===== */
+.section-title{
+  font-family:var(--font-display);font-size:1rem;font-weight:900;
+  margin-bottom:0.2rem;
+}
+.section-subtitle{
+  font-size:0.72rem;color:var(--muted);margin-bottom:1rem;
+}
+
+/* ===== INLINE TAGS ===== */
+.tag{
+  display:inline-flex;align-items:center;gap:0.25rem;
+  font-size:0.62rem;font-family:var(--font-mono);
+  padding:0.18em 0.55em;border-radius:var(--radius-full);
+  background:var(--cream);color:var(--muted);border:1px solid var(--border);
+}
+.tag.accent{background:var(--accent-light);color:var(--accent);border-color:rgba(192,66,42,0.2)}
+.tag.green{background:var(--green-light);color:var(--green);border-color:rgba(26,102,64,0.2)}
+.tag.blue{background:var(--blue-light);color:var(--blue);border-color:rgba(23,48,96,0.2)}
+
+/* ===== TOOLTIP ===== */
+[data-tooltip]{position:relative}
+[data-tooltip]::after{
+  content:attr(data-tooltip);
+  position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);
+  background:var(--ink);color:var(--paper);
+  font-size:0.65rem;font-family:var(--font-mono);
+  padding:0.3rem 0.6rem;border-radius:var(--radius);
+  white-space:nowrap;pointer-events:none;
+  opacity:0;transition:opacity var(--transition);
+  z-index:100;
+}
+[data-tooltip]:hover::after{opacity:1}
+
+/* ===== PROGRESS BAR 改善 ===== */
+.progress{
+  height:6px;background:var(--border);border-radius:var(--radius-full);
+  overflow:hidden;margin-top:0.4rem;
+}
+.progress-bar{
+  height:100%;border-radius:var(--radius-full);
+  transition:width 0.6s cubic-bezier(0.4,0,0.2,1);
+  background:var(--muted);
+}
+.progress-bar.ok{background:linear-gradient(90deg,var(--green),#22a060)}
+.progress-bar.warn{background:linear-gradient(90deg,var(--gold),#c8a030)}
+.progress-bar.over{background:linear-gradient(90deg,var(--accent),#d8502a)}
+.progress-bar.blue{background:linear-gradient(90deg,var(--blue),#2050a0)}
+
+/* ===== 給与計算ページ改善 ===== */
+/* 計算プレビューバー */
+.calc-preview{
+  background:linear-gradient(135deg,var(--blue-light),var(--green-light));
+  border:1px solid rgba(23,48,96,0.15);border-radius:var(--radius);
+  padding:0.65rem 0.9rem;font-size:0.72rem;font-family:var(--font-mono);
+  line-height:2;margin-top:0.5rem;display:none;
+  animation:pageFadeIn 0.15s ease;
+}
+
+/* ===== RESPONSIVE 強化 ===== */
+@media(max-width:900px){
+  #pagePayroll > div:last-of-type{grid-template-columns:1fr !important}
+}
 @media(max-width:768px){
   .form-row{grid-template-columns:1fr}
-  .form-row.cols3{grid-template-columns:1fr}
+  .form-row.cols3,.form-row.cols4{grid-template-columns:1fr}
   .stat-grid{grid-template-columns:1fr 1fr}
-  .page{padding:1rem}
+  .page{padding:0.85rem}
   #pageDashboard > div:not(.stat-grid){grid-template-columns:1fr !important}
-  .period-bar{gap:0.4rem}
+  .period-bar{gap:0.4rem;top:var(--header-h)}
   .btn-cluster{flex-wrap:wrap}
-  #pagePayroll > div:last-of-type{grid-template-columns:1fr !important}
+  .nav-tab{padding:0.65rem 0.75rem;font-size:0.6rem}
 }
 @media(max-width:480px){
   .stat-grid{grid-template-columns:1fr}
-  .app-header{padding:0 0.75rem;gap:0.5rem}
+  .app-header{padding:0 0.75rem;gap:0.4rem}
   .header-btn{display:none}
   #btnDarkMode{display:flex !important}
   #btnSignOut{display:flex !important}
+  .modal{padding:1.25rem}
+  .page{padding:0.65rem}
 }
+/* タッチデバイス */
+@media(hover:none){
+  .btn:hover{transform:none}
+  .stat-card:hover{transform:none;box-shadow:var(--shadow)}
+  .company-card:hover{transform:none;box-shadow:var(--shadow)}
+}
+
 
 /* ===== ATTENDANCE CALENDAR ===== */
 .att-calendar{width:100%;border-collapse:collapse;font-size:0.78rem}
@@ -680,11 +1040,6 @@ body.dark .hoshu-tbl tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
     <div class="nav-tab owner-only" data-page="transfer">振込管理</div>
     <div class="nav-tab owner-only" data-page="shahou">社保届出</div>
     <div class="nav-tab" data-page="taxrates">税率管理</div>
-    <div class="nav-tab" data-page="simulator">人件費シミュ</div>
-    <div class="nav-tab" data-page="forecast">AI予測</div>
-    <div class="nav-tab owner-only" data-page="portal">従業員ポータル</div>
-    <div class="nav-tab owner-only" data-page="accounting">会計連携</div>
-    <div class="nav-tab owner-only" data-page="apikeys">API管理</div>
     <div class="nav-tab owner-only" data-page="users">ユーザー管理</div>
     <div class="nav-tab owner-only" data-page="settings">会社設定</div>
   </nav>
@@ -735,16 +1090,6 @@ body.dark .hoshu-tbl tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
         <div class="panel-body">
           <canvas id="drilldownChart" height="70"></canvas>
           <p id="drilldownMsg" style="font-size:0.78rem;color:var(--muted);padding:0.5rem 0">従業員を選択すると手取り推移が表示されます</p>
-        </div>
-      </div>
-      <!-- v6: AI Insightパネル -->
-      <div class="panel" style="margin-top:1rem">
-        <div class="panel-header" style="display:flex;align-items:center;justify-content:space-between">
-          <span>🤖 AI Insight — 人件費異常検知</span>
-          <button class="btn btn-sm btn-blue" onclick="window.renderAIInsightPanel()">更新</button>
-        </div>
-        <div class="panel-body" id="aiInsightPanel">
-          <p style="font-size:0.78rem;color:var(--muted)">読み込み中...</p>
         </div>
       </div>
       <!-- v5クイックアクセス -->
@@ -887,7 +1232,7 @@ body.dark .hoshu-tbl tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
           <div class="panel-body" style="padding:0">
             <div class="tbl-wrap">
               <table class="data-tbl">
-                <thead><tr><th>氏名</th><th>部署/役職</th><th>基本給</th><th>支給額</th><th>手取り</th><th>状態</th><th>操作</th></tr></thead>
+                <thead><tr><th data-sort="name">氏名 ↕</th><th>部署/役職</th><th data-sort="base" class="num">基本給 ↕</th><th data-sort="gross" class="num">支給額 ↕</th><th data-sort="monthlyNet" class="num">手取り ↕</th><th>状態</th><th>操作</th></tr></thead>
                 <tbody id="empTbody"></tbody>
                 <tfoot id="empTfoot"></tfoot>
               </table>
@@ -1127,269 +1472,6 @@ body.dark .hoshu-tbl tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
     </div>
   </div>
 </div>
-
-  <!-- ═══════════════════════════════════════════════
-       v6: 人件費シミュレーター
-  ═══════════════════════════════════════════════ -->
-  <div class="page" id="pageSimulator">
-    <div style="margin-bottom:1rem">
-      <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900">💡 人件費シミュレーター</div>
-      <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem">採用・昇給検討時の人件費を即座にシミュレーション</div>
-    </div>
-    <div style="display:grid;grid-template-columns:360px 1fr;gap:1rem;align-items:start">
-      <!-- 入力パネル -->
-      <div>
-        <div class="panel">
-          <div class="panel-header">⚙ 入力条件</div>
-          <div class="panel-body">
-            <div class="form-group"><label>人数</label><input type="number" id="simCount" value="1" min="1" max="1000"></div>
-            <div class="form-group"><label>基本給（円/月）</label><input type="number" id="simBase" value="300000" step="10000"></div>
-            <div class="form-group"><label>想定残業時間（h/月）</label><input type="number" id="simOt" value="20" min="0" max="200"></div>
-            <div class="form-group"><label>時間外単価（円/h）</label><input type="number" id="simOtRate" value="2000" step="100"></div>
-            <div class="form-group"><label>扶養家族数</label><input type="number" id="simDep" value="0" min="0" max="10"></div>
-            <div class="form-group"><label>年齢</label><input type="number" id="simAge" value="35" min="18" max="80"></div>
-            <div class="form-group"><label>賞与倍率（月）</label><input type="number" id="simBonus" value="2.0" step="0.1" min="0"></div>
-            <div class="form-group"><label>昇給率（%/年）</label><input type="number" id="simRaise" value="2.0" step="0.1" min="0"></div>
-            <div class="form-group"><label>シナリオ名</label><input type="text" id="simName" placeholder="例：新卒エンジニア採用"></div>
-            <div class="btn-group">
-              <button class="btn btn-primary" id="btnSimCalc">計算する</button>
-              <button class="btn btn-secondary btn-sm" id="btnSimSave">💾 保存</button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- 結果パネル -->
-      <div>
-        <div class="panel">
-          <div class="panel-header">📊 シミュレーション結果</div>
-          <div class="panel-body" id="simResult">
-            <p style="color:var(--muted);font-size:0.82rem">左の条件を入力して「計算する」を押してください</p>
-          </div>
-        </div>
-        <div class="panel">
-          <div class="panel-header">📈 5年間コスト推移</div>
-          <div class="panel-body"><canvas id="simChart" height="120"></canvas></div>
-        </div>
-        <div class="panel">
-          <div class="panel-header">💾 保存済みシナリオ</div>
-          <div class="panel-body" id="simSavedList">
-            <p style="color:var(--muted);font-size:0.82rem">保存されたシナリオがありません</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════
-       v6: AI人件費予測
-  ═══════════════════════════════════════════════ -->
-  <div class="page" id="pageForecast">
-    <div style="margin-bottom:1rem">
-      <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900">🤖 AI人件費予測・分析</div>
-      <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem">過去データから年間人件費を予測・異常を自動検知</div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
-      <div class="panel">
-        <div class="panel-header">🔮 年間人件費予測</div>
-        <div class="panel-body" id="forecastSummary">
-          <p style="color:var(--muted);font-size:0.82rem">「予測を実行」ボタンを押してください</p>
-        </div>
-      </div>
-      <div class="panel">
-        <div class="panel-header">🚨 AI異常検知・インサイト</div>
-        <div class="panel-body" id="forecastInsights">
-          <p style="color:var(--muted);font-size:0.82rem">分析待ち...</p>
-        </div>
-      </div>
-    </div>
-    <div class="panel">
-      <div class="panel-header" style="display:flex;align-items:center;justify-content:space-between">
-        <span>📈 人件費推移 + 予測ライン</span>
-        <button class="btn btn-sm btn-blue" id="btnRunForecast">🤖 予測を実行</button>
-      </div>
-      <div class="panel-body"><canvas id="forecastChart" height="100"></canvas></div>
-    </div>
-    <div class="panel">
-      <div class="panel-header">📋 部署別コスト分析</div>
-      <div class="panel-body" id="forecastDeptTable">
-        <p style="color:var(--muted);font-size:0.82rem">予測実行後に表示されます</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════
-       v6: 従業員ポータル管理（Owner設定画面）
-  ═══════════════════════════════════════════════ -->
-  <div class="page" id="pagePortal">
-    <div style="margin-bottom:1rem">
-      <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900">👤 従業員ポータル管理</div>
-      <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem">従業員が自分の給与明細・有給を確認できるポータルを管理します</div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-      <div class="panel">
-        <div class="panel-header">📧 従業員アカウント管理</div>
-        <div class="panel-body">
-          <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.75rem">
-            従業員にポータルアクセス用のメールアドレスを登録します。<br>
-            登録するとポータルURL（/portal）からログインして給与明細を閲覧できます。
-          </div>
-          <div id="portalEmpList"></div>
-          <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border)">
-            <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem">ポータルアカウント追加</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem">
-              <div class="form-group"><label>従業員名</label>
-                <select id="portalEmpSelect" style="width:100%;padding:0.45rem;border:1.5px solid var(--border);border-radius:var(--radius);font-size:0.82rem;background:var(--paper);color:var(--ink)">
-                  <option value="">— 選択 —</option>
-                </select>
-              </div>
-              <div class="form-group"><label>メールアドレス</label>
-                <input type="email" id="portalEmpEmail" placeholder="employee@example.com">
-              </div>
-            </div>
-            <div class="form-group"><label>有給残日数</label>
-              <input type="number" id="portalEmpLeave" value="20" min="0" max="40" step="0.5">
-            </div>
-            <button class="btn btn-primary btn-sm" id="btnAddPortalEmp">登録する</button>
-          </div>
-        </div>
-      </div>
-      <div class="panel">
-        <div class="panel-header">🔗 ポータルURL・設定</div>
-        <div class="panel-body">
-          <div style="margin-bottom:1rem">
-            <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.35rem">ポータルURL</div>
-            <div id="portalUrl" style="font-family:var(--font-mono);font-size:0.82rem;background:var(--cream);border:1.5px solid var(--border);padding:0.55rem 0.75rem;border-radius:var(--radius);cursor:pointer" title="クリックでコピー">
-              読み込み中...
-            </div>
-            <div style="font-size:0.65rem;color:var(--muted);margin-top:0.25rem">クリックでコピー。従業員に共有してください。</div>
-          </div>
-          <div style="margin-bottom:1rem">
-            <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.35rem">閲覧可能コンテンツ</div>
-            <div style="display:flex;flex-direction:column;gap:0.4rem">
-              <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.8rem"><input type="checkbox" id="portalOptSlip" checked> 給与明細（PDF含む）</label>
-              <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.8rem"><input type="checkbox" id="portalOptHistory" checked> 給与履歴</label>
-              <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.8rem"><input type="checkbox" id="portalOptWithhold" checked> 源泉徴収票</label>
-              <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.8rem"><input type="checkbox" id="portalOptLeave" checked> 有給残日数</label>
-              <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.8rem"><input type="checkbox" id="portalOptYearend"> 年末調整入力</label>
-            </div>
-          </div>
-          <button class="btn btn-primary btn-sm" id="btnSavePortalSettings">設定を保存</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════
-       v6: 会計連携
-  ═══════════════════════════════════════════════ -->
-  <div class="page" id="pageAccounting">
-    <div style="margin-bottom:1rem">
-      <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900">📒 会計連携</div>
-      <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem">freee・マネーフォワード対応の仕訳データを生成します</div>
-    </div>
-    <div style="display:grid;grid-template-columns:300px 1fr;gap:1rem;align-items:start">
-      <div>
-        <div class="panel">
-          <div class="panel-header">⚙ 出力設定</div>
-          <div class="panel-body">
-            <div class="form-group"><label>会計ソフト</label>
-              <select id="acctSoftware" style="width:100%;padding:0.45rem;border:1.5px solid var(--border);border-radius:var(--radius);font-size:0.82rem;background:var(--paper);color:var(--ink)">
-                <option value="freee">freee会計</option>
-                <option value="mf">マネーフォワード会計</option>
-                <option value="generic">汎用CSV</option>
-              </select>
-            </div>
-            <div class="form-group"><label>対象年月</label>
-              <select id="acctPeriod" style="width:100%;padding:0.45rem;border:1.5px solid var(--border);border-radius:var(--radius);font-size:0.82rem;font-family:var(--font-mono);background:var(--paper);color:var(--ink)"></select>
-            </div>
-            <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin:0.75rem 0 0.35rem">勘定科目マッピング</div>
-            <div class="form-group"><label>給与手当</label><input type="text" id="acctMapSalary" value="給与手当" style="font-size:0.8rem"></div>
-            <div class="form-group"><label>法定福利費（会社負担）</label><input type="text" id="acctMapIns" value="法定福利費" style="font-size:0.8rem"></div>
-            <div class="form-group"><label>預り金（源泉所得税）</label><input type="text" id="acctMapTax" value="預り金" style="font-size:0.8rem"></div>
-            <div class="form-group"><label>預り金（住民税）</label><input type="text" id="acctMapMuni" value="預り金" style="font-size:0.8rem"></div>
-            <div class="form-group"><label>普通預金（支払口座）</label><input type="text" id="acctMapBank" value="普通預金" style="font-size:0.8rem"></div>
-            <div class="btn-group">
-              <button class="btn btn-primary" id="btnGenAcct">仕訳CSV生成</button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div>
-        <div class="panel">
-          <div class="panel-header">📋 仕訳プレビュー</div>
-          <div class="panel-body" id="acctPreview">
-            <p style="color:var(--muted);font-size:0.82rem">左の設定を入力して「仕訳CSV生成」を押してください</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════
-       v6: API管理
-  ═══════════════════════════════════════════════ -->
-  <div class="page" id="pageApikeys">
-    <div style="margin-bottom:1rem">
-      <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900">🔑 API管理</div>
-      <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem">外部サービス連携用のAPIキーとWebhookを管理します</div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-      <div class="panel">
-        <div class="panel-header">🔑 APIキー</div>
-        <div class="panel-body">
-          <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.75rem">
-            外部システムからPayrollAutoのデータにアクセスするためのAPIキーです。<br>
-            <b>秘密にしてください。漏洩した場合はすぐに再生成してください。</b>
-          </div>
-          <div id="apiKeyList"></div>
-          <div class="btn-group" style="margin-top:0.75rem">
-            <button class="btn btn-primary btn-sm" id="btnGenApiKey">🔑 新しいAPIキーを生成</button>
-          </div>
-        </div>
-      </div>
-      <div class="panel">
-        <div class="panel-header">🔔 Webhook設定</div>
-        <div class="panel-body">
-          <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.75rem">
-            給与確定時に外部URLへ自動通知します。
-          </div>
-          <div class="form-group"><label>Webhook URL</label>
-            <input type="url" id="webhookUrl" placeholder="https://example.com/webhooks/payroll">
-          </div>
-          <div class="form-group"><label>通知タイミング</label>
-            <div style="display:flex;flex-direction:column;gap:0.35rem;margin-top:0.25rem">
-              <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.8rem"><input type="checkbox" id="whTriggerCommit" checked> 給与確定時</label>
-              <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.8rem"><input type="checkbox" id="whTriggerTransfer"> 振込完了時</label>
-            </div>
-          </div>
-          <div class="form-group"><label>Slackチャンネル（任意）</label>
-            <input type="text" id="webhookSlack" placeholder="#payroll-notifications">
-          </div>
-          <div class="btn-group">
-            <button class="btn btn-primary btn-sm" id="btnSaveWebhook">保存</button>
-            <button class="btn btn-secondary btn-sm" id="btnTestWebhook">テスト送信</button>
-          </div>
-          <div id="webhookLog" style="margin-top:0.75rem;font-size:0.72rem;font-family:var(--font-mono);color:var(--muted)"></div>
-        </div>
-      </div>
-    </div>
-    <div class="panel" style="margin-top:1rem">
-      <div class="panel-header">📖 API仕様</div>
-      <div class="panel-body">
-        <div style="font-size:0.72rem;font-family:var(--font-mono);background:var(--cream);padding:1rem;border-radius:var(--radius);line-height:1.8">
-          <div style="color:var(--muted);margin-bottom:0.5rem"># PayrollAuto API v1</div>
-          <div><b style="color:var(--blue)">GET</b>  /api/v1/payroll?month=YYYY-MM</div>
-          <div style="color:var(--muted);margin-left:1rem;font-size:0.65rem">→ 指定月の給与データ一覧を返す</div>
-          <div><b style="color:var(--blue)">GET</b>  /api/v1/employees</div>
-          <div style="color:var(--muted);margin-left:1rem;font-size:0.65rem">→ 従業員一覧を返す</div>
-          <div><b style="color:var(--green)">POST</b> /api/v1/webhooks/test</div>
-          <div style="color:var(--muted);margin-left:1rem;font-size:0.65rem">→ Webhookのテスト送信</div>
-          <div style="margin-top:0.5rem;color:var(--muted)"># 認証: Authorization: Bearer &lt;api_key&gt;</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
 <div id="printArea"></div>
 
 
@@ -1429,24 +1511,66 @@ function esc(str){
   return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function showToast(msg, type='') {
+/* トーストスタック管理 */
+const _toastStack = [];
+function showToast(msg, type='', duration=3200) {
+  const icons = { success:'✅', error:'⚠️', warning:'⚡', '':'ℹ️' };
+  const icon = icons[type] || icons[''];
   const t = document.createElement('div');
-  t.className = 'toast ' + type; t.textContent = msg;
+  t.className = 'toast' + (type ? ' ' + type : '');
+  t.innerHTML = `<span class="toast-icon">${icon}</span><span class="toast-msg">${msg}</span>`;
+
+  // スタック位置を調整
+  _toastStack.push(t);
+  const offset = (_toastStack.length - 1) * 58;
+  t.style.bottom = (1.25 * 16 + offset) + 'px';
+
   document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3200);
+  const timer = setTimeout(() => {
+    t.style.opacity = '0';
+    t.style.transform = 'translateX(20px)';
+    t.style.transition = 'all 0.2s ease';
+    setTimeout(() => {
+      t.remove();
+      const idx = _toastStack.indexOf(t);
+      if (idx !== -1) _toastStack.splice(idx, 1);
+      // 残りのトーストの位置を更新
+      _toastStack.forEach((el, i) => {
+        el.style.bottom = (1.25 * 16 + i * 58) + 'px';
+        el.style.transition = 'bottom 0.2s ease';
+      });
+    }, 200);
+  }, duration);
+  t.addEventListener('click', () => clearTimeout(timer));
 }
 
 function showModal(title, body, confirmLabel, confirmClass, onConfirm) {
-  $('modalTitle').textContent = title;
+  // ヘッダーを構築（閉じるボタン付き）
+  $('modalTitle').innerHTML = `
+    <div class="modal-header">
+      <span>${title}</span>
+      <button class="modal-close" id="modalCloseBtn" aria-label="閉じる">✕</button>
+    </div>`;
   $('modalBody').innerHTML = body;
-  const btn = $('modalConfirm');
-  btn.textContent = confirmLabel || '実行';
-  btn.className = 'btn ' + (confirmClass || 'btn-danger');
+  const confirmBtn = $('modalConfirm');
+  confirmBtn.textContent = confirmLabel || '実行';
+  confirmBtn.className = 'btn ' + (confirmClass || 'btn-danger');
   $('modalOverlay').classList.add('show');
-  const close = () => $('modalOverlay').classList.remove('show');
-  btn.onclick = () => { close(); onConfirm(); };
+
+  const close = () => {
+    $('modalOverlay').classList.remove('show');
+    document.removeEventListener('keydown', onEsc);
+  };
+  const onEsc = (e) => { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', onEsc);
+
+  confirmBtn.onclick = () => { close(); onConfirm(); };
   $('modalCancel').onclick = close;
+  $('modalCloseBtn').onclick = close;
   $('modalOverlay').onclick = e => { if (e.target === $('modalOverlay')) close(); };
+
+  // フォーカスをconfirmボタンに移動
+  setTimeout(() => confirmBtn.focus(), 50);
 }
 
 /* ── Supabase helpers ── */
@@ -1494,36 +1618,108 @@ function applyRound(v,mode){
   if(mode==='ceil')return Math.ceil(v);
   return Math.round(v);
 }
-function calcIncomeTaxRate(t){
-  const b=[{l:1950000,r:.05,d:0},{l:3300000,r:.10,d:97500},{l:6950000,r:.20,d:427500},
-    {l:9000000,r:.23,d:636000},{l:18000000,r:.33,d:1536000},{l:40000000,r:.40,d:2796000},{l:Infinity,r:.45,d:4796000}];
-  for(const x of b)if(t<=x.l)return Math.max(0,t*x.r-x.d);
+/* ────────────────────────────────────────────────────────
+   給与計算エンジン v7 — 精度改善版
+   ・所得税：令和6年分 超過累進税率（年税額から月割）
+   ・社会保険：年齢別免除（健保75歳/厚年70歳）
+   ・給与所得控除：令和2年改正後の速算表
+   ・基礎控除：48万円（令和2年以降）
+   ・住民税：前年所得ベース簡易計算（均等割5,000円/年込）
+   ・扶養控除：一般38万円/年
+   ・ボーナス：前月給与方式（月割係数法）
+───────────────────────────────────────────────────────── */
+
+// 所得税速算表（令和6年：超過累進。annualTaxable=課税所得年額）
+function calcIncomeTaxAnnual(annualTaxable){
+  const t = Math.max(0, Math.floor(annualTaxable/1000)*1000); // 千円未満切捨て
+  const b=[
+    {l:1950000,  r:0.05, d:0},
+    {l:3300000,  r:0.10, d:97500},
+    {l:6950000,  r:0.20, d:427500},
+    {l:9000000,  r:0.23, d:636000},
+    {l:18000000, r:0.33, d:1536000},
+    {l:40000000, r:0.40, d:2796000},
+    {l:Infinity, r:0.45, d:4796000},
+  ];
+  for(const x of b) if(t<=x.l) return Math.max(0, t*x.r - x.d);
   return 0;
 }
-function calc(base,perf,mag,hRate,pRate,eRate,mRate,rm,age,deps,spDed,disDed,alTotal=0){
-  age=age||35;deps=deps||0;spDed=spDed||0;disDed=disDed||0;
-  const b=Math.round(base)+Math.round(alTotal);
-  const gross=applyRound(b*perf,rm);
-  const aH=age<75,aP=age<70;
-  const ins=applyRound(gross*((aH?hRate/100:0)+(aP?pRate/100:0)+eRate/100),rm);
-  const taxMo=gross-ins;
-  const annG=taxMo*12;
-  let salDed;
-  if(annG<=1625000)salDed=550000;
-  else if(annG<=1800000)salDed=annG*.4-100000;
-  else if(annG<=3600000)salDed=annG*.3+80000;
-  else if(annG<=6600000)salDed=annG*.2+440000;
-  else if(annG<=8500000)salDed=annG*.1+1100000;
-  else salDed=1950000;
-  const totDed=salDed+480000+380000*deps+Number(spDed)+Number(disDed);
-  const tax=applyRound(calcIncomeTaxRate(Math.max(0,annG-totDed))/12,rm);
-  const mun=applyRound((applyRound(Math.max(0,annG-totDed-430000)*(mRate/100),rm)+5500)/12,rm);
-  const monthlyNet=taxMo-tax-mun;
-  const bG=applyRound(Math.round(base)*mag,rm);
-  const bI=applyRound(bG*((aH?hRate/100:0)+(aP?pRate/100:0)+eRate/100),rm);
-  const bT=applyRound(calcIncomeTaxRate(Math.max(0,(bG-bI)*12-totDed))/12,rm);
-  const bM=applyRound((bG-bI)*(mRate/100)/12,rm);
-  return{gross,insurance:ins,tax,municipal:mun,monthlyNet,bonusGross:bG,bonusIns:bI,bonusTax:bT,bonusMun:bM,bonusNet:bG-bI-bT-bM};
+// 後方互換
+function calcIncomeTaxRate(t){ return calcIncomeTaxAnnual(t); }
+
+// 給与所得控除（令和2年改正）
+function calcSalaryDeduction(annualGross){
+  if(annualGross <= 1625000)  return 550000;
+  if(annualGross <= 1800000)  return annualGross * 0.4  - 100000;
+  if(annualGross <= 3600000)  return annualGross * 0.3  + 80000;
+  if(annualGross <= 6600000)  return annualGross * 0.2  + 440000;
+  if(annualGross <= 8500000)  return annualGross * 0.1  + 1100000;
+  return 1950000; // 上限
+}
+
+function calc(base, perf, mag, hRate, pRate, eRate, mRate, rm,
+              age, deps, spDed, disDed, alTotal=0){
+  age=age||35; deps=deps||0; spDed=Number(spDed)||0; disDed=Number(disDed)||0;
+
+  // ── 支給額 ──
+  const b     = Math.round(base) + Math.round(alTotal);
+  const gross = applyRound(b * perf, rm);
+
+  // ── 社会保険（年齢別免除） ──
+  const aH = age < 75; // 75歳未満：健保
+  const aP = age < 70; // 70歳未満：厚年
+  const insRate = (aH ? hRate/100 : 0) + (aP ? pRate/100 : 0) + eRate/100;
+  const insurance = applyRound(gross * insRate, rm);
+
+  // ── 課税標準（月次） ──
+  const taxableMo  = gross - insurance;
+  const annualG    = taxableMo * 12;
+
+  // ── 給与所得控除（年額） ──
+  const salDed = calcSalaryDeduction(annualG);
+
+  // ── 各種控除合計（年額） ──
+  // 基礎控除：48万（令和2年〜/所得2400万以下は満額）
+  const basicDed    = 480000;
+  // 扶養控除：一般扶養38万×人数
+  const depDed      = 380000 * deps;
+  // 配偶者控除・障害者控除
+  const totalDed    = salDed + basicDed + depDed + spDed + disDed;
+
+  // ── 所得税（年税額→月割） ──
+  const annualTaxable = Math.max(0, annualG - totalDed);
+  const annualTax     = calcIncomeTaxAnnual(annualTaxable);
+  // 復興特別所得税 2.1%上乗せ（令和19年まで）
+  const tax = applyRound(annualTax * 1.021 / 12, rm);
+
+  // ── 住民税（月次・前年所得ベース簡易） ──
+  // 住民税所得割：課税所得×10%（標準税率）
+  // 均等割：5,000円/年（市区町村3,500+都道府県1,500）
+  const munTaxable = Math.max(0, annualG - totalDed - 430000); // 住民税基礎控除43万
+  const munAnnual  = applyRound(munTaxable * (mRate/100), rm) + 5000;
+  const municipal  = applyRound(munAnnual / 12, rm);
+
+  const monthlyNet = taxableMo - tax - municipal;
+
+  // ── ボーナス（前月給与方式・月割係数法） ──
+  const bG  = applyRound(Math.round(base) * mag, rm);
+  const bI  = applyRound(bG * insRate, rm);
+  // ボーナス所得税：前月給与から税率を引く（簡易）
+  const bAnnualTax = calcIncomeTaxAnnual(
+    Math.max(0, (bG - bI) * 12 - totalDed)
+  );
+  const bT  = applyRound(bAnnualTax * 1.021 / 12, rm);
+  const bM  = applyRound((bG - bI) * (mRate/100) / 12, rm);
+  const bonusNet = bG - bI - bT - bM;
+
+  return {
+    gross, insurance, tax, municipal, monthlyNet,
+    bonusGross:bG, bonusIns:bI, bonusTax:bT, bonusMun:bM, bonusNet,
+    // デバッグ用
+    _annualTaxable: annualTaxable, _annualTax: annualTax,
+    _salDed: salDed, _totalDed: totalDed,
+    pensionExempt: !aP, healthExempt: !aH,
+  };
 }
 function fmtY(v){return'¥'+Math.round(v||0).toLocaleString('ja-JP');}
 
@@ -1857,41 +2053,100 @@ function renderTaxRatePanel(){
     </div>`).join('');
 }
 
+// テーブルソート状態
+let _tblSort = { key: null, dir: 1 };
+
 function renderPayrollTable(){
   const tbody=$('empTbody'),tfoot=$('empTfoot');
   $('empCount').textContent=`${employees.length}名`;
+
   if(employees.length===0){
-    tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--muted);font-size:0.8rem">従業員データがありません</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="7">
+      <div class="empty-state">
+        <div class="empty-state-icon">📋</div>
+        <div class="empty-state-title">従業員データがありません</div>
+        <div class="empty-state-body">左のフォームから従業員を登録するか、「前月コピー」で前月データを引き継いでください</div>
+      </div>
+    </td></tr>`;
     tfoot.innerHTML='';return;
   }
+
+  // ソート処理
+  let sorted = [...employees];
+  if(_tblSort.key){
+    sorted.sort((a,b)=>{
+      const av=a[_tblSort.key]||0, bv=b[_tblSort.key]||0;
+      return typeof av==='string' ? av.localeCompare(bv)*_tblSort.dir : (av-bv)*_tblSort.dir;
+    });
+  }
+
   const canEdit=!isLocked()&&currentCompany.role!=='viewer';
-  tbody.innerHTML=employees.map(emp=>`
-    <tr>
-      <td><b>${esc(emp.name)}</b>${emp.allowanceTotal>0?`<br><small style="color:var(--muted);font-family:var(--font-mono);font-size:0.62rem">手当 ${fmtY(emp.allowanceTotal)}</small>`:''}
-      <td style="font-size:0.75rem">${esc(emp.dept||'—')}<br><span style="color:var(--muted)">${esc(emp.pos||'—')}</span></td>
-      <td style="font-family:var(--font-mono)">${fmtY(emp.base)}</td>
-      <td style="font-family:var(--font-mono)">${fmtY(emp.gross)}</td>
-      <td style="font-family:var(--font-mono);color:var(--green);font-weight:700">${fmtY(emp.monthlyNet)}</td>
-      <td><span class="badge badge-${emp.status==='pdf'?'pdf':'calc'}">${emp.status==='pdf'?'PDF済':'計算済'}</span></td>
-      <td><div class="tbl-actions">
-        ${canEdit?`<button class="tbl-btn" data-id="${emp.id}" data-act="edit">編集</button>`:''}
-        <button class="tbl-btn" data-id="${emp.id}" data-act="slip">🖨 明細PDF</button>
-        ${canEdit?`<button class="tbl-btn danger" data-id="${emp.id}" data-act="del">削除</button>`:''}
-      </div></td>
+  tbody.innerHTML=sorted.map(emp=>`
+    <tr data-id="${emp.id}" style="cursor:${canEdit?'default':'default'}">
+      <td>
+        <div style="font-weight:600;font-size:0.85rem">${esc(emp.name)}</div>
+        ${emp.allowanceTotal>0?`<div style="color:var(--muted);font-family:var(--font-mono);font-size:0.62rem;margin-top:0.1rem">+手当 ${fmtY(emp.allowanceTotal)}</div>`:''}
+      </td>
+      <td>
+        <div style="font-size:0.78rem">${esc(emp.dept||'—')}</div>
+        <div style="color:var(--muted);font-size:0.68rem">${esc(emp.pos||'—')}</div>
+      </td>
+      <td class="num" style="font-family:var(--font-mono);font-size:0.82rem">${fmtY(emp.base)}</td>
+      <td class="num" style="font-family:var(--font-mono);font-size:0.82rem">${fmtY(emp.gross)}</td>
+      <td class="num" style="font-family:var(--font-mono);font-size:0.85rem;font-weight:700;color:var(--green)">${fmtY(emp.monthlyNet)}</td>
+      <td>
+        <span class="badge badge-${emp.status==='pdf'?'pdf':'calc'}">${emp.status==='pdf'?'PDF済':'計算済'}</span>
+      </td>
+      <td>
+        <div class="tbl-actions">
+          ${canEdit?`<button class="tbl-btn" data-id="${emp.id}" data-act="edit" data-tooltip="編集">✏️</button>`:''}
+          <button class="tbl-btn info" data-id="${emp.id}" data-act="slip" data-tooltip="明細PDF">🖨</button>
+          ${canEdit?`<button class="tbl-btn danger" data-id="${emp.id}" data-act="del" data-tooltip="削除">🗑</button>`:''}
+        </div>
+      </td>
     </tr>`).join('');
-  const tG=employees.reduce((a,e)=>a+e.gross,0),tN=employees.reduce((a,e)=>a+e.monthlyNet,0),tI=employees.reduce((a,e)=>a+e.insurance,0);
-  tfoot.innerHTML=`<tr style="background:var(--cream)">
-    <td colspan="2" style="font-weight:700;font-family:var(--font-mono);font-size:0.72rem">TOTAL ${employees.length}名</td>
-    <td></td><td style="font-family:var(--font-mono);font-weight:700">${fmtY(tG)}</td>
-    <td style="font-family:var(--font-mono);font-weight:700;color:var(--green)">${fmtY(tN)}</td>
-    <td colspan="2" style="font-size:0.68rem;color:var(--muted);font-family:var(--font-mono)">社保合計 ${fmtY(tI)}</td>
+
+  // 合計行
+  const tG=employees.reduce((a,e)=>a+e.gross,0);
+  const tN=employees.reduce((a,e)=>a+e.monthlyNet,0);
+  const tI=employees.reduce((a,e)=>a+e.insurance,0);
+  const tT=employees.reduce((a,e)=>a+e.tax+(e.municipal||0),0);
+  tfoot.innerHTML=`<tr style="background:var(--cream);border-top:2px solid var(--border)">
+    <td colspan="2">
+      <span style="font-weight:700;font-family:var(--font-mono);font-size:0.72rem">合計 ${employees.length}名</span>
+    </td>
+    <td></td>
+    <td class="num" style="font-family:var(--font-mono);font-weight:700;font-size:0.85rem">${fmtY(tG)}</td>
+    <td class="num" style="font-family:var(--font-mono);font-weight:700;font-size:0.85rem;color:var(--green)">${fmtY(tN)}</td>
+    <td colspan="2" style="font-size:0.68rem;color:var(--muted);font-family:var(--font-mono)">
+      社保 ${fmtY(tI)}&nbsp;|&nbsp;税 ${fmtY(tT)}
+    </td>
   </tr>`;
+
+  // イベント登録
   tbody.querySelectorAll('[data-act]').forEach(btn=>{
-    btn.addEventListener('click',function(){
+    btn.addEventListener('click',function(e){
+      e.stopPropagation();
       const eid=Number(this.dataset.id),act=this.dataset.act;
       if(act==='edit')startEdit(eid);
       else if(act==='slip')printSlip(eid);
       else if(act==='del')deleteEmp(eid);
+    });
+  });
+
+  // ソート可能ヘッダーの再バインド
+  bindTblSortHeaders();
+}
+
+// テーブルヘッダーのソート
+function bindTblSortHeaders(){
+  document.querySelectorAll('table.data-tbl th[data-sort]').forEach(th=>{
+    th.style.cursor='pointer';
+    th.addEventListener('click',()=>{
+      const key=th.dataset.sort;
+      if(_tblSort.key===key) _tblSort.dir*=-1;
+      else { _tblSort.key=key; _tblSort.dir=1; }
+      renderPayrollTable();
     });
   });
 }
@@ -1977,8 +2232,8 @@ function triggerAutoCalc(){
     const f=getFormValues(),al=getAllowanceTotal();
     const r=calc(base,f.perf,f.mag,f.hRate,f.pRate,f.eRate,f.mRate,f.rm,f.age,f.dep,f.spDed,f.disDed,al);
     const prev=$('calcPreview');prev.style.display='block';
-    const alStr=al>0?`　手当：<b>${esc(fmtY(al))}</b>`:'';
-    prev.innerHTML=`支給額：<b>${fmtY(r.gross)}</b>${alStr}　社保：<b style="color:var(--accent)">${fmtY(r.insurance)}</b>　所得税：<b style="color:var(--accent)">${fmtY(r.tax)}</b>　住民税：<b style="color:var(--accent)">${fmtY(r.municipal)}</b>　<span style="color:var(--green)">→手取：<b>${fmtY(r.monthlyNet)}</b></span>`;
+    const alStr=al>0?`<span style="color:var(--blue)">手当 ${fmtY(al)}</span>　`:'';
+    prev.innerHTML=`${alStr}支給額：<b>${fmtY(r.gross)}</b>　社保：<b style="color:var(--accent)">${fmtY(r.insurance)}</b>　所得税：<b style="color:var(--accent)">${fmtY(r.tax)}</b>（復興税込）　住民税：<b style="color:var(--accent)">${fmtY(r.municipal)}</b>　<span style="color:var(--green);font-weight:700">→ 手取り ${fmtY(r.monthlyNet)}</span>`;
     $('basePayFmt').textContent=base>0?'→ '+base.toLocaleString('ja-JP')+'円':'';
   },300);
 }
@@ -2595,8 +2850,10 @@ function showPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   const pageEl=$('page'+id.charAt(0).toUpperCase()+id.slice(1));
-  if(pageEl)pageEl.classList.add('active');
+  if(pageEl) pageEl.classList.add('active');
   document.querySelector(`[data-page="${id}"]`)?.classList.add('active');
+  // ページ切替時にトップへ
+  window.scrollTo({top:0,behavior:'instant'});
   if(id==='attendance')renderAttCalendar();
   if(id==='yearend')renderYearendList();
   if(id==='transfer')renderTransferList();
@@ -3874,8 +4131,8 @@ async function renderDashboard(){
 
   $('dashStats').innerHTML=`
     <div class="stat-card"><div class="stat-label">従業員数</div><div class="stat-value blue">${employees.length}名</div><div class="stat-sub">${currentPeriod}</div></div>
-    <div class="stat-card"><div class="stat-label">支給額合計</div><div class="stat-value">${fmtY(tG)} ${diffBadge(tG,prevG)}</div></div>
-    <div class="stat-card"><div class="stat-label">手取り合計</div><div class="stat-value green">${fmtY(tN)} ${diffBadge(tN,prevN)}</div></div>
+    <div class="stat-card variant-blue"><div class="stat-label">支給額合計</div><div class="stat-value">${fmtY(tG)} ${diffBadge(tG,prevG)}</div></div>
+    <div class="stat-card variant-green"><div class="stat-label">手取り合計</div><div class="stat-value green">${fmtY(tN)} ${diffBadge(tN,prevN)}</div></div>
     <div class="stat-card"><div class="stat-label">社会保険合計</div><div class="stat-value accent">${fmtY(tI)}</div></div>
     <div class="stat-card"><div class="stat-label">税金合計</div><div class="stat-value accent">${fmtY(tT)}</div></div>`;
 
@@ -4138,728 +4395,6 @@ window.renderDrilldownChart = renderDrilldownChart;
 window.checkShahouChanges   = checkShahouChanges;
 
 })();
-</script>
-<script>
-/* ══════════════════════════════════════════════════════════
-   PayrollAuto v6.0 — 追加機能 JavaScript
-   ① 人件費シミュレーター
-   ② AI人件費予測・異常検知
-   ③ 従業員ポータル管理
-   ④ 会計連携（freee/MF対応仕訳CSV）
-   ⑤ API管理・Webhook
-   ⑥ ワークフロー自動化
-   ⑦ AI Insightパネル
-══════════════════════════════════════════════════════════ */
-(() => {
-'use strict';
-
-// v5のsupabaseクライアントを再利用
-const sb = window.__PA_SB;
-const $  = id => document.getElementById(id);
-const fmtY = v => '¥' + Math.round(v||0).toLocaleString('ja-JP');
-function esc(s){ const d=document.createElement('div'); d.textContent=String(s||''); return d.innerHTML; }
-function showToast(msg,type=''){
-  const t=document.createElement('div');
-  t.className='toast '+type; t.textContent=msg;
-  document.body.appendChild(t);
-  setTimeout(()=>t.remove(),3200);
-}
-function showModal(title,body,confirmLabel,confirmClass,onConfirm){
-  $('modalTitle').textContent=title;
-  $('modalBody').innerHTML=body;
-  const btn=$('modalConfirm');
-  btn.textContent=confirmLabel||'実行';
-  btn.className='btn '+(confirmClass||'btn-danger');
-  $('modalOverlay').classList.add('show');
-  const close=()=>$('modalOverlay').classList.remove('show');
-  btn.onclick=()=>{close();onConfirm();};
-  $('modalCancel').onclick=close;
-}
-async function dbGet(table,match){
-  try{
-    let q=sb.from(table).select('*');
-    for(const[k,v]of Object.entries(match))q=q.eq(k,v);
-    const{data,error}=await q.maybeSingle();
-    if(error)throw error;
-    return data;
-  }catch(e){console.warn('[v6]',table,e.message);return null;}
-}
-
-// ─── Chart.js インスタンス管理 ───
-let simChartObj = null;
-let forecastChartObj = null;
-
-// ══════════════════════════════════════════
-// ① 人件費シミュレーター
-// ══════════════════════════════════════════
-
-function runSimulation(){
-  const count  = Number($('simCount')?.value)  || 1;
-  const base   = Number($('simBase')?.value)   || 0;
-  const ot     = Number($('simOt')?.value)     || 0;
-  const otRate = Number($('simOtRate')?.value) || 0;
-  const dep    = Number($('simDep')?.value)    || 0;
-  const age    = Number($('simAge')?.value)    || 35;
-  const bonus  = Number($('simBonus')?.value)  || 0;
-  const raise  = Number($('simRaise')?.value)  || 0;
-
-  const otPay   = Math.round(ot * otRate);
-  const monthly = base + otPay;
-
-  // 社会保険料率（概算: 従業員 ≒ 会社）
-  const insRate = (5.0 + 9.15 + 0.6) / 100;
-  const empIns  = Math.round(monthly * insRate);
-  const coIns   = Math.round(monthly * insRate);
-
-  const bonusGross = Math.round(base * bonus);
-  const bonusIns   = Math.round(bonusGross * insRate);
-
-  // 会社の年間総負担（給与+会社社保+賞与+賞与社保）
-  const annualSalaryCost = (monthly + coIns) * 12 + bonusGross + bonusIns;
-  const annualTotal      = annualSalaryCost * count;
-
-  // 5年推移（昇給率加味）
-  const yearlyTotals = [1,2,3,4,5].map(y => {
-    const factor  = Math.pow(1 + raise/100, y-1);
-    const yBase   = Math.round(base * factor);
-    const yOtPay  = Math.round(ot * otRate * factor);
-    const yMo     = yBase + yOtPay;
-    const yIns    = Math.round(yMo * insRate);
-    const yBonus  = Math.round(yBase * bonus);
-    const yBI     = Math.round(yBonus * insRate);
-    return ((yMo + yIns) * 12 + yBonus + yBI) * count;
-  });
-
-  // 手取り概算（社保+所得税+住民税）
-  const takeHome = monthly - empIns - Math.round(monthly * 0.05) - Math.round(monthly * 0.008);
-  return { count, base, otPay, monthly, empIns, coIns, bonusGross, bonusIns, annualSalaryCost, annualTotal, yearlyTotals, takeHome };
-}
-
-function renderSimResult(r){
-  const card = (label, value, sub='', color='') =>
-    `<div class="stat-card"><div class="stat-label">${label}</div>
-     <div class="stat-value${color?' '+color:''}">${value}</div>
-     ${sub?`<div class="stat-sub">${sub}</div>`:''}
-     </div>`;
-
-  const el = $('simResult');
-  if(!el) return;
-  el.innerHTML = `
-    <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:1rem">
-      ${card('月間支給額（1人）', fmtY(r.monthly), '基本給+残業')}
-      ${card('月間手取り概算', fmtY(r.takeHome), '税・社保控除後', 'green')}
-      ${card('従業員社保（月）', fmtY(r.empIns), '従業員負担', 'accent')}
-      ${card('会社社保負担（月）', fmtY(r.coIns), '会社負担', 'accent')}
-      ${card('年間ボーナス', fmtY(r.bonusGross), r.bonusGross>0?($('simBonus').value+'ヶ月分'):'なし')}
-      ${card('年間総人件費（1人）', fmtY(r.annualSalaryCost), '給与+社保+賞与')}
-    </div>
-    <div style="background:var(--ink);color:var(--paper);padding:1rem 1.25rem;border-radius:var(--radius);display:flex;justify-content:space-between;align-items:center">
-      <div>
-        <div style="font-size:0.7rem;letter-spacing:0.1em;opacity:0.6">${r.count}名採用 / 年間総人件費</div>
-        <div style="font-family:var(--font-display);font-size:1.6rem;font-weight:900;margin-top:0.2rem">${fmtY(r.annualTotal)}</div>
-      </div>
-      <div style="text-align:right;font-size:0.72rem;opacity:0.6">
-        <div>月額 ${fmtY(Math.round(r.annualTotal/12))}</div>
-        <div style="margin-top:0.2rem">1人あたり月 ${fmtY(Math.round(r.annualTotal/12/r.count))}</div>
-      </div>
-    </div>`;
-}
-
-function renderSimChart(r){
-  const canvas = $('simChart');
-  if(!canvas) return;
-  if(simChartObj){ simChartObj.destroy(); simChartObj=null; }
-  const isDark = document.body.classList.contains('dark');
-  const tc = isDark?'#5a5650':'#7a7469';
-  const gc = isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.05)';
-  simChartObj = new Chart(canvas,{
-    type:'bar',
-    data:{
-      labels:['1年目','2年目','3年目','4年目','5年目'],
-      datasets:[{
-        label:'年間総人件費', data:r.yearlyTotals,
-        backgroundColor:'rgba(200,80,42,0.7)', borderColor:'#c8502a',
-        borderWidth:1, borderRadius:3,
-      }]
-    },
-    options:{
-      responsive:true, maintainAspectRatio:true,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>fmtY(ctx.parsed.y)}}},
-      scales:{
-        x:{ticks:{color:tc,font:{size:10}},grid:{color:gc}},
-        y:{ticks:{color:tc,callback:v=>'¥'+(v/10000).toFixed(0)+'万',font:{size:10}},grid:{color:gc}}
-      }
-    }
-  });
-}
-
-function saveSimScenario(){
-  const name = $('simName')?.value.trim() || ('シナリオ '+new Date().toLocaleDateString('ja-JP'));
-  const r = runSimulation();
-  const scenarios = JSON.parse(localStorage.getItem('pa_sim_scenarios')||'[]');
-  scenarios.unshift({name,r,savedAt:new Date().toISOString()});
-  if(scenarios.length>10) scenarios.pop();
-  localStorage.setItem('pa_sim_scenarios',JSON.stringify(scenarios));
-  renderSavedScenarios();
-  showToast(`「${name}」を保存しました`,'success');
-}
-
-function renderSavedScenarios(){
-  const wrap=$('simSavedList');
-  if(!wrap) return;
-  const scenarios=JSON.parse(localStorage.getItem('pa_sim_scenarios')||'[]');
-  if(!scenarios.length){
-    wrap.innerHTML='<p style="color:var(--muted);font-size:0.82rem">保存されたシナリオがありません</p>';
-    return;
-  }
-  wrap.innerHTML=`<table class="data-tbl">
-    <thead><tr><th>シナリオ名</th><th>人数</th><th>年間総人件費</th><th>保存日時</th><th></th></tr></thead>
-    <tbody>${scenarios.map((s,i)=>`
-      <tr>
-        <td style="font-weight:600">${esc(s.name)}</td>
-        <td style="font-family:var(--font-mono)">${s.r.count}名</td>
-        <td style="font-family:var(--font-mono);color:var(--accent)">${fmtY(s.r.annualTotal)}</td>
-        <td style="font-size:0.7rem;color:var(--muted)">${new Date(s.savedAt).toLocaleDateString('ja-JP')}</td>
-        <td><button class="tbl-btn danger" onclick="v6DeleteSimScenario(${i})">削除</button></td>
-      </tr>`).join('')}
-    </tbody></table>`;
-}
-window.v6DeleteSimScenario=function(i){
-  const scenarios=JSON.parse(localStorage.getItem('pa_sim_scenarios')||'[]');
-  scenarios.splice(i,1);
-  localStorage.setItem('pa_sim_scenarios',JSON.stringify(scenarios));
-  renderSavedScenarios();
-};
-
-$('btnSimCalc')?.addEventListener('click',()=>{
-  const r=runSimulation();
-  renderSimResult(r);
-  renderSimChart(r);
-});
-$('btnSimSave')?.addEventListener('click',saveSimScenario);
-renderSavedScenarios();
-
-// ══════════════════════════════════════════
-// ② AI人件費予測・異常検知
-// ══════════════════════════════════════════
-
-async function runForecast(){
-  const cc = window.currentCompany;
-  if(!cc){ showToast('会社を選択してください','error'); return; }
-  showToast('データ分析中...','');
-
-  const {data:snaps} = await sb.from('payroll_snapshots')
-    .select('*').eq('company_id',cc.id).order('period',{ascending:true});
-
-  if(!snaps||snaps.length<3){
-    $('forecastSummary').innerHTML='<p style="color:var(--muted);font-size:0.82rem">予測には3ヶ月以上のデータが必要です</p>';
-    return;
-  }
-
-  // 線形回帰
-  const n=snaps.length;
-  const xs=snaps.map((_,i)=>i);
-  const ys=snaps.map(s=>s.tot_gross||0);
-  const mx=xs.reduce((a,b)=>a+b,0)/n, my=ys.reduce((a,b)=>a+b,0)/n;
-  const slope=xs.reduce((s,x,i)=>s+(x-mx)*(ys[i]-my),0)/xs.reduce((s,x)=>s+(x-mx)**2,0);
-  const intercept=my-slope*mx;
-
-  // 6ヶ月予測
-  const lastPeriod=snaps[n-1].period;
-  const [ly,lm]=lastPeriod.split('-').map(Number);
-  const forecasts=[];
-  for(let i=1;i<=6;i++){
-    const d=new Date(ly,lm-1+i,1);
-    const period=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-    const predicted=Math.max(0,Math.round(intercept+slope*(n+i-1)));
-    forecasts.push({period,predicted});
-  }
-
-  // 変動率
-  const growthRates=[];
-  for(let i=1;i<snaps.length;i++){
-    if(snaps[i-1].tot_gross>0)
-      growthRates.push((snaps[i].tot_gross-snaps[i-1].tot_gross)/snaps[i-1].tot_gross*100);
-  }
-  const avgGrowth=growthRates.length?growthRates.reduce((a,b)=>a+b,0)/growthRates.length:0;
-  const annualForecast=forecasts.reduce((s,f)=>s+f.predicted,0);
-
-  $('forecastSummary').innerHTML=`
-    <div class="stat-grid" style="grid-template-columns:1fr 1fr">
-      <div class="stat-card">
-        <div class="stat-label">年間人件費予測（6ヶ月×2）</div>
-        <div class="stat-value accent">${fmtY(annualForecast*2)}</div>
-        <div class="stat-sub">トレンド予測値</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">月次成長率（平均）</div>
-        <div class="stat-value ${avgGrowth>0?'accent':'green'}">${avgGrowth>0?'▲':'▼'}${Math.abs(avgGrowth).toFixed(1)}%</div>
-        <div class="stat-sub">過去${snaps.length}ヶ月平均</div>
-      </div>
-    </div>
-    <div style="margin-top:0.75rem;padding:0.75rem;background:var(--cream);border-radius:var(--radius);font-size:0.78rem">
-      <b>直近予測：</b>
-      ${forecasts.slice(0,3).map(f=>`${f.period.replace('-','/')} → ${fmtY(f.predicted)}`).join('　|　')}
-    </div>`;
-
-  // 異常検知インサイト
-  $('forecastInsights').innerHTML = generateInsights(snaps,growthRates,avgGrowth);
-
-  // チャート
-  renderForecastChart(snaps,forecasts);
-
-  // 部署別
-  await renderForecastDeptTable(snaps);
-
-  // 予測結果をSupabaseに保存
-  await sb.from('forecast_results').upsert({
-    company_id:cc.id,
-    year:new Date().getFullYear(),
-    forecast_total:annualForecast*2,
-    scenario:JSON.stringify({slope,intercept,avgGrowth,forecasts}),
-    created_at:new Date().toISOString(),
-  },{onConflict:'company_id,year'}).catch(()=>{});
-
-  showToast('予測完了','success');
-}
-window.runForecast=runForecast;
-
-function generateInsights(snaps,growthRates,avgGrowth){
-  const alerts=[];
-  if(growthRates.length){
-    const last=growthRates[growthRates.length-1];
-    if(last>15) alerts.push({type:'danger',msg:`⚠️ 先月の人件費が前月比 <b>+${last.toFixed(1)}%</b> 急増しています。残業増加・新規採用を確認してください。`});
-    else if(last>8) alerts.push({type:'warn',msg:`📈 先月の人件費が前月比 <b>+${last.toFixed(1)}%</b> 増加しています。`});
-  }
-  if(growthRates.slice(-3).every(r=>r>0)) alerts.push({type:'warn',msg:`📊 人件費が <b>3ヶ月連続で増加</b>しています。予算との乖離を確認してください。`});
-  if(avgGrowth>5) alerts.push({type:'info',msg:`💡 月次平均成長率 <b>${avgGrowth.toFixed(1)}%</b> — 年率換算で約 <b>${(avgGrowth*12).toFixed(0)}%</b> の増加ペースです。`});
-  else if(avgGrowth<0) alerts.push({type:'success',msg:`✅ 人件費は月次平均 <b>${Math.abs(avgGrowth).toFixed(1)}%</b> の減少傾向です。`});
-  else alerts.push({type:'info',msg:`📋 人件費は安定しています（月次平均変動 <b>${avgGrowth.toFixed(1)}%</b>）。`});
-  if(!alerts.length) return '<p style="color:var(--muted);font-size:0.82rem">異常は検知されませんでした</p>';
-  const colors={danger:'var(--accent)',warn:'var(--gold)',info:'var(--blue)',success:'var(--green)'};
-  return alerts.map(a=>`<div style="border-left:3px solid ${colors[a.type]};padding:0.6rem 0.85rem;margin-bottom:0.5rem;background:${colors[a.type]}18;border-radius:0 var(--radius) var(--radius) 0;font-size:0.78rem;line-height:1.5">${a.msg}</div>`).join('');
-}
-
-function renderForecastChart(snaps,forecasts){
-  const canvas=$('forecastChart');
-  if(!canvas) return;
-  if(forecastChartObj){forecastChartObj.destroy();forecastChartObj=null;}
-  const isDark=document.body.classList.contains('dark');
-  const tc=isDark?'#5a5650':'#7a7469';
-  const gc=isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.05)';
-  const aLabels=snaps.map(s=>s.period.replace('-','/'));
-  const fLabels=forecasts.map(f=>f.period.replace('-','/')+'(予)');
-  forecastChartObj=new Chart(canvas,{
-    type:'line',
-    data:{
-      labels:[...aLabels,...fLabels],
-      datasets:[
-        {label:'実績',data:[...snaps.map(s=>s.tot_gross||0),...Array(forecasts.length).fill(null)],
-          borderColor:'#1a3a5c',backgroundColor:'rgba(26,58,92,0.1)',borderWidth:2,fill:true,tension:0.3,pointRadius:4,pointBackgroundColor:'#1a3a5c'},
-        {label:'予測',data:[...Array(snaps.length).fill(null),...forecasts.map(f=>f.predicted)],
-          borderColor:'#c8502a',backgroundColor:'rgba(200,80,42,0.08)',borderWidth:2,borderDash:[6,4],fill:true,tension:0.3,pointRadius:4,pointBackgroundColor:'#c8502a'},
-      ]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:true,
-      plugins:{legend:{labels:{color:tc,font:{size:10},boxWidth:12}},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmtY(ctx.parsed.y)}`}}},
-      scales:{
-        x:{ticks:{color:tc,font:{size:9},maxRotation:45},grid:{color:gc}},
-        y:{ticks:{color:tc,callback:v=>'¥'+(v/10000).toFixed(0)+'万',font:{size:10}},grid:{color:gc}}
-      }
-    }
-  });
-}
-
-async function renderForecastDeptTable(snaps){
-  const cc=window.currentCompany;
-  if(!snaps.length||!cc) return;
-  const latest=snaps[snaps.length-1];
-  const payroll=await dbGet('payroll_data',{company_id:cc.id,period:latest.period});
-  const el=$('forecastDeptTable');
-  if(!el) return;
-  if(!payroll?.employees?.length){
-    el.innerHTML='<p style="color:var(--muted);font-size:0.82rem">給与データが見つかりません</p>';
-    return;
-  }
-  const deptMap={};
-  payroll.employees.forEach(e=>{
-    const dept=e.dept||'未設定';
-    if(!deptMap[dept]) deptMap[dept]={count:0,gross:0,ins:0};
-    deptMap[dept].count++;
-    deptMap[dept].gross+=e.gross||0;
-    deptMap[dept].ins+=e.insurance||0;
-  });
-  const total=Object.values(deptMap).reduce((s,d)=>s+d.gross,0);
-  const rows=Object.entries(deptMap).sort((a,b)=>b[1].gross-a[1].gross);
-  el.innerHTML=`<div class="tbl-wrap"><table class="data-tbl">
-    <thead><tr><th>部署</th><th>人数</th><th>月間支給額</th><th>社保合計</th><th>会社負担概算</th><th>構成比</th></tr></thead>
-    <tbody>${rows.map(([dept,d])=>{
-      const coIns=Math.round(d.ins*0.9);
-      const pct=total>0?(d.gross/total*100).toFixed(1):0;
-      return `<tr>
-        <td><b>${esc(dept)}</b></td>
-        <td style="font-family:var(--font-mono)">${d.count}名</td>
-        <td style="font-family:var(--font-mono)">${fmtY(d.gross)}</td>
-        <td style="font-family:var(--font-mono);color:var(--accent)">${fmtY(d.ins)}</td>
-        <td style="font-family:var(--font-mono);color:var(--accent)">${fmtY(d.gross+coIns)}</td>
-        <td>
-          <div style="display:flex;align-items:center;gap:0.5rem">
-            <div style="flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden">
-              <div style="width:${pct}%;height:100%;background:var(--blue);border-radius:2px"></div>
-            </div>
-            <span style="font-family:var(--font-mono);font-size:0.72rem">${pct}%</span>
-          </div>
-        </td>
-      </tr>`;}).join('')}
-    </tbody></table></div>`;
-}
-
-$('btnRunForecast')?.addEventListener('click',runForecast);
-
-// ══════════════════════════════════════════
-// ③ 従業員ポータル管理
-// ══════════════════════════════════════════
-
-async function loadPortalPage(){
-  const cc=window.currentCompany;
-  if(!cc) return;
-  const portalUrlEl=$('portalUrl');
-  if(portalUrlEl){
-    portalUrlEl.textContent=`${location.origin}/?portal=1&company=${cc.id}`;
-    portalUrlEl.onclick=()=>{
-      navigator.clipboard?.writeText(portalUrlEl.textContent);
-      showToast('ポータルURLをコピーしました','success');
-    };
-  }
-  // 従業員セレクト更新
-  const emps=window.employees||[];
-  const empSel=$('portalEmpSelect');
-  if(empSel&&emps.length){
-    empSel.innerHTML='<option value="">— 選択 —</option>'+
-      emps.map(e=>`<option value="${esc(e.name)}">${esc(e.name)}</option>`).join('');
-  }
-  await renderPortalEmpList();
-}
-window.loadPortalPage=loadPortalPage;
-
-async function renderPortalEmpList(){
-  const cc=window.currentCompany;
-  if(!cc) return;
-  const {data}=await sb.from('employee_profiles').select('*').eq('company_id',cc.id).order('employee_name',{ascending:true});
-  const wrap=$('portalEmpList');
-  if(!wrap) return;
-  if(!data||!data.length){
-    wrap.innerHTML='<p style="font-size:0.78rem;color:var(--muted);margin-bottom:0.75rem">登録済みアカウントがありません</p>';
-    return;
-  }
-  wrap.innerHTML=`<table class="data-tbl" style="margin-bottom:0.75rem">
-    <thead><tr><th>従業員名</th><th>メール</th><th>有給残</th><th>操作</th></tr></thead>
-    <tbody>${data.map(p=>`
-      <tr>
-        <td><b>${esc(p.employee_name||'—')}</b></td>
-        <td style="font-size:0.75rem;font-family:var(--font-mono)">${esc(p.portal_email||'—')}</td>
-        <td style="font-family:var(--font-mono)">${p.leave_days??'—'}日</td>
-        <td><button class="tbl-btn danger" onclick="v6DeletePortalEmp('${p.id}')">削除</button></td>
-      </tr>`).join('')}
-    </tbody></table>`;
-}
-
-window.v6DeletePortalEmp=async function(id){
-  showModal('削除確認','このポータルアカウントを削除しますか？','削除','btn-danger',async()=>{
-    await sb.from('employee_profiles').delete().eq('id',id);
-    await renderPortalEmpList();
-    showToast('削除しました','success');
-  });
-};
-
-$('btnAddPortalEmp')?.addEventListener('click',async()=>{
-  const cc=window.currentCompany;
-  if(!cc) return;
-  const empName=$('portalEmpSelect')?.value;
-  const email=$('portalEmpEmail')?.value.trim();
-  const leaveDays=Number($('portalEmpLeave')?.value)||20;
-  if(!empName||!email){showToast('従業員名とメールアドレスを入力してください','error');return;}
-  await sb.from('employee_profiles').upsert({
-    company_id:cc.id, employee_name:empName, portal_email:email, leave_days:leaveDays,
-    updated_at:new Date().toISOString(),
-  },{onConflict:'company_id,employee_name'});
-  if($('portalEmpEmail')) $('portalEmpEmail').value='';
-  await renderPortalEmpList();
-  showToast(`${empName} のポータルアカウントを登録しました`,'success');
-});
-
-$('btnSavePortalSettings')?.addEventListener('click',()=>{
-  showToast('ポータル設定を保存しました','success');
-});
-
-// ══════════════════════════════════════════
-// ④ 会計連携
-// ══════════════════════════════════════════
-
-function buildAcctPeriodSelector(){
-  const sel=$('acctPeriod');
-  if(!sel) return;
-  const now=new Date();
-  sel.innerHTML='';
-  for(let i=0;i<12;i++){
-    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
-    const v=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-    const o=document.createElement('option');
-    o.value=v; o.textContent=`${d.getFullYear()}年${d.getMonth()+1}月`;
-    sel.appendChild(o);
-  }
-}
-
-async function generateAccountingCSV(){
-  const cc=window.currentCompany;
-  const software=$('acctSoftware')?.value||'generic';
-  const period=$('acctPeriod')?.value;
-  if(!period||!cc){showToast('対象月を選択してください','error');return;}
-  const row=await dbGet('payroll_history',{company_id:cc.id,period});
-  if(!row?.employees?.length){showToast('この月の確定済みデータが見つかりません','error');return;}
-  const emps=row.employees;
-  const totGross=emps.reduce((s,e)=>s+(e.gross||0),0);
-  const totIns  =emps.reduce((s,e)=>s+(e.insurance||0),0);
-  const totTax  =emps.reduce((s,e)=>s+(e.tax||0),0);
-  const totMuni =emps.reduce((s,e)=>s+(e.municipal||0),0);
-  const totNet  =emps.reduce((s,e)=>s+(e.monthlyNet||0),0);
-  const coIns   =Math.round(totIns*0.9);
-  const mapSalary=$('acctMapSalary')?.value||'給与手当';
-  const mapIns   =$('acctMapIns')?.value||'法定福利費';
-  const mapTax   =$('acctMapTax')?.value||'預り金';
-  const mapMuni  =$('acctMapMuni')?.value||'預り金';
-  const mapBank  =$('acctMapBank')?.value||'普通預金';
-  const [y,m]=period.split('-');
-  const dateStr=`${y}/${m}/25`;
-  let csvLines=[];
-  if(software==='freee'){
-    csvLines.push(['取引日','収支区分','勘定科目','金額','備考'].join(','));
-    csvLines.push([dateStr,'支出',mapSalary,totGross,`${y}年${Number(m)}月分 給与`].join(','));
-    csvLines.push([dateStr,'支出',mapIns,coIns,`${y}年${Number(m)}月分 会社負担社会保険`].join(','));
-    csvLines.push([dateStr,'収入',mapTax,totTax+totMuni,`${y}年${Number(m)}月分 源泉所得税・住民税`].join(','));
-    csvLines.push([dateStr,'支出',mapBank,totNet,`${y}年${Number(m)}月分 給与振込`].join(','));
-  } else if(software==='mf'){
-    csvLines.push(['日付','借方勘定科目','借方金額','貸方勘定科目','貸方金額','摘要'].join(','));
-    csvLines.push([dateStr,mapSalary,totGross,mapBank,totNet,`${y}年${Number(m)}月分 給与`].join(','));
-    csvLines.push([dateStr,mapSalary,'',mapTax,totTax,`${y}年${Number(m)}月分 源泉所得税`].join(','));
-    csvLines.push([dateStr,mapSalary,'',mapMuni,totMuni,`${y}年${Number(m)}月分 住民税`].join(','));
-    csvLines.push([dateStr,mapIns,coIns,mapBank,coIns,`${y}年${Number(m)}月分 会社負担社保`].join(','));
-  } else {
-    csvLines.push(['日付','借方科目','借方金額','貸方科目','貸方金額','摘要'].join(','));
-    csvLines.push([dateStr,mapSalary,totGross,mapBank,totNet,`${y}年${Number(m)}月分 給与支払`].join(','));
-    csvLines.push([dateStr,mapSalary,'',mapTax,totTax+totMuni,`${y}年${Number(m)}月分 源泉・住民税`].join(','));
-    csvLines.push([dateStr,mapIns,coIns,mapBank,coIns,`${y}年${Number(m)}月分 法定福利費`].join(','));
-  }
-  const swLabel=software==='freee'?'freee会計':software==='mf'?'マネーフォワード':'汎用CSV';
-  $('acctPreview').innerHTML=`
-    <div style="margin-bottom:0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap">
-      <span style="font-size:0.72rem;font-family:var(--font-mono);background:var(--cream);padding:0.25rem 0.65rem;border-radius:var(--radius)">${swLabel}</span>
-      <span style="font-size:0.72rem;font-family:var(--font-mono);background:var(--cream);padding:0.25rem 0.65rem;border-radius:var(--radius)">${y}年${Number(m)}月分</span>
-      <span style="font-size:0.72rem;font-family:var(--font-mono);background:var(--cream);padding:0.25rem 0.65rem;border-radius:var(--radius)">${emps.length}名分</span>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
-      <div><div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">支給総額</div><div style="font-family:var(--font-mono);font-size:1rem;font-weight:700">${fmtY(totGross)}</div></div>
-      <div><div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">振込額合計</div><div style="font-family:var(--font-mono);font-size:1rem;font-weight:700;color:var(--green)">${fmtY(totNet)}</div></div>
-      <div><div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">源泉+住民税</div><div style="font-family:var(--font-mono);font-size:1rem;color:var(--accent)">${fmtY(totTax+totMuni)}</div></div>
-      <div><div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">会社負担社保</div><div style="font-family:var(--font-mono);font-size:1rem;color:var(--accent)">${fmtY(coIns)}</div></div>
-    </div>
-    <pre style="font-size:0.68rem;font-family:var(--font-mono);background:var(--cream);padding:0.75rem;border-radius:var(--radius);overflow-x:auto;line-height:1.6;white-space:pre">${csvLines.join('\n')}</pre>
-    <div class="btn-group" style="margin-top:0.75rem">
-      <button class="btn btn-green btn-sm" id="btnDlAcctCSV">⬇ CSVダウンロード</button>
-    </div>`;
-  const csvData=csvLines;
-  $('btnDlAcctCSV')?.addEventListener('click',()=>{
-    const bom='\uFEFF';
-    const blob=new Blob([bom+csvData.join('\r\n')],{type:'text/csv;charset=utf-8'});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');
-    a.href=url; a.download=`仕訳_${software}_${period}.csv`; a.click();
-    URL.revokeObjectURL(url);
-    showToast('仕訳CSVをダウンロードしました','success');
-  });
-}
-window.generateAccountingCSV=generateAccountingCSV;
-$('btnGenAcct')?.addEventListener('click',generateAccountingCSV);
-
-// ══════════════════════════════════════════
-// ⑤ API管理・Webhook
-// ══════════════════════════════════════════
-
-function generateApiKey(){
-  const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  return 'pa_'+Array.from({length:48},()=>chars[Math.floor(Math.random()*chars.length)]).join('');
-}
-
-async function loadApiKeys(){
-  const cc=window.currentCompany;
-  if(!cc) return;
-  const {data}=await sb.from('api_keys').select('*').eq('company_id',cc.id).order('created_at',{ascending:false});
-  const wrap=$('apiKeyList');
-  if(!wrap) return;
-  if(!data||!data.length){
-    wrap.innerHTML='<p style="font-size:0.78rem;color:var(--muted);margin-bottom:0.75rem">APIキーがありません</p>';
-  } else {
-    wrap.innerHTML=data.map(k=>`
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0;border-bottom:1px solid var(--border)">
-        <div>
-          <div style="font-family:var(--font-mono);font-size:0.75rem">${k.api_key.slice(0,12)}${'•'.repeat(36)}</div>
-          <div style="font-size:0.65rem;color:var(--muted);margin-top:0.15rem">作成：${new Date(k.created_at).toLocaleDateString('ja-JP')}</div>
-        </div>
-        <button class="tbl-btn danger" onclick="v6DeleteApiKey('${k.id}')">削除</button>
-      </div>`).join('');
-  }
-  await loadWebhookSettings();
-}
-window.loadApiKeys=loadApiKeys;
-
-window.v6DeleteApiKey=async function(id){
-  showModal('APIキー削除','このAPIキーを削除しますか？','削除','btn-danger',async()=>{
-    await sb.from('api_keys').delete().eq('id',id);
-    await loadApiKeys();
-    showToast('APIキーを削除しました','success');
-  });
-};
-
-$('btnGenApiKey')?.addEventListener('click',async()=>{
-  const cc=window.currentCompany;
-  if(!cc) return;
-  const apiKey=generateApiKey();
-  await sb.from('api_keys').insert({company_id:cc.id,api_key:apiKey,created_at:new Date().toISOString()});
-  await loadApiKeys();
-  showModal('🔑 APIキー生成完了',
-    `<p style="margin-bottom:0.5rem;font-size:0.78rem">安全な場所に保管してください。再表示されません。</p>
-     <div style="font-family:var(--font-mono);font-size:0.72rem;background:var(--cream);padding:0.65rem;border-radius:var(--radius);word-break:break-all;cursor:pointer" onclick="navigator.clipboard?.writeText('${apiKey}');showToast('コピーしました','success')">${apiKey}</div>
-     <p style="font-size:0.68rem;color:var(--muted);margin-top:0.35rem">クリックでコピー</p>`,
-    'OK','btn-primary',()=>{});
-});
-
-async function loadWebhookSettings(){
-  const cc=window.currentCompany;
-  if(!cc) return;
-  const {data}=await sb.from('webhook_settings').select('*').eq('company_id',cc.id).maybeSingle();
-  if(data){
-    if($('webhookUrl')) $('webhookUrl').value=data.url||'';
-    if($('webhookSlack')) $('webhookSlack').value=data.slack_channel||'';
-    if($('whTriggerCommit')) $('whTriggerCommit').checked=data.trigger_commit!==false;
-    if($('whTriggerTransfer')) $('whTriggerTransfer').checked=!!data.trigger_transfer;
-  }
-}
-
-$('btnSaveWebhook')?.addEventListener('click',async()=>{
-  const cc=window.currentCompany;
-  if(!cc) return;
-  await sb.from('webhook_settings').upsert({
-    company_id:cc.id,
-    url:$('webhookUrl')?.value.trim()||'',
-    slack_channel:$('webhookSlack')?.value.trim()||'',
-    trigger_commit:$('whTriggerCommit')?.checked??true,
-    trigger_transfer:$('whTriggerTransfer')?.checked??false,
-    updated_at:new Date().toISOString(),
-  },{onConflict:'company_id'});
-  showToast('Webhook設定を保存しました','success');
-});
-
-$('btnTestWebhook')?.addEventListener('click',async()=>{
-  const url=$('webhookUrl')?.value.trim();
-  const logEl=$('webhookLog');
-  if(!url){showToast('Webhook URLを入力してください','error');return;}
-  if(logEl) logEl.textContent='送信中...';
-  try{
-    await fetch(url,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({event:'test',company_id:window.currentCompany?.id,timestamp:new Date().toISOString(),message:'PayrollAuto v6 Webhook テスト'}),
-      mode:'no-cors',
-    });
-    if(logEl) logEl.textContent='✅ 送信完了: '+new Date().toLocaleTimeString('ja-JP');
-  }catch(e){
-    if(logEl) logEl.textContent='❌ エラー: '+e.message;
-  }
-});
-
-// ══════════════════════════════════════════
-// ⑥ ワークフロー自動化
-// ══════════════════════════════════════════
-
-async function runPayrollFinalizedWorkflow(period,empList){
-  const cc=window.currentCompany;
-  if(!cc) return;
-  const totGross=empList.reduce((s,e)=>s+(e.gross||0),0);
-  // Webhook通知
-  const {data:whConfig}=await sb.from('webhook_settings').select('*').eq('company_id',cc.id).maybeSingle();
-  if(whConfig?.url&&whConfig.trigger_commit){
-    fetch(whConfig.url,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({event:'payroll_finalized',company_id:cc.id,company_name:cc.name,month:period,total_payroll:totGross,employee_count:empList.length,timestamp:new Date().toISOString()}),
-      mode:'no-cors',
-    }).catch(()=>{});
-    showToast('🔔 Webhook通知を送信しました','');
-  }
-  // レポートログ
-  await sb.from('dashboard_reports').insert({
-    company_id:cc.id, generated_by:window.currentUser?.id,
-    report_type:'payroll_finalized', period,
-    file_name:`給与確定_${period}`, generated_at:new Date().toISOString(),
-  }).catch(()=>{});
-}
-window.runPayrollFinalizedWorkflow=runPayrollFinalizedWorkflow;
-
-// ══════════════════════════════════════════
-// ⑦ AI Insightパネル（ダッシュボード）
-// ══════════════════════════════════════════
-
-async function renderAIInsightPanel(){
-  const panel=$('aiInsightPanel');
-  const cc=window.currentCompany;
-  if(!panel||!cc) return;
-  const {data:snaps}=await sb.from('payroll_snapshots').select('*').eq('company_id',cc.id).order('period',{ascending:false}).limit(6);
-  if(!snaps||snaps.length<2){
-    panel.innerHTML='<p style="font-size:0.78rem;color:var(--muted)">インサイト生成には2ヶ月以上のデータが必要です</p>';
-    return;
-  }
-  const latest=snaps[0], prev=snaps[1];
-  const growthRate=prev.tot_gross>0?((latest.tot_gross-prev.tot_gross)/prev.tot_gross*100):0;
-  const payroll=await dbGet('payroll_data',{company_id:cc.id,period:latest.period});
-  let otCost=0, deptInsights='';
-  if(payroll?.employees){
-    payroll.employees.forEach(e=>{otCost+=e.allowanceTotal||0;});
-    const deptMap={};
-    payroll.employees.forEach(e=>{const d=e.dept||'未設定';if(!deptMap[d])deptMap[d]=[];deptMap[d].push(e.gross||0);});
-    const globalAvg=payroll.employees.reduce((s,e)=>s+(e.gross||0),0)/payroll.employees.length;
-    const outliers=Object.entries(deptMap).map(([d,gs])=>({dept:d,avg:gs.reduce((a,b)=>a+b,0)/gs.length})).filter(d=>Math.abs(d.avg-globalAvg)/globalAvg>0.2);
-    if(outliers.length){
-      deptInsights=outliers.map(d=>`<div style="border-left:3px solid var(--gold);padding:0.4rem 0.7rem;margin-bottom:0.4rem;background:rgba(184,154,62,0.08);font-size:0.75rem">💼 <b>${esc(d.dept)}</b>の平均支給額 ${fmtY(Math.round(d.avg))} は全体平均から ${d.avg>globalAvg?'+':''}${((d.avg-globalAvg)/globalAvg*100).toFixed(0)}% 乖離</div>`).join('');
-    }
-  }
-  const color=growthRate>5?'var(--accent)':growthRate>0?'var(--gold)':'var(--green)';
-  panel.innerHTML=`
-    <div style="border-left:3px solid ${color};padding:0.5rem 0.75rem;margin-bottom:0.5rem;background:${color}18;font-size:0.78rem">
-      📊 先月の人件費は前月比 <b style="color:${color}">${growthRate>0?'▲':'▼'}${Math.abs(growthRate).toFixed(1)}%</b>（${fmtY(latest.tot_gross)}）
-    </div>
-    ${otCost>0?`<div style="border-left:3px solid var(--blue);padding:0.5rem 0.75rem;margin-bottom:0.5rem;background:rgba(26,58,92,0.08);font-size:0.78rem">⏰ 先月の残業・手当コスト合計: <b>${fmtY(otCost)}</b></div>`:''}
-    ${deptInsights}
-    <div style="text-align:right;margin-top:0.35rem">
-      <button class="btn btn-sm btn-blue" onclick="window.showPage('forecast')">詳細分析 →</button>
-    </div>`;
-}
-window.renderAIInsightPanel=renderAIInsightPanel;
-
-// ══════════════════════════════════════════
-// showPage 拡張（v6ページ初期化）
-// ══════════════════════════════════════════
-const _v5ShowPage=window.showPage;
-window.showPage=function(id){
-  _v5ShowPage(id);
-  if(id==='simulator')       renderSavedScenarios();
-  else if(id==='portal')     loadPortalPage();
-  else if(id==='accounting') buildAcctPeriodSelector();
-  else if(id==='apikeys')    loadApiKeys();
-};
-
-})();
-
 </script>
 </body>
 </html>
