@@ -3149,6 +3149,14 @@ const { data: { subscription } } = sb.auth.onAuthStateChange(async (event, sessi
 
 window.__PA_AUTH_UNSUB = () => subscription.unsubscribe();
 
+// ── onclick属性から呼ぶ関数をグローバルに公開 ──
+// IIFEスコープ内の関数はHTML onclick=""から直接参照できないため window に登録
+window.showPage          = showPage;
+window.calcYearend       = calcYearend;
+window.saveYearend       = saveYearend;
+window.genWithholdingPDF = genWithholdingPDF;
+window.toggleAcc         = toggleAcc;
+
 })();
 </script>
 </body>
