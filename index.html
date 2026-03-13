@@ -721,7 +721,23 @@ body.dark .tax-rate-card{background:#0d0f14}
 
 const SUPABASE_URL  = 'https://ymyiymigtequcjbvhsgw.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlteWl5bWlndGVxdWNqYnZoc2d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNDkwOTIsImV4cCI6MjA4ODkyNTA5Mn0.Dcq5oOheOYt-ghPT73euWpOzprUtQCsPEnsHQo7I1j0';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ── Supabaseシングルトン ──
+// window.__PA_SB に保持することで、スクリプト再評価時も同一インスタンスを再利用。
+// これが Lock 競合（AbortError: Lock broken）の根本解決。
+if (!window.__PA_SB) {
+  window.__PA_SB = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+    auth: {
+      // ストレージキーを固定してインスタンス間の競合を防ぐ
+      storageKey: 'pa_auth',
+      // タブ非アクティブ時にバックグラウンドrefreshが重複しないよう制御
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+    }
+  });
+}
+const sb = window.__PA_SB;
 
 const $ = id => document.getElementById(id);
 
@@ -832,8 +848,6 @@ function fmtY(v){return'¥'+Math.round(v||0).toLocaleString('ja-JP');}
 let currentUser=null,currentCompany=null,employees=[],lockedPeriods=new Set();
 let taxRates={hRate:5.0,pRate:9.15,eRate:0.6,mRate:10.0};
 let currentPeriod='',editingId=null,allowances=[],trendChartObj=null;
-// onAuthStateChange の二重発火・競合防止フラグ
-let _authHandling=false;
 
 function generateInviteCode(){
   const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -918,7 +932,7 @@ function showScreen(id){
 
 async function loadCompanyList(uid){
   const members=await dbGetAll('company_users',{user_id:uid});
-  if(!members.length){_authHandling=false;showScreen('setupScreen');return;}
+  if(!members.length){showScreen('setupScreen');return;}
   // 一括で会社情報を取得（N+1回避）
   const cids=members.map(m=>m.company_id);
   let companiesRaw=[];
@@ -946,7 +960,6 @@ async function loadCompanyList(uid){
     });
   });
   showScreen('companySelectScreen');
-  _authHandling=false;
 }
 
 async function openCompany(company){
@@ -959,7 +972,6 @@ async function openCompany(company){
     address:company.address||'',phone:company.phone||'',logo_url:company.logo_url||''
   };
   await initApp();
-  _authHandling=false; // initApp完了後にリセット
 }
 
 async function initApp(){
@@ -1704,8 +1716,8 @@ $('btnSaveTaxRates').addEventListener('click',()=>{
   applyTaxRatesToForm();saveTaxRates();
 });
 $('btnSwitchCompany').addEventListener('click',()=>loadCompanyList(currentUser.id));
-$('btnSignOut').addEventListener('click',async()=>{_authHandling=false;await sb.auth.signOut();location.reload();});
-$('btnSignOutFromSelect').addEventListener('click',async()=>{_authHandling=false;await sb.auth.signOut();showScreen('authScreen');});
+$('btnSignOut').addEventListener('click',async()=>{_lastHandledSessionId=null;await sb.auth.signOut();location.reload();});
+$('btnSignOutFromSelect').addEventListener('click',async()=>{_lastHandledSessionId=null;await sb.auth.signOut();showScreen('authScreen');});
 $('btnNewCompany').addEventListener('click',()=>showScreen('setupScreen'));
 $('btnCreateCompany').addEventListener('click',async()=>{
   const name=$('setupCompanyName').value.trim();
@@ -1738,26 +1750,40 @@ $('inviteCodeBox').addEventListener('click',()=>{
   showToast('コードをコピーしました','success');
 });
 
-sb.auth.onAuthStateChange(async(event,session)=>{
-  // ログアウト時は即ログイン画面へ
-  if(!session){
-    _authHandling=false;
-    currentUser=null;currentCompany=null;
+// ── 認証状態監視 ──
+// 処理済みセッションIDを記録して同一セッションの重複処理を防ぐ
+let _lastHandledSessionId = null;
+let _authSubscription = null;
+
+// 既存の購読があれば解除してから再登録（Hot Reload対策）
+if (window.__PA_AUTH_UNSUB) { try{ window.__PA_AUTH_UNSUB(); }catch(_){} }
+
+const { data: { subscription } } = sb.auth.onAuthStateChange(async (event, session) => {
+  // ログアウト・セッション切れ
+  if (!session) {
+    _lastHandledSessionId = null;
+    currentUser = null; currentCompany = null;
     showScreen('authScreen');
     return;
   }
-  // TOKEN_REFRESHED等の重複イベントをスキップして lock 競合を防ぐ
-  if(_authHandling&&(event==='TOKEN_REFRESHED'||event==='INITIAL_SESSION'))return;
-  _authHandling=true;
-  try{
-    const user=session.user;
-    currentUser={id:user.id,email:user.email,name:user.user_metadata?.name||user.email};
+
+  // 同一セッションの重複イベント（TOKEN_REFRESHED, INITIAL_SESSION等）をスキップ
+  // これが「Lock not released」と「AbortError: Lock broken」の主因
+  const sid = session.access_token;
+  if (_lastHandledSessionId === sid) return;
+  _lastHandledSessionId = sid;
+
+  try {
+    const user = session.user;
+    currentUser = { id: user.id, email: user.email, name: user.user_metadata?.name || user.email };
     await loadCompanyList(user.id);
-  }catch(e){
-    console.error('[PA] auth handler error:',e);
-    _authHandling=false;
+  } catch(e) {
+    console.error('[PA] auth handler error:', e);
+    _lastHandledSessionId = null; // 失敗時はリトライできるようリセット
   }
 });
+
+window.__PA_AUTH_UNSUB = () => subscription.unsubscribe();
 
 })();
 </script>
