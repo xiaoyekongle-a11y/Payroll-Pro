@@ -2073,8 +2073,8 @@ $('btnSaveTaxRates').addEventListener('click',()=>{
   applyTaxRatesToForm();saveTaxRates();
 });
 $('btnSwitchCompany').addEventListener('click',()=>loadCompanyList(currentUser.id));
-$('btnSignOut').addEventListener('click',async()=>{_lastHandledSessionId=null;await sb.auth.signOut();location.reload();});
-$('btnSignOutFromSelect').addEventListener('click',async()=>{_lastHandledSessionId=null;await sb.auth.signOut();showScreen('authScreen');});
+$('btnSignOut').addEventListener('click',async()=>{_lastHandledUserId=null;await sb.auth.signOut();location.reload();});
+$('btnSignOutFromSelect').addEventListener('click',async()=>{_lastHandledUserId=null;await sb.auth.signOut();showScreen('authScreen');});
 $('btnNewCompany').addEventListener('click',()=>showScreen('setupScreen'));
 $('btnCreateCompany').addEventListener('click',async()=>{
   const name=$('setupCompanyName').value.trim();
