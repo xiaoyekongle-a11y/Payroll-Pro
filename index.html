@@ -990,7 +990,13 @@ $('btnLogin').addEventListener('click',async()=>{
     showAuthErr('loginErr', authErrMsg(error.message));
   } else {
     btn.textContent='接続中...';
-    setTimeout(()=>{if(btn.disabled){btn.disabled=false;btn.textContent='ログイン';}},10000);
+    // 5秒以内に画面遷移しなければボタンを復元（固まり防止）
+    setTimeout(()=>{
+      if(btn.disabled){
+        btn.disabled=false;btn.textContent='ログイン';
+        showAuthErr('loginErr','接続がタイムアウトしました。再度お試しください。');
+      }
+    },5000);
   }
 });
 
@@ -2102,9 +2108,8 @@ $('inviteCodeBox').addEventListener('click',()=>{
 });
 
 // ── 認証状態監視 ──
-// 処理済みセッションIDを記録して同一セッションの重複処理を防ぐ
-let _lastHandledSessionId = null;
-let _authSubscription = null;
+let _lastHandledUserId = null;
+let _isHandlingAuth = false;
 
 // 既存の購読があれば解除してから再登録（Hot Reload対策）
 if (window.__PA_AUTH_UNSUB) { try{ window.__PA_AUTH_UNSUB(); }catch(_){} }
@@ -2112,17 +2117,25 @@ if (window.__PA_AUTH_UNSUB) { try{ window.__PA_AUTH_UNSUB(); }catch(_){} }
 const { data: { subscription } } = sb.auth.onAuthStateChange(async (event, session) => {
   // ログアウト・セッション切れ
   if (!session) {
-    _lastHandledSessionId = null;
+    _lastHandledUserId = null;
+    _isHandlingAuth = false;
     currentUser = null; currentCompany = null;
+    // ログインボタンをリセット
+    const btn = $('btnLogin');
+    if(btn){ btn.disabled = false; btn.textContent = 'ログイン'; }
     showScreen('authScreen');
     return;
   }
 
-  // 同一セッションの重複イベント（TOKEN_REFRESHED, INITIAL_SESSION等）をスキップ
-  // これが「Lock not released」と「AbortError: Lock broken」の主因
-  const sid = session.access_token;
-  if (_lastHandledSessionId === sid) return;
-  _lastHandledSessionId = sid;
+  // TOKEN_REFRESHED は画面遷移済みなら無視してOK
+  if (event === 'TOKEN_REFRESHED') return;
+
+  // 同じユーザーで処理中 or 処理済みならスキップ（二重処理防止）
+  const uid = session.user.id;
+  if (_isHandlingAuth || _lastHandledUserId === uid) return;
+
+  _isHandlingAuth = true;
+  _lastHandledUserId = uid;
 
   try {
     const user = session.user;
@@ -2130,7 +2143,13 @@ const { data: { subscription } } = sb.auth.onAuthStateChange(async (event, sessi
     await loadCompanyList(user.id);
   } catch(e) {
     console.error('[PA] auth handler error:', e);
-    _lastHandledSessionId = null; // 失敗時はリトライできるようリセット
+    // 失敗時はリセットしてリトライ可能に
+    _lastHandledUserId = null;
+    const btn = $('btnLogin');
+    if(btn){ btn.disabled = false; btn.textContent = 'ログイン'; }
+    showToast('接続エラーが発生しました。再度ログインしてください。', 'error');
+  } finally {
+    _isHandlingAuth = false;
   }
 });
 
