@@ -525,7 +525,10 @@ body.dark .tax-rate-card{background:#0d0f14}
         <button class="btn btn-sm btn-secondary" id="btnLock">🔒 ロック</button>
         <button class="btn btn-sm btn-danger" id="btnUnlock" style="display:none">🔓 解除</button>
         <button class="btn btn-sm btn-blue" id="btnPDF">🖨 PDF</button>
-        <button class="btn btn-sm btn-secondary" id="btnCSV">📊 CSV</button>
+        <button class="btn btn-sm btn-secondary" id="btnExcel">📗 Excel</button>
+        <button class="btn btn-sm btn-secondary" id="btnCSV">📄 CSV</button>
+        <label class="btn btn-sm btn-secondary" id="btnImportLabel" style="cursor:pointer;margin:0">📂 インポート<input type="file" id="btnImport" accept=".csv,.xlsx,.xls" style="display:none"></label>
+        <button class="btn btn-sm btn-secondary" id="btnTemplate" title="インポート用テンプレートをダウンロード">📋 テンプレ</button>
       </div>
       <div style="display:grid;grid-template-columns:340px 1fr;gap:1rem;align-items:start">
         <div>
@@ -629,7 +632,8 @@ body.dark .tax-rate-card{background:#0d0f14}
               <option value="">— 年月を選択 —</option>
             </select>
             <button class="btn btn-sm btn-danger" id="btnHistoryPDF" style="display:none">🖨 PDF再発行</button>
-            <button class="btn btn-sm btn-secondary" id="btnHistoryCSV" style="display:none">📊 CSV</button>
+            <button class="btn btn-sm btn-secondary" id="btnHistoryExcel" style="display:none">📗 Excel</button>
+            <button class="btn btn-sm btn-secondary" id="btnHistoryCSV" style="display:none">📄 CSV</button>
           </div>
           <div id="historyContent"><p style="font-size:0.8rem;color:var(--muted)">年月を選択すると過去データが表示されます</p></div>
         </div>
@@ -718,6 +722,7 @@ body.dark .tax-rate-card{background:#0d0f14}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 (() => {
 'use strict';
@@ -1501,6 +1506,7 @@ async function showHistoryData(period){
   const wrap=$('historyContent');
   if(!row){wrap.innerHTML='<p style="color:var(--muted);font-size:0.8rem">データが見つかりません</p>';return;}
   $('btnHistoryPDF').style.display='inline-flex';
+  $('btnHistoryExcel').style.display='inline-flex';
   $('btnHistoryCSV').style.display='inline-flex';
   const rows=(row.employees||[]).map(e=>`
     <tr>
@@ -1533,26 +1539,215 @@ async function exportHistoryPDF(period){
 }
 
 /* ══ CSVエクスポート ══ */
+function exportExcel(empList, period){
+  if(!empList||empList.length===0){showToast('エクスポートするデータがありません','error');return;}
+  if(!window.XLSX){showToast('Excel出力ライブラリ読み込み中です。少し待ってから再試行してください','error');return;}
+
+  const [y,m] = period.split('-');
+  const iTotal = e => (e.hRate||0)+(e.pRate||0)+(e.eRate||0)||1;
+
+  // ── シート1: 給与一覧 ──
+  const headers = ['氏名','部署','役職','年齢','扶養家族数','基本給','支給額',
+    '健康保険料','厚生年金料','雇用保険料','所得税','住民税','手取り',
+    'ボーナス支給額','ボーナス手取り','業績係数'];
+
+  const dataRows = empList.map(e => [
+    e.name, e.dept||'', e.pos||'', e.age||'', e.dep||0,
+    e.base, e.gross,
+    Math.round(e.insurance*(e.hRate/iTotal(e))),
+    Math.round(e.insurance*(e.pRate/iTotal(e))),
+    Math.round(e.insurance*(e.eRate/iTotal(e))),
+    e.tax, e.municipal||0, e.monthlyNet,
+    e.bonusGross||0, e.bonusNet||0, e.perf||1
+  ]);
+
+  // 合計行
+  const sumRow = ['合計','','','','',
+    empList.reduce((a,e)=>a+e.base,0),
+    empList.reduce((a,e)=>a+e.gross,0),
+    empList.reduce((a,e)=>a+Math.round(e.insurance*(e.hRate/iTotal(e))),0),
+    empList.reduce((a,e)=>a+Math.round(e.insurance*(e.pRate/iTotal(e))),0),
+    empList.reduce((a,e)=>a+Math.round(e.insurance*(e.eRate/iTotal(e))),0),
+    empList.reduce((a,e)=>a+e.tax,0),
+    empList.reduce((a,e)=>a+(e.municipal||0),0),
+    empList.reduce((a,e)=>a+e.monthlyNet,0),
+    empList.reduce((a,e)=>a+(e.bonusGross||0),0),
+    empList.reduce((a,e)=>a+(e.bonusNet||0),0),
+    ''
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet([
+    [`${y}年${Number(m)}月 給与一覧　${currentCompany?.name||''}`],
+    [],
+    headers,
+    ...dataRows,
+    [],
+    sumRow
+  ]);
+
+  // 列幅設定
+  ws['!cols'] = [
+    {wch:14},{wch:10},{wch:8},{wch:6},{wch:8},
+    {wch:12},{wch:12},{wch:12},{wch:12},{wch:10},
+    {wch:10},{wch:10},{wch:12},{wch:12},{wch:12},{wch:8}
+  ];
+
+  // ── シート2: 明細（従業員ごとの縦型） ──
+  const ws2rows = [];
+  empList.forEach(e => {
+    ws2rows.push([e.name, '', y+'年'+Number(m)+'月分 給与明細']);
+    ws2rows.push(['基本給', '', e.base]);
+    ws2rows.push(['支給額合計', '', e.gross]);
+    ws2rows.push(['　健康保険料', '', Math.round(e.insurance*(e.hRate/iTotal(e)))]);
+    ws2rows.push(['　厚生年金料', '', Math.round(e.insurance*(e.pRate/iTotal(e)))]);
+    ws2rows.push(['　雇用保険料', '', Math.round(e.insurance*(e.eRate/iTotal(e)))]);
+    ws2rows.push(['　所得税', '', e.tax]);
+    ws2rows.push(['　住民税', '', e.municipal||0]);
+    ws2rows.push(['手取り合計', '', e.monthlyNet]);
+    ws2rows.push([]);
+  });
+  const ws2 = XLSX.utils.aoa_to_sheet(ws2rows);
+  ws2['!cols'] = [{wch:16},{wch:4},{wch:14}];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '給与一覧');
+  XLSX.utils.book_append_sheet(wb, ws2, '個人明細');
+
+  XLSX.writeFile(wb, `給与データ_${y}${m}.xlsx`);
+  showToast(`Excelをダウンロードしました（${empList.length}名）`, 'success');
+}
+
 function exportCSV(empList, period){
   if(!empList||empList.length===0){showToast('エクスポートするデータがありません','error');return;}
-  const headers=['氏名','部署','役職','年齢','扶養家族数','基本給','支給額','健康保険','厚生年金','雇用保険','所得税','住民税','手取り','ボーナス支給','ボーナス手取り','業績係数'];
-  const rows=empList.map(e=>[
-    e.name,e.dept||'',e.pos||'',e.age||'',e.dep||0,
-    e.base,e.gross,
-    Math.round(e.insurance*(e.hRate/((e.hRate||0)+(e.pRate||0)+(e.eRate||0)||1))),
-    Math.round(e.insurance*(e.pRate/((e.hRate||0)+(e.pRate||0)+(e.eRate||0)||1))),
-    Math.round(e.insurance*(e.eRate/((e.hRate||0)+(e.pRate||0)+(e.eRate||0)||1))),
-    e.tax,e.municipal||0,e.monthlyNet,
-    e.bonusGross||0,e.bonusNet||0,e.perf||1
-  ].map(v=>typeof v==='string'&&v.includes(',')?`"${v}"`:v));
-  const csv='\uFEFF'+[headers,...rows].map(r=>r.join(',')).join('\r\n');
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  const[y,m]=period.split('-');
-  a.href=url;a.download=`給与データ_${y}${m}.csv`;
-  a.click();URL.revokeObjectURL(url);
+  const [y,m] = period.split('-');
+  const iTotal = e => (e.hRate||0)+(e.pRate||0)+(e.eRate||0)||1;
+  const headers = ['氏名','部署','役職','年齢','扶養家族数','基本給','支給額',
+    '健康保険料','厚生年金料','雇用保険料','所得税','住民税','手取り',
+    'ボーナス支給額','ボーナス手取り','業績係数'];
+  const rows = empList.map(e => [
+    e.name, e.dept||'', e.pos||'', e.age||'', e.dep||0,
+    e.base, e.gross,
+    Math.round(e.insurance*(e.hRate/iTotal(e))),
+    Math.round(e.insurance*(e.pRate/iTotal(e))),
+    Math.round(e.insurance*(e.eRate/iTotal(e))),
+    e.tax, e.municipal||0, e.monthlyNet,
+    e.bonusGross||0, e.bonusNet||0, e.perf||1
+  ].map(v => typeof v==='string' && v.includes(',') ? `"${v}"` : v));
+  const csv = '\uFEFF' + [headers,...rows].map(r=>r.join(',')).join('\r\n');
+  const blob = new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=`給与データ_${y}${m}.csv`;
+  a.click(); URL.revokeObjectURL(url);
   showToast(`CSVをダウンロードしました（${empList.length}名）`,'success');
+}
+
+/* ══ インポートテンプレートDL ══ */
+function downloadImportTemplate(){
+  if(!window.XLSX){showToast('ライブラリ読み込み中です','error');return;}
+  const headers = ['氏名*','部署','役職','年齢','扶養家族数','基本給*','業績係数','ボーナス倍率'];
+  const sample  = ['田中 太郎','営業部','課長',35,1,300000,1.0,2.0];
+  const ws = XLSX.utils.aoa_to_sheet([headers, sample]);
+  ws['!cols'] = headers.map(()=>({wch:14}));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'インポート用');
+  XLSX.writeFile(wb, 'payrollauto_import_template.xlsx');
+  showToast('テンプレートをダウンロードしました','success');
+}
+
+/* ══ CSV / Excel インポート ══ */
+function handleImportFile(file){
+  if(!file)return;
+  if(isLocked()){showToast('この月は確定済みのためインポートできません','error');return;}
+  const ext = file.name.split('.').pop().toLowerCase();
+  if(ext==='csv'){
+    const reader = new FileReader();
+    reader.onload = e => parseImportCSV(e.target.result);
+    reader.readAsText(file,'UTF-8');
+  } else if(ext==='xlsx'||ext==='xls'){
+    if(!window.XLSX){showToast('Excelライブラリ読み込み中です','error');return;}
+    const reader = new FileReader();
+    reader.onload = e => {
+      const wb = XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      parseImportRows(rows);
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    showToast('CSV または Excel ファイルを選択してください','error');
+  }
+}
+
+function parseImportCSV(text){
+  const clean = text.replace(/^\uFEFF/,'');
+  const rows = clean.split(/\r?\n/).map(r=>r.split(',').map(v=>v.replace(/^"|"$/g,'').trim()));
+  parseImportRows(rows);
+}
+
+function parseImportRows(rows){
+  if(rows.length<2){showToast('データが空です','error');return;}
+  const headerIdx = rows[0].some(h=>String(h).includes('氏名')||String(h).includes('名前')) ? 0 : 1;
+  const header = rows[headerIdx].map(h=>String(h).replace(/\*/g,'').trim());
+  const dataRows = rows.slice(headerIdx+1).filter(r=>r.some(v=>v!==''&&v!==null&&v!==undefined));
+
+  const col = k => {
+    const aliases = {
+      '氏名':['氏名','名前','name'],
+      '部署':['部署','dept','department'],
+      '役職':['役職','pos','position'],
+      '年齢':['年齢','age'],
+      '扶養家族数':['扶養家族数','扶養','dependents','dep'],
+      '基本給':['基本給','base','base_salary','basePay'],
+      '業績係数':['業績係数','業績','perf','performance'],
+      'ボーナス倍率':['ボーナス倍率','ボーナス','bonus','mag','bonusMag'],
+    };
+    const alts = aliases[k]||[k];
+    for(const a of alts){
+      const i = header.findIndex(h=>h===a||h.toLowerCase()===a.toLowerCase());
+      if(i>=0)return i;
+    }
+    return -1;
+  };
+
+  const nameIdx=col('氏名'), baseIdx=col('基本給');
+  if(nameIdx<0||baseIdx<0){
+    showToast('「氏名」と「基本給」列が見つかりません。テンプレートをご確認ください','error');
+    return;
+  }
+
+  let added=0, skipped=0;
+  const newEmps=[];
+  dataRows.forEach(row=>{
+    const name=String(row[nameIdx]||'').trim();
+    const base=Number(String(row[baseIdx]||'').replace(/[¥,]/g,''));
+    if(!name||!base||base<=0){skipped++;return;}
+    const dept  = col('部署')>=0   ? String(row[col('部署')]||'')      : '';
+    const pos   = col('役職')>=0   ? String(row[col('役職')]||'')      : '';
+    const age   = col('年齢')>=0   ? Number(row[col('年齢')])||35       : 35;
+    const dep   = col('扶養家族数')>=0 ? Number(row[col('扶養家族数')])||0  : 0;
+    const perf  = col('業績係数')>=0 ? Number(row[col('業績係数')])||1.0  : 1.0;
+    const mag   = col('ボーナス倍率')>=0 ? Number(row[col('ボーナス倍率')])||2.0 : 2.0;
+    const r = calc(base,perf,mag,taxRates.hRate,taxRates.pRate,taxRates.eRate,taxRates.mRate,'round',age,dep,0,0,0);
+    newEmps.push({
+      id:Date.now()+Math.floor(Math.random()*99999)+added,
+      name,dept,pos,age,dep,base,perf,mag,
+      hRate:taxRates.hRate,pRate:taxRates.pRate,
+      eRate:taxRates.eRate,mRate:taxRates.mRate,
+      rm:'round',status:'calc',allowances:[],allowanceTotal:0,spDed:0,disDed:0,...r
+    });
+    added++;
+  });
+
+  if(added===0){showToast('インポートできる有効なデータがありませんでした','error');return;}
+  showModal('インポート確認',
+    `<b>${added}名</b>をインポートします。${skipped>0?`（${skipped}行スキップ）`:''}<br>
+     <small style="color:var(--muted)">既存データに追加されます。重複がある場合は別途ご確認ください。</small>`,
+    'インポート実行','btn-primary',async()=>{
+      employees.push(...newEmps);
+      await saveAndRender();
+      showToast(`${added}名をインポートしました ✅`,'success');
+    });
 }
 
 function renderDashboard(){
@@ -1751,12 +1946,27 @@ $('btnCommit').addEventListener('click',()=>{
   showModal('月次確定保存',`<b>${currentPeriod}</b>（${employees.length}名）を確定保存します。`,'確定保存','btn-green',commitMonthlyHistory);
 });
 $('btnPDF').addEventListener('click',exportAllPDF);
+$('btnExcel').addEventListener('click',()=>{
+  if(employees.length===0){showToast('データがありません','error');return;}
+  exportExcel(employees,currentPeriod);
+});
 $('btnCSV').addEventListener('click',()=>{
   if(employees.length===0){showToast('データがありません','error');return;}
   exportCSV(employees,currentPeriod);
 });
+$('btnImport').addEventListener('change',e=>{
+  handleImportFile(e.target.files[0]);
+  e.target.value='';
+});
+$('btnTemplate').addEventListener('click',downloadImportTemplate);
 $('historyPeriodSel').addEventListener('change',e=>{_historyPeriod=e.target.value;showHistoryData(e.target.value);});
 $('btnHistoryPDF').addEventListener('click',()=>{if(_historyPeriod)exportHistoryPDF(_historyPeriod);});
+$('btnHistoryExcel').addEventListener('click',async()=>{
+  if(!_historyPeriod)return;
+  const row=await dbGet('payroll_history',{company_id:currentCompany.id,period:_historyPeriod});
+  if(row?.employees)exportExcel(row.employees,_historyPeriod);
+  else showToast('データが見つかりません','error');
+});
 $('btnHistoryCSV').addEventListener('click',async()=>{
   if(!_historyPeriod)return;
   const row=await dbGet('payroll_history',{company_id:currentCompany.id,period:_historyPeriod});
