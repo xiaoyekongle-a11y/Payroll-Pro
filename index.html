@@ -6,7 +6,7 @@
 <!-- HTTPS強制リダイレクト -->
 <script>if(location.protocol==='http:'&&location.hostname!=='localhost'&&location.hostname!=='127.0.0.1'){location.replace('https:'+location.href.slice(5));}</script>
 <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
-<title>PayrollAuto v4.0</title>
+<title>PayrollAuto v5.0</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&family=Syne:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -285,6 +285,14 @@ body.dark .tbl-btn{background:var(--cream);color:#e6e2d8}
 .badge-pdf{background:var(--green);color:#fff}
 .badge-none{background:var(--cream);color:var(--muted)}
 .badge-archived{background:var(--gold);color:#fff}
+.badge-admin{background:#6b3fa0;color:#fff}
+.badge-draft{background:var(--muted);color:#fff}
+.badge-submitted{background:var(--blue);color:#fff}
+.badge-confirmed{background:var(--green);color:#fff}
+.badge-pending{background:var(--gold);color:#fff}
+.badge-sent{background:var(--blue);color:#fff}
+.badge-completed{background:var(--green);color:#fff}
+.badge-failed{background:var(--accent);color:#fff}
 
 /* ===== PERIOD BAR ===== */
 .period-bar{
@@ -489,6 +497,71 @@ body.dark .tax-rate-card{background:#1a1d26}
   #btnDarkMode{display:flex !important}
   #btnSignOut{display:flex !important}
 }
+
+/* ===== ATTENDANCE CALENDAR ===== */
+.att-calendar{width:100%;border-collapse:collapse;font-size:0.78rem}
+.att-calendar th{background:var(--cream);padding:0.4rem 0.5rem;text-align:center;font-size:0.65rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border)}
+.att-calendar th.sat{color:#2563eb}.att-calendar th.sun{color:var(--accent)}
+.att-calendar td{padding:0.25rem 0.35rem;border-bottom:1px solid var(--border);vertical-align:middle}
+.att-calendar td.sat .att-date{color:#2563eb}.att-calendar td.sun .att-date{color:var(--accent)}
+.att-date{font-size:0.65rem;font-weight:700;font-family:var(--font-mono);min-width:1.5rem;display:inline-block;color:var(--muted)}
+.att-input{width:100%;border:1px solid var(--border);border-radius:3px;padding:0.2rem 0.35rem;font-size:0.72rem;font-family:var(--font-mono);background:var(--surface);color:var(--ink);transition:border-color var(--transition)}
+.att-input:focus{outline:none;border-color:var(--accent);background:#fff}
+body.dark .att-input{background:#0e1016;color:#e6e2d8}
+.att-input.holiday{background:rgba(192,66,42,0.07)}
+.att-absence-sel{width:100%;border:1px solid var(--border);border-radius:3px;padding:0.18rem 0.25rem;font-size:0.68rem;background:var(--surface);color:var(--ink)}
+body.dark .att-absence-sel{background:#0e1016;color:#e6e2d8}
+.att-ot-badge{font-size:0.6rem;font-family:var(--font-mono);color:var(--accent);font-weight:700}
+.att-summary-row{display:flex;justify-content:space-between;padding:0.35rem 0;border-bottom:1px solid var(--border);font-size:0.78rem}
+.att-summary-row:last-child{border-bottom:none}
+.att-summary-label{color:var(--muted);font-size:0.7rem}
+.att-summary-val{font-family:var(--font-mono);font-weight:700}
+
+/* ===== YEAREND ADJUSTMENT ===== */
+.yearend-emp-row{display:flex;align-items:center;gap:0.5rem;padding:0.55rem 0.75rem;border-bottom:1px solid var(--border);cursor:pointer;transition:background var(--transition)}
+.yearend-emp-row:hover{background:var(--cream)}
+body.dark .yearend-emp-row:hover{background:#1a1d26}
+.yearend-emp-row.selected{background:rgba(192,66,42,0.08);border-left:3px solid var(--accent)}
+.yearend-emp-name{flex:1;font-size:0.82rem;font-weight:500}
+.yearend-progress{width:80px;height:5px;background:var(--border);border-radius:99px;overflow:hidden}
+.yearend-progress-bar{height:100%;background:var(--green);border-radius:99px;transition:width 0.4s}
+.ye-section{margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+.ye-section:last-child{border-bottom:none;margin-bottom:0}
+.ye-section-title{font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.65rem}
+.ye-result-box{background:linear-gradient(135deg,rgba(30,110,69,0.08),rgba(24,53,98,0.06));border:1px solid rgba(30,110,69,0.2);border-radius:6px;padding:0.75rem;margin-top:0.75rem}
+.ye-result-row{display:flex;justify-content:space-between;font-size:0.78rem;padding:0.2rem 0}
+.ye-result-total{font-weight:700;font-size:0.88rem;border-top:1px solid var(--border);padding-top:0.35rem;margin-top:0.35rem}
+.ye-refund-pos{color:var(--green);font-weight:700}
+.ye-refund-neg{color:var(--accent);font-weight:700}
+
+/* ===== TRANSFER TABLE ===== */
+.transfer-tbl{width:100%;border-collapse:collapse;font-size:0.79rem}
+.transfer-tbl th{background:var(--cream);padding:0.5rem 0.65rem;text-align:left;font-size:0.63rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border)}
+body.dark .transfer-tbl th{background:#1a1d26}
+.transfer-tbl td{padding:0.55rem 0.65rem;border-bottom:1px solid var(--border);vertical-align:middle}
+.transfer-tbl tr:last-child td{border-bottom:none}
+.transfer-tbl tr:hover td{background:var(--cream);transition:background var(--transition)}
+body.dark .transfer-tbl tr:hover td{background:#1a1d26}
+.transfer-check{width:16px;height:16px;cursor:pointer;accent-color:var(--accent)}
+.transfer-bank{font-size:0.7rem;color:var(--muted)}
+.transfer-amount{font-family:var(--font-mono);font-weight:700;text-align:right;color:var(--green)}
+.transfer-total-bar{background:linear-gradient(135deg,rgba(24,53,98,0.06),rgba(30,110,69,0.06));border:1px solid var(--border);border-radius:6px;padding:0.65rem 1rem;margin:0.75rem;display:flex;justify-content:space-between;align-items:center;font-size:0.82rem}
+.transfer-total-amount{font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:var(--green)}
+
+/* ===== HISTORY ENHANCED ===== */
+.hist-meta{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:0.75rem}
+.hist-meta-item{font-size:0.7rem;color:var(--muted);display:flex;flex-direction:column;gap:0.1rem}
+.hist-meta-item strong{font-size:0.82rem;color:var(--ink);font-family:var(--font-mono)}
+body.dark .hist-meta-item strong{color:var(--ink)}
+
+/* ===== RBAC PERMISSION ===== */
+.rbac-table{width:100%;border-collapse:collapse;font-size:0.75rem;margin-top:0.75rem}
+.rbac-table th{background:var(--cream);padding:0.4rem 0.5rem;text-align:center;font-size:0.63rem;font-weight:700;letter-spacing:0.05em;color:var(--muted)}
+body.dark .rbac-table th{background:#1a1d26}
+.rbac-table td{padding:0.4rem 0.5rem;text-align:center;border-bottom:1px solid var(--border)}
+.rbac-ok{color:var(--green);font-weight:700}
+.rbac-no{color:var(--border)}
+.rbac-own{color:var(--gold);font-weight:700;font-size:0.65rem}
 </style>
 </head>
 <body>
@@ -558,7 +631,7 @@ body.dark .tax-rate-card{background:#1a1d26}
 <!-- APP SCREEN -->
 <div class="screen" id="appScreen">
   <header class="app-header">
-    <div class="app-logo">Payroll<span>Auto</span></div>
+    <div class="app-logo">Payroll<span>Auto</span> <span style="font-size:0.5em;font-weight:400;opacity:0.5;letter-spacing:0.05em">v5.0</span></div>
     <div class="app-company" id="headerCompanyName">—</div>
     <div class="header-spacer"></div>
     <span class="header-role-badge" id="headerRoleBadge"></span>
@@ -571,6 +644,9 @@ body.dark .tax-rate-card{background:#1a1d26}
     <div class="nav-tab active" data-page="dashboard">ダッシュボード</div>
     <div class="nav-tab" data-page="payroll">給与計算</div>
     <div class="nav-tab" data-page="history">履歴</div>
+    <div class="nav-tab" data-page="attendance">勤怠管理</div>
+    <div class="nav-tab" data-page="yearend">年末調整</div>
+    <div class="nav-tab owner-only" data-page="transfer">振込管理</div>
     <div class="nav-tab" data-page="taxrates">税率管理</div>
     <div class="nav-tab owner-only" data-page="users">ユーザー管理</div>
     <div class="nav-tab owner-only" data-page="settings">会社設定</div>
@@ -581,6 +657,33 @@ body.dark .tax-rate-card{background:#1a1d26}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
         <div class="panel"><div class="panel-header">📊 今月の予実管理</div><div class="panel-body" id="dashBudget"></div></div>
         <div class="panel"><div class="panel-header">⚠️ 扶養の壁アラート</div><div class="panel-body" id="dashWall"></div></div>
+      </div>
+      <div class="panel" style="margin-top:1rem">
+        <div class="panel-header">🚀 v5.0 新機能クイックアクセス</div>
+        <div class="panel-body">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0.65rem">
+            <button class="btn btn-secondary" style="flex-direction:column;gap:0.3rem;padding:1rem;height:auto;align-items:center" onclick="showPage('attendance')">
+              <span style="font-size:1.5rem">🕐</span>
+              <span style="font-size:0.75rem;font-weight:700">勤怠管理</span>
+              <span style="font-size:0.65rem;color:var(--muted)">打刻・残業計算・取込</span>
+            </button>
+            <button class="btn btn-secondary" style="flex-direction:column;gap:0.3rem;padding:1rem;height:auto;align-items:center" onclick="showPage('yearend')">
+              <span style="font-size:1.5rem">📋</span>
+              <span style="font-size:0.75rem;font-weight:700">年末調整</span>
+              <span style="font-size:0.65rem;color:var(--muted)">控除入力・源泉徴収票</span>
+            </button>
+            <button class="btn btn-secondary owner-only" style="flex-direction:column;gap:0.3rem;padding:1rem;height:auto;align-items:center" onclick="showPage('transfer')">
+              <span style="font-size:1.5rem">💳</span>
+              <span style="font-size:0.75rem;font-weight:700">振込管理</span>
+              <span style="font-size:0.65rem;color:var(--muted)">全銀FBファイル生成</span>
+            </button>
+            <button class="btn btn-secondary" style="flex-direction:column;gap:0.3rem;padding:1rem;height:auto;align-items:center" onclick="showPage('history')">
+              <span style="font-size:1.5rem">📂</span>
+              <span style="font-size:0.75rem;font-weight:700">給与履歴</span>
+              <span style="font-size:0.65rem;color:var(--muted)">過去データ・再発行</span>
+            </button>
+          </div>
+        </div>
       </div>
       <div class="panel" style="margin-top:1rem">
         <div class="panel-header">📈 月別人件費推移</div>
@@ -606,6 +709,7 @@ body.dark .tax-rate-card{background:#1a1d26}
           <button class="btn btn-sm btn-blue" id="btnPDF">🖨 PDF</button>
           <button class="btn btn-sm btn-secondary" id="btnExcel">📗 Excel</button>
           <button class="btn btn-sm btn-secondary" id="btnCSV">📄 CSV</button>
+          <button class="btn btn-sm btn-secondary" id="btnYayoi" title="弥生給与インポート用CSV">📊 弥生CSV</button>
         </div>
         <div class="btn-cluster">
           <span class="cluster-label">入力</span>
@@ -786,6 +890,101 @@ body.dark .tax-rate-card{background:#1a1d26}
           <div class="btn-group">
             <button class="btn btn-primary" id="btnSaveSettings">設定を保存</button>
           </div>
+        </div>
+      </div>
+    </div>
+    <!-- ══ 勤怠管理ページ ══ -->
+    <div class="page" id="pageAttendance">
+      <div class="period-bar">
+        <div class="period-bar-left">
+          <label class="period-label">対象年月</label>
+          <select id="attPeriodSelect" style="padding:0.4rem 0.65rem;border:1.5px solid var(--border);border-radius:var(--radius);font-family:var(--font-mono);font-size:0.82rem"></select>
+          <select id="attEmpSelect" style="padding:0.4rem 0.65rem;border:1.5px solid var(--border);border-radius:var(--radius);font-family:var(--font-body);font-size:0.82rem;min-width:160px"><option value="">— 従業員を選択 —</option></select>
+        </div>
+        <div style="flex:1"></div>
+        <div class="btn-cluster">
+          <span class="cluster-label">操作</span>
+          <button class="btn btn-sm btn-green" id="btnAttSave">💾 保存</button>
+          <button class="btn btn-sm btn-secondary" id="btnAttExport">📗 Excel出力</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 300px;gap:1rem;align-items:start">
+        <div class="panel">
+          <div class="panel-header">📅 月次カレンダー入力</div>
+          <div class="panel-body" style="padding:0">
+            <div id="attCalendar" style="padding:0.75rem">
+              <p style="font-size:0.8rem;color:var(--muted)">従業員を選択してください</p>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="panel" style="margin-bottom:1rem">
+            <div class="panel-header">📊 月次サマリー</div>
+            <div class="panel-body" id="attSummary">
+              <p style="font-size:0.8rem;color:var(--muted)">従業員を選択してください</p>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header">💡 給与計算への取込</div>
+            <div class="panel-body">
+              <p style="font-size:0.72rem;color:var(--muted);margin-bottom:0.75rem">勤怠データを給与計算の残業手当に反映します。</p>
+              <button class="btn btn-primary btn-sm" id="btnAttToPayroll" style="width:100%;justify-content:center">🔗 給与計算に取込</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- ══ 年末調整ページ ══ -->
+    <div class="page" id="pageYearend">
+      <div class="period-bar">
+        <div class="period-bar-left">
+          <label class="period-label">対象年度</label>
+          <select id="yearendYearSel" style="padding:0.4rem 0.65rem;border:1.5px solid var(--border);border-radius:var(--radius);font-family:var(--font-mono);font-size:0.82rem"></select>
+        </div>
+        <div style="flex:1"></div>
+        <div class="btn-cluster">
+          <span class="cluster-label">出力</span>
+          <button class="btn btn-sm btn-danger" id="btnYearendPDF">🖨 源泉徴収票PDF</button>
+          <button class="btn btn-sm btn-secondary" id="btnYearendCSV">📄 CSV出力</button>
+          <button class="btn btn-sm btn-green owner-only" id="btnYearendConfirm">✅ 一括確定</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start">
+        <div class="panel">
+          <div class="panel-header">👥 従業員別年末調整一覧</div>
+          <div class="panel-body" style="padding:0">
+            <div id="yearendList" style="padding:0.75rem"><p style="font-size:0.8rem;color:var(--muted)">読み込み中...</p></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">✏️ 控除情報入力 <span id="yearendEditName" style="font-size:0.72rem;color:var(--muted);margin-left:0.5rem"></span></div>
+          <div class="panel-body">
+            <div id="yearendFormWrap">
+              <p style="font-size:0.8rem;color:var(--muted)">左の一覧から従業員を選択してください</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- ══ 振込管理ページ ══ -->
+    <div class="page" id="pageTransfer">
+      <div class="period-bar">
+        <div class="period-bar-left">
+          <label class="period-label">対象年月</label>
+          <select id="transferPeriodSel" style="padding:0.4rem 0.65rem;border:1.5px solid var(--border);border-radius:var(--radius);font-family:var(--font-mono);font-size:0.82rem"></select>
+        </div>
+        <div style="flex:1"></div>
+        <div class="btn-cluster">
+          <span class="cluster-label">振込操作</span>
+          <button class="btn btn-sm btn-blue" id="btnTransferLoad">🔄 振込データ作成</button>
+          <button class="btn btn-sm btn-secondary" id="btnTransferFB">📥 FBファイル生成</button>
+          <button class="btn btn-sm btn-green" id="btnTransferMarkSent">✅ 振込済みにマーク</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">💳 振込データ一覧 <span id="transferSummary" style="font-size:0.72rem;color:var(--muted);margin-left:0.5rem"></span></div>
+        <div class="panel-body" style="padding:0">
+          <div id="transferList" style="padding:0.75rem"><p style="font-size:0.8rem;color:var(--muted)">「振込データ作成」ボタンで確定済み給与から自動生成します</p></div>
         </div>
       </div>
     </div>
@@ -1109,13 +1308,18 @@ async function initApp(){
   $('headerRoleBadge').textContent=role.toUpperCase();
   $('headerRoleBadge').className=`header-role-badge badge-${role}`;
   $('headerAvatar').textContent=(currentUser.name||'U').charAt(0).toUpperCase();
-  document.querySelectorAll('.owner-only').forEach(el=>el.style.display=role==='owner'?'':'none');
+  // RBAC: owner-only / editor-only 表示制御
+  const isOwner=role==='owner';
+  const isEditor=role==='editor'||role==='owner'||role==='admin';
+  document.querySelectorAll('.owner-only').forEach(el=>el.style.display=isOwner?'':'none');
+  document.querySelectorAll('.editor-only').forEach(el=>el.style.display=isEditor?'':'none');
   await loadTaxRates();
   buildPeriodSelector();
   await loadLocks();
   await loadEmployees();
   populateDeptSelect();
-  if(role==='owner'){
+  buildAttEmpSelect();
+  if(isOwner){
     $('settingsCompanyName').value=currentCompany.name;
     $('settingsIndustry').value=currentCompany.industry||'';
     $('settingsAddress').value=currentCompany.address||'';
@@ -1128,6 +1332,10 @@ async function initApp(){
   }
   renderPayrollTable();renderDashboard();renderTaxRatePanel();
   await renderHistorySelect();
+  // 新機能初期化
+  buildAttPeriodSelector();
+  buildYearendYearSelector();
+  buildTransferPeriodSelector();
   showScreen('appScreen');showPage('dashboard');initDarkMode();
 }
 
@@ -1576,11 +1784,26 @@ async function exportAllPDF() {
 
 async function commitMonthlyHistory(){
   if(employees.length===0){showToast('データがありません','error');return;}
-  await sb.from('payroll_history').upsert({
-    company_id:currentCompany.id,period:currentPeriod,employees,
+  const role=currentCompany.role;
+  if(role==='viewer'){showToast('owner/editor権限が必要です','error');return;}
+  const tot_gross=employees.reduce((a,e)=>a+(e.gross||0),0);
+  const tot_net=employees.reduce((a,e)=>a+(e.monthlyNet||0),0);
+  const tot_insurance=employees.reduce((a,e)=>a+(e.insurance||0),0);
+  const tot_tax=employees.reduce((a,e)=>a+(e.tax||0)+(e.municipal||0),0);
+  const payload={
+    company_id:currentCompany.id,
+    period:currentPeriod,
+    employees,
+    tot_gross,tot_net,tot_insurance,tot_tax,
+    emp_count:employees.length,
+    locked_at:new Date().toISOString(),
+    locked_by:currentUser.id,
+    // v4互換フィールドも維持
     saved_at:new Date().toISOString(),
-    summary:{count:employees.length,totGross:employees.reduce((a,e)=>a+e.gross,0),totNet:employees.reduce((a,e)=>a+e.monthlyNet,0)}
-  },{onConflict:'company_id,period'});
+    summary:{count:employees.length,totGross:tot_gross,totNet:tot_net}
+  };
+  const {error}=await sb.from('payroll_history').upsert(payload,{onConflict:'company_id,period'});
+  if(error){showToast('保存に失敗しました: '+error.message,'error');return;}
   await sb.from('payroll_locks').upsert({company_id:currentCompany.id,period:currentPeriod},{onConflict:'company_id,period'});
   lockedPeriods.add(currentPeriod);updateLockUI();
   await renderHistorySelect();
@@ -1593,7 +1816,11 @@ async function renderHistorySelect(){
   const sel=$('historyPeriodSel');
   sel.innerHTML=rows.length===0?'<option value="">（履歴なし）</option>':
     '<option value="">— 年月を選択 —</option>'+
-    rows.map(r=>`<option value="${r.period}">${r.period.replace('-','年')}月（${r.summary?.count||0}名）</option>`).join('');
+    rows.map(r=>{
+      const cnt=r.emp_count||r.summary?.count||0;
+      const net=r.tot_net||r.summary?.totNet||0;
+      return `<option value="${r.period}">${r.period.replace('-','年')}月（${cnt}名 / ${fmtY(net)}）</option>`;
+    }).join('');
 }
 let _historyPeriod=null;
 async function showHistoryData(period){
@@ -1602,25 +1829,34 @@ async function showHistoryData(period){
   const wrap=$('historyContent');
   if(!row){wrap.innerHTML='<p style="color:var(--muted);font-size:0.8rem">データが見つかりません</p>';return;}
   $('historyBtnGroup').style.display='flex';
+  const lockedAt=row.locked_at||row.saved_at;
   const rows=(row.employees||[]).map(e=>`
     <tr>
-      <td>${e.name}</td><td>${e.dept||'—'}</td><td>${e.pos||'—'}</td>
+      <td>${esc(e.name)}</td><td>${esc(e.dept||'—')}</td><td>${esc(e.pos||'—')}</td>
       <td style="font-family:var(--font-mono);text-align:right">${fmtY(e.base)}</td>
       <td style="font-family:var(--font-mono);text-align:right">${fmtY(e.gross)}</td>
       <td style="font-family:var(--font-mono);text-align:right;color:var(--accent)">${fmtY(e.insurance)}</td>
-      <td style="font-family:var(--font-mono);text-align:right;color:var(--accent)">${fmtY(e.tax)}</td>
+      <td style="font-family:var(--font-mono);text-align:right;color:var(--accent)">${fmtY((e.tax||0)+(e.municipal||0))}</td>
       <td style="font-family:var(--font-mono);text-align:right;font-weight:700;color:var(--green)">${fmtY(e.monthlyNet)}</td>
     </tr>`).join('');
+  const totGross=row.tot_gross||row.summary?.totGross||0;
+  const totNet=row.tot_net||row.summary?.totNet||0;
+  const totIns=row.tot_insurance||0;
+  const totTax=row.tot_tax||0;
+  const empCnt=row.emp_count||row.summary?.count||0;
   wrap.innerHTML=`
-    <p style="font-size:0.72rem;color:var(--muted);margin-bottom:0.65rem">
-      保存日時：${new Date(row.saved_at).toLocaleString('ja-JP')} &nbsp;|&nbsp;
-      従業員数：${row.summary?.count||0}名 &nbsp;|&nbsp;
-      手取り合計：${fmtY(row.summary?.totNet||0)}
-      <span class="badge badge-archived" style="margin-left:0.4rem">ARCHIVED</span>
-    </p>
+    <div class="hist-meta">
+      <div class="hist-meta-item"><span class="att-summary-label">確定日時</span><strong>${lockedAt?new Date(lockedAt).toLocaleString('ja-JP'):'—'}</strong></div>
+      <div class="hist-meta-item"><span class="att-summary-label">従業員数</span><strong>${empCnt}名</strong></div>
+      <div class="hist-meta-item"><span class="att-summary-label">支給総額</span><strong>${fmtY(totGross)}</strong></div>
+      <div class="hist-meta-item"><span class="att-summary-label">社保合計</span><strong style="color:var(--accent)">${fmtY(totIns)}</strong></div>
+      <div class="hist-meta-item"><span class="att-summary-label">税金合計</span><strong style="color:var(--accent)">${fmtY(totTax)}</strong></div>
+      <div class="hist-meta-item"><span class="att-summary-label">手取り合計</span><strong style="color:var(--green)">${fmtY(totNet)}</strong></div>
+      <span class="badge badge-archived" style="margin-left:0.4rem;align-self:center">ARCHIVED</span>
+    </div>
     <div class="tbl-wrap">
       <table class="data-tbl">
-        <thead><tr><th>氏名</th><th>部署</th><th>役職</th><th>基本給</th><th>支給額</th><th>社保</th><th>所得税</th><th>手取り</th></tr></thead>
+        <thead><tr><th>氏名</th><th>部署</th><th>役職</th><th>基本給</th><th>支給額</th><th>社保</th><th>税金</th><th>手取り</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>`;
@@ -1716,17 +1952,20 @@ function exportCSV(empList, period){
   const [y,m] = period.split('-');
   const iTotal = e => (e.hRate||0)+(e.pRate||0)+(e.eRate||0)||1;
   const headers = ['氏名','部署','役職','年齢','扶養家族数','基本給','支給額',
-    '健康保険料','厚生年金料','雇用保険料','所得税','住民税','手取り',
-    'ボーナス支給額','ボーナス手取り','業績係数'];
-  const rows = empList.map(e => [
-    e.name, e.dept||'', e.pos||'', e.age||'', e.dep||0,
-    e.base, e.gross,
-    Math.round(e.insurance*(e.hRate/iTotal(e))),
-    Math.round(e.insurance*(e.pRate/iTotal(e))),
-    Math.round(e.insurance*(e.eRate/iTotal(e))),
-    e.tax, e.municipal||0, e.monthlyNet,
-    e.bonusGross||0, e.bonusNet||0, e.perf||1
-  ].map(v => typeof v==='string' && v.includes(',') ? `"${v}"` : v));
+    '健康保険料','厚生年金料','雇用保険料','所得税','住民税','控除合計','手取り',
+    'ボーナス支給額','ボーナス手取り','業績係数','備考'];
+  const rows = empList.map(e => {
+    const hIns=Math.round(e.insurance*((e.hRate||0)/iTotal(e)));
+    const pIns=Math.round(e.insurance*((e.pRate||0)/iTotal(e)));
+    const eIns=Math.round(e.insurance*((e.eRate||0)/iTotal(e)));
+    const dedTotal=hIns+pIns+eIns+(e.tax||0)+(e.municipal||0);
+    return [
+      e.name, e.dept||'', e.pos||'', e.age||'', e.dep||0,
+      e.base, e.gross,hIns,pIns,eIns,
+      e.tax||0, e.municipal||0, dedTotal, e.monthlyNet,
+      e.bonusGross||0, e.bonusNet||0, e.perf||1, e.note||''
+    ].map(v => typeof v==='string' && (v.includes(',')||v.includes('"')) ? `"${v.replace(/"/g,'""')}"` : v);
+  });
   const csv = '\uFEFF' + [headers,...rows].map(r=>r.join(',')).join('\r\n');
   const blob = new Blob([csv],{type:'text/csv;charset=utf-8'});
   const url = URL.createObjectURL(blob);
@@ -1734,6 +1973,27 @@ function exportCSV(empList, period){
   a.href=url; a.download=`給与データ_${y}${m}.csv`;
   a.click(); URL.revokeObjectURL(url);
   showToast(`CSVをダウンロードしました（${empList.length}名）`,'success');
+}
+
+/* ══ 弥生給与CSVエクスポート ══ */
+function exportYayoiCSV(empList, period){
+  if(!empList||empList.length===0){showToast('データがありません','error');return;}
+  const [y,m]=period.split('-');
+  const iTotal=e=>(e.hRate||0)+(e.pRate||0)+(e.eRate||0)||1;
+  // 弥生給与インポート標準フォーマット（社員コード,氏名,支給額,控除合計,...）
+  const headers=['社員コード','氏名','基本給','支給合計','健保','厚年','雇保','所得税','住民税','控除合計','手取り'];
+  const rows=empList.map((e,i)=>{
+    const hIns=Math.round(e.insurance*((e.hRate||0)/iTotal(e)));
+    const pIns=Math.round(e.insurance*((e.pRate||0)/iTotal(e)));
+    const eIns=Math.round(e.insurance*((e.eRate||0)/iTotal(e)));
+    const dedTotal=hIns+pIns+eIns+(e.tax||0)+(e.municipal||0);
+    return [String(i+1).padStart(6,'0'),e.name,e.base,e.gross,hIns,pIns,eIns,e.tax||0,e.municipal||0,dedTotal,e.monthlyNet];
+  });
+  const csv='\uFEFF'+[headers,...rows].map(r=>r.map(v=>typeof v==='string'&&v.includes(',')?`"${v}"`:v).join(',')).join('\r\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download=`弥生_${y}${m}.csv`;a.click();
+  showToast('弥生給与用CSVを出力しました','success');
 }
 
 /* ══ インポートテンプレートDL ══ */
@@ -1925,25 +2185,34 @@ async function renderTrendChart(){
 async function renderUserList(){
   const wrap=$('userListWrap');
   const users=await dbGetAll('company_users',{company_id:currentCompany.id});
+  const roleLabel={owner:'オーナー',admin:'管理者',editor:'編集者',viewer:'閲覧者'};
   wrap.innerHTML=`
     <table class="data-tbl">
-      <thead><tr><th>名前</th><th>役割</th><th>参加日</th><th>操作</th></tr></thead>
+      <thead><tr><th>名前</th><th>メール</th><th>役割</th><th>参加日</th><th>操作</th></tr></thead>
       <tbody>${users.map(u=>`
         <tr>
           <td>${u.name||'—'}</td>
-          <td><span class="badge badge-${u.role}">${u.role.toUpperCase()}</span></td>
+          <td style="font-size:0.72rem;color:var(--muted)">${u.email||'—'}</td>
+          <td><span class="badge badge-${u.role}">${(roleLabel[u.role]||u.role).toUpperCase()}</span></td>
           <td style="font-size:0.72rem;color:var(--muted)">${u.joined_at?new Date(u.joined_at).toLocaleDateString('ja-JP'):'—'}</td>
           <td><div class="tbl-actions">
+            ${u.user_id!==currentUser.id?`
             <select class="tbl-btn" data-uid="${u.user_id}" data-act="role">
               <option value="owner" ${u.role==='owner'?'selected':''}>Owner</option>
+              <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
               <option value="editor" ${u.role==='editor'?'selected':''}>Editor</option>
               <option value="viewer" ${u.role==='viewer'?'selected':''}>Viewer</option>
             </select>
-            ${u.user_id!==currentUser.id?`<button class="tbl-btn danger" data-uid="${u.user_id}" data-act="remove">削除</button>`:''}
+            <button class="tbl-btn danger" data-uid="${u.user_id}" data-act="remove">削除</button>`
+            :'<span style="font-size:0.7rem;color:var(--muted)">（自分）</span>'}
           </div></td>
         </tr>`).join('')}
       </tbody>
-    </table>`;
+    </table>
+    <div style="margin-top:1rem;padding:0.65rem 0.85rem;background:var(--cream);border-radius:6px;font-size:0.7rem;color:var(--muted)">
+      <strong style="color:var(--ink)">権限早見表：</strong>
+      Owner=全権限 / Admin=給与確定・年末調整 / Editor=給与入力・編集 / Viewer=自分の明細閲覧のみ
+    </div>`;
   wrap.querySelectorAll('[data-act="role"]').forEach(sel=>{
     sel.addEventListener('change',async()=>{
       await dbUpdate('company_users',{company_id:currentCompany.id,user_id:sel.dataset.uid},{role:sel.value});
@@ -1959,7 +2228,6 @@ async function renderUserList(){
     });
   });
 }
-
 async function copyPrevMonth(){
   const rows=await dbGetAll('payroll_history',{company_id:currentCompany.id});
   rows.sort((a,b)=>b.period.localeCompare(a.period));
@@ -2005,8 +2273,678 @@ $('btnDarkMode').addEventListener('click',()=>{
 function showPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
-  $('page'+id.charAt(0).toUpperCase()+id.slice(1)).classList.add('active');
+  const pageEl=$('page'+id.charAt(0).toUpperCase()+id.slice(1));
+  if(pageEl)pageEl.classList.add('active');
   document.querySelector(`[data-page="${id}"]`)?.classList.add('active');
+  // ページ固有の初期化
+  if(id==='attendance')renderAttCalendar();
+  if(id==='yearend')renderYearendList();
+  if(id==='transfer')renderTransferList();
+}
+
+/* ══════════════════════════════════════
+   ① 勤怠管理 (Sprint 4-5)
+══════════════════════════════════════ */
+let attRecords={}; // {date: {clock_in,clock_out,break_minutes,absence_type,holiday_work,note}}
+let attPeriod='', attEmpId=null;
+
+function buildAttPeriodSelector(){
+  const sel=$('attPeriodSelect'),now=new Date();
+  sel.innerHTML='';
+  for(let i=-2;i<=1;i++){
+    const d=new Date(now.getFullYear(),now.getMonth()+i,1);
+    const v=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const o=document.createElement('option');
+    o.value=v;o.textContent=v.replace('-','年')+'月';
+    if(i===0)o.selected=true;
+    sel.appendChild(o);
+  }
+  attPeriod=sel.value;
+  sel.addEventListener('change',e=>{attPeriod=e.target.value;loadAttRecords();});
+}
+
+function buildAttEmpSelect(){
+  const sel=$('attEmpSelect');
+  sel.innerHTML='<option value="">— 従業員を選択 —</option>';
+  employees.forEach(e=>{
+    const o=document.createElement('option');
+    o.value=e.id;o.textContent=e.name;
+    sel.appendChild(o);
+  });
+  sel.addEventListener('change',e=>{
+    attEmpId=e.target.value||null;
+    loadAttRecords();
+  });
+}
+
+async function loadAttRecords(){
+  attRecords={};
+  if(!attEmpId||!attPeriod){renderAttCalendar();return;}
+  const {data}=await sb.from('attendance_records')
+    .select('*')
+    .eq('company_id',currentCompany.id)
+    .eq('employee_id',attEmpId)
+    .gte('work_date',attPeriod+'-01')
+    .lte('work_date',attPeriod+'-31');
+  (data||[]).forEach(r=>{attRecords[r.work_date]=r;});
+  renderAttCalendar();
+}
+
+function calcActualMinutes(clock_in,clock_out,break_min){
+  if(!clock_in||!clock_out)return 0;
+  const [ih,im]=clock_in.split(':').map(Number);
+  const [oh,om]=clock_out.split(':').map(Number);
+  return Math.max(0,(oh*60+om)-(ih*60+im)-(break_min||60));
+}
+
+function calcOvertimeMinutes(actual){
+  return Math.max(0,actual-480);
+}
+
+function calcLateNightMinutes(clock_out){
+  if(!clock_out)return 0;
+  const [oh,om]=clock_out.split(':').map(Number);
+  const endMin=oh*60+om;
+  if(endMin>22*60)return endMin-22*60;
+  return 0;
+}
+
+function renderAttCalendar(){
+  const cal=$('attCalendar');
+  if(!attEmpId){cal.innerHTML='<p style="font-size:0.8rem;color:var(--muted)">従業員を選択してください</p>';updateAttSummary();return;}
+  const [y,m]=attPeriod.split('-').map(Number);
+  const daysInMonth=new Date(y,m,0).getDate();
+  const DOW=['月','火','水','木','金','土','日'];
+
+  let rows='';
+  for(let d=1;d<=daysInMonth;d++){
+    const dt=new Date(y,m-1,d);
+    const dow=dt.getDay(); // 0=Sun,6=Sat
+    const dateStr=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const r=attRecords[dateStr]||{};
+    const isSat=dow===6,isSun=dow===0;
+    const isHoliday=isSat||isSun||(r.holiday_work&&(isSat||isSun));
+    const actual=calcActualMinutes(r.clock_in||'',r.clock_out||'',r.break_minutes??60);
+    const ot=calcOvertimeMinutes(actual);
+    rows+=`<tr>
+      <td class="${isSat?'sat':isSun?'sun':''}">
+        <span class="att-date">${d}(${DOW[(dow+6)%7]})</span>
+      </td>
+      <td><input class="att-input${isHoliday?' holiday':''}" type="time" data-date="${dateStr}" data-field="clock_in" value="${r.clock_in||''}" ${r.absence_type?'disabled':''}></td>
+      <td><input class="att-input${isHoliday?' holiday':''}" type="time" data-date="${dateStr}" data-field="clock_out" value="${r.clock_out||''}" ${r.absence_type?'disabled':''}></td>
+      <td><input class="att-input" type="number" style="width:55px" data-date="${dateStr}" data-field="break_minutes" value="${r.break_minutes??60}" min="0" max="240"></td>
+      <td>
+        <select class="att-absence-sel" data-date="${dateStr}" data-field="absence_type">
+          <option value=""${!r.absence_type?' selected':''}>—</option>
+          <option value="paid_leave"${r.absence_type==='paid_leave'?' selected':''}>有休</option>
+          <option value="sick"${r.absence_type==='sick'?' selected':''}>病欠</option>
+          <option value="absent"${r.absence_type==='absent'?' selected':''}>欠勤</option>
+        </select>
+      </td>
+      <td>${ot>0?`<span class="att-ot-badge">+${Math.floor(ot/60)}h${ot%60?ot%60+'m':''}</span>`:''}</td>
+    </tr>`;
+  }
+  cal.innerHTML=`
+    <table class="att-calendar" style="width:100%">
+      <thead><tr>
+        <th style="width:70px">日付</th>
+        <th>出勤</th><th>退勤</th>
+        <th style="width:65px">休憩(分)</th>
+        <th style="width:90px">休暇区分</th>
+        <th style="width:60px">残業</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  // inputイベントで attRecords をリアルタイム更新
+  cal.querySelectorAll('.att-input,.att-absence-sel').forEach(el=>{
+    el.addEventListener('change',e=>{
+      const {date,field}=e.target.dataset;
+      if(!attRecords[date])attRecords[date]={work_date:date};
+      attRecords[date][field]=e.target.value||null;
+      // absence_typeがあれば打刻をクリア
+      if(field==='absence_type'&&e.target.value){
+        attRecords[date].clock_in=null;attRecords[date].clock_out=null;
+      }
+      updateAttSummary();
+    });
+  });
+  updateAttSummary();
+}
+
+function updateAttSummary(){
+  const s=$('attSummary');
+  if(!attEmpId){s.innerHTML='<p style="font-size:0.8rem;color:var(--muted)">従業員を選択してください</p>';return;}
+  let workDays=0,totalMin=0,otMin=0,lateNightMin=0,paidLeave=0,absent=0;
+  Object.values(attRecords).forEach(r=>{
+    if(!r.work_date)return;
+    if(r.absence_type==='paid_leave'){paidLeave++;return;}
+    if(r.absence_type==='absent'||r.absence_type==='sick'){absent++;return;}
+    const actual=calcActualMinutes(r.clock_in||'',r.clock_out||'',r.break_minutes??60);
+    if(actual>0){workDays++;totalMin+=actual;otMin+=calcOvertimeMinutes(actual);lateNightMin+=calcLateNightMinutes(r.clock_out||'');}
+  });
+  const h=v=>Math.floor(v/60)+'h'+(v%60?v%60+'m':'');
+  s.innerHTML=`
+    <div class="att-summary-row"><span class="att-summary-label">出勤日数</span><span class="att-summary-val">${workDays}日</span></div>
+    <div class="att-summary-row"><span class="att-summary-label">総労働時間</span><span class="att-summary-val">${h(totalMin)}</span></div>
+    <div class="att-summary-row"><span class="att-summary-label">残業時間</span><span class="att-summary-val" style="color:var(--accent)">${h(otMin)}</span></div>
+    <div class="att-summary-row"><span class="att-summary-label">深夜労働</span><span class="att-summary-val">${h(lateNightMin)}</span></div>
+    <div class="att-summary-row"><span class="att-summary-label">有休取得</span><span class="att-summary-val">${paidLeave}日</span></div>
+    <div class="att-summary-row"><span class="att-summary-label">欠勤</span><span class="att-summary-val">${absent}日</span></div>`;
+}
+
+async function saveAttRecords(){
+  if(!attEmpId){showToast('従業員を選択してください','error');return;}
+  const role=currentCompany.role;
+  if(role==='viewer'){showToast('編集権限がありません','error');return;}
+  const upserts=Object.values(attRecords).filter(r=>r.work_date).map(r=>{
+    const actual=calcActualMinutes(r.clock_in||'',r.clock_out||'',r.break_minutes??60);
+    return {
+      company_id:currentCompany.id,
+      employee_id:parseInt(attEmpId)||attEmpId,
+      work_date:r.work_date,
+      clock_in:r.clock_in||null,
+      clock_out:r.clock_out||null,
+      break_minutes:parseInt(r.break_minutes??60)||60,
+      actual_minutes:actual,
+      overtime_minutes:calcOvertimeMinutes(actual),
+      late_night_min:calcLateNightMinutes(r.clock_out||''),
+      absence_type:r.absence_type||null,
+      holiday_work:!!r.holiday_work,
+      note:r.note||null
+    };
+  });
+  if(!upserts.length){showToast('保存するデータがありません','error');return;}
+  const {error}=await sb.from('attendance_records').upsert(upserts,{onConflict:'company_id,employee_id,work_date'});
+  if(error){showToast('保存失敗: '+error.message,'error');return;}
+  showToast(`${upserts.length}件の勤怠データを保存しました ✅`,'success');
+}
+
+function exportAttExcel(){
+  if(!attEmpId){showToast('従業員を選択してください','error');return;}
+  if(!window.XLSX){showToast('ライブラリ読み込み中です','error');return;}
+  const emp=employees.find(e=>String(e.id)===String(attEmpId));
+  const rows=[['日付','出勤','退勤','休憩(分)','実労働(分)','残業(分)','深夜(分)','休暇区分']];
+  const [y,m]=attPeriod.split('-').map(Number);
+  const days=new Date(y,m,0).getDate();
+  for(let d=1;d<=days;d++){
+    const ds=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const r=attRecords[ds]||{};
+    const actual=calcActualMinutes(r.clock_in||'',r.clock_out||'',r.break_minutes??60);
+    rows.push([ds,r.clock_in||'',r.clock_out||'',r.break_minutes??60,actual,calcOvertimeMinutes(actual),calcLateNightMinutes(r.clock_out||''),r.absence_type||'']);
+  }
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'勤怠');
+  XLSX.writeFile(wb,`勤怠_${emp?.name||''}${attPeriod}.xlsx`);
+}
+
+/* ══════════════════════════════════════
+   ⑤ 年末調整 (Sprint 6-7)
+══════════════════════════════════════ */
+let yearendYear=new Date().getFullYear();
+let yearendRecords={};
+let yearendEditEmpId=null;
+
+function buildYearendYearSelector(){
+  const sel=$('yearendYearSel');
+  const cur=new Date().getFullYear();
+  sel.innerHTML='';
+  for(let y=cur;y>=cur-3;y--){
+    const o=document.createElement('option');
+    o.value=y;o.textContent=y+'年';
+    if(y===cur)o.selected=true;
+    sel.appendChild(o);
+  }
+  yearendYear=cur;
+  sel.addEventListener('change',e=>{yearendYear=parseInt(e.target.value);renderYearendList();});
+}
+
+async function renderYearendList(){
+  const wrap=$('yearendList');
+  if(!currentCompany){return;}
+  wrap.innerHTML='<p style="font-size:0.8rem;color:var(--muted)">読み込み中...</p>';
+  // yearend_adjustmentsテーブルから取得（なければ給与データから自動生成）
+  const {data:yeData}=await sb.from('yearend_adjustments')
+    .select('*').eq('company_id',currentCompany.id).eq('year',yearendYear);
+  yearendRecords={};
+  (yeData||[]).forEach(r=>{yearendRecords[r.employee_id]=r;});
+  if(!employees.length){wrap.innerHTML='<p style="font-size:0.8rem;color:var(--muted)">従業員データがありません</p>';return;}
+  const rows=employees.map(e=>{
+    const ye=yearendRecords[e.id];
+    const status=ye?.status||'draft';
+    const pct=ye?( ye.status==='confirmed'?100: ye.status==='submitted'?60:30):0;
+    return `<div class="yearend-emp-row${yearendEditEmpId==e.id?' selected':''}" data-empid="${e.id}">
+      <div class="yearend-emp-name">${esc(e.name)}<br><span style="font-size:0.65rem;color:var(--muted)">${e.dept||'—'}</span></div>
+      <div style="text-align:right;min-width:110px">
+        <span class="badge badge-${status}" style="margin-bottom:0.25rem">${status.toUpperCase()}</span>
+        <div class="yearend-progress"><div class="yearend-progress-bar" style="width:${pct}%"></div></div>
+      </div>
+    </div>`;
+  }).join('');
+  wrap.innerHTML=rows||'<p style="font-size:0.8rem;color:var(--muted)">データなし</p>';
+  wrap.querySelectorAll('.yearend-emp-row').forEach(row=>{
+    row.addEventListener('click',()=>openYearendForm(row.dataset.empid));
+  });
+}
+
+function openYearendForm(empId){
+  yearendEditEmpId=empId;
+  const emp=employees.find(e=>String(e.id)===String(empId));
+  if(!emp)return;
+  $('yearendEditName').textContent=emp.name;
+  const ye=yearendRecords[empId]||{};
+  const isOwnerEditor=['owner','editor','admin'].includes(currentCompany.role);
+  const dis=(!isOwnerEditor||ye.status==='confirmed')?'disabled':'';
+  $('yearendFormWrap').innerHTML=`
+    <div class="ye-section">
+      <div class="ye-section-title">📋 扶養・配偶者</div>
+      <div class="form-row">
+        <div class="form-group"><label>扶養人数</label>
+          <input type="number" id="ye_deps" value="${ye.dependents_count||0}" min="0" max="10" ${dis}></div>
+        <div class="form-group"><label>配偶者収入（万円）</label>
+          <input type="number" id="ye_sp_income" value="${Math.round((ye.spouse_income||0)/10000)}" min="0" step="1" ${dis}></div>
+      </div>
+    </div>
+    <div class="ye-section">
+      <div class="ye-section-title">🛡 保険料控除</div>
+      <div class="form-row">
+        <div class="form-group"><label>生命保険料（円）</label>
+          <input type="number" id="ye_life" value="${ye.life_insurance||0}" min="0" step="1000" ${dis}></div>
+        <div class="form-group"><label>地震保険料（円）</label>
+          <input type="number" id="ye_eq" value="${ye.earthquake_ins||0}" min="0" step="1000" ${dis}></div>
+      </div>
+    </div>
+    <div class="ye-section">
+      <div class="ye-section-title">🏠 住宅ローン控除</div>
+      <div class="form-row">
+        <div class="form-group"><label>ローン残高（円）</label>
+          <input type="number" id="ye_loan_bal" value="${ye.housing_loan_balance||0}" min="0" step="100000" ${dis}></div>
+        <div class="form-group"><label>控除額（自動計算）</label>
+          <input type="number" id="ye_loan_ded" value="${ye.housing_loan||0}" min="0" step="1000" ${dis}></div>
+      </div>
+    </div>
+    <div class="ye-section">
+      <div class="ye-section-title">🧮 自動計算結果</div>
+      <div id="yeCalcResult" class="ye-result-box">
+        <p style="font-size:0.75rem;color:var(--muted)">「計算」ボタンで年税額・還付額を算出します</p>
+      </div>
+    </div>
+    <div class="btn-group" style="flex-wrap:wrap">
+      ${dis?'':`<button class="btn btn-secondary" onclick="calcYearend('${empId}')">🧮 計算</button>`}
+      ${dis?'':`<button class="btn btn-primary" onclick="saveYearend('${empId}')">💾 保存</button>`}
+      <button class="btn btn-danger btn-sm" onclick="genWithholdingPDF('${empId}')">🖨 源泉徴収票</button>
+    </div>`;
+  // ローン残高入力で控除額を自動計算
+  const loanBal=$('ye_loan_bal');
+  if(loanBal)loanBal.addEventListener('input',e=>{
+    const bal=Number(e.target.value)||0;
+    const ded=Math.min(Math.floor(bal*0.007),500000);
+    const dedEl=$('ye_loan_ded');
+    if(dedEl)dedEl.value=ded;
+  });
+  // 一覧をリフレッシュ（選択状態を更新）
+  renderYearendList();
+}
+
+function calcLifeInsDeduction(paid){
+  // 新制度：一般生命保険料控除
+  if(paid<=20000)return paid;
+  if(paid<=40000)return Math.floor(paid/2)+10000;
+  if(paid<=80000)return Math.floor(paid/4)+20000;
+  return 40000;
+}
+
+function calcYearend(empId){
+  const emp=employees.find(e=>String(e.id)===String(empId));
+  if(!emp)return;
+  const deps=parseInt($('ye_deps')?.value)||0;
+  const spIncome=(parseInt($('ye_sp_income')?.value)||0)*10000;
+  const lifePaid=parseInt($('ye_life')?.value)||0;
+  const eqPaid=parseInt($('ye_eq')?.value)||0;
+  const housingDed=parseInt($('ye_loan_ded')?.value)||0;
+  // 年間総収入（月次historyから集計、なければ当月 × 12で推計）
+  const annGross=emp.gross*12;
+  // 給与所得控除（速算表 2024年版）
+  let salDed;
+  if(annGross<=1625000)salDed=550000;
+  else if(annGross<=1800000)salDed=annGross*0.4-100000;
+  else if(annGross<=3600000)salDed=annGross*0.3+80000;
+  else if(annGross<=6600000)salDed=annGross*0.2+440000;
+  else if(annGross<=8500000)salDed=annGross*0.1+1100000;
+  else salDed=1950000;
+  // 各種控除計算
+  const basicDed=480000;
+  const depDed=380000*deps;
+  // 配偶者控除
+  let spDed=0;
+  if(spIncome<=1030000)spDed=380000;
+  else if(spIncome<=1500000)spDed=260000;
+  // 生命保険料控除（上限40,000円）
+  const lifeDed=Math.min(calcLifeInsDeduction(lifePaid),40000);
+  // 地震保険料控除（上限50,000円）
+  const eqDed=Math.min(eqPaid,50000);
+  // 社会保険料控除（年間）
+  const annIns=emp.insurance*12;
+  // 課税所得
+  const taxableIncome=Math.max(0,
+    annGross-salDed-basicDed-depDed-spDed-lifeDed-eqDed-annIns-housingDed
+  );
+  // 年税額（速算表）× 復興特別所得税
+  const annTax=Math.floor(calcIncomeTaxRate(taxableIncome)*1.021);
+  // 既源泉徴収（年間）
+  const withheld=(emp.tax||0)*12;
+  // 還付額（+）/ 追加徴収（-）
+  const refund=withheld-annTax;
+  const box=$('yeCalcResult');
+  if(box){
+    box.innerHTML=`
+      <div class="ye-result-row"><span>年間総収入</span><span>${fmtY(annGross)}</span></div>
+      <div class="ye-result-row"><span>給与所得控除後</span><span>${fmtY(annGross-salDed)}</span></div>
+      <div class="ye-result-row"><span style="padding-left:0.75rem;font-size:0.7rem">基礎控除</span><span style="font-size:0.7rem">-${fmtY(basicDed)}</span></div>
+      <div class="ye-result-row"><span style="padding-left:0.75rem;font-size:0.7rem">扶養控除</span><span style="font-size:0.7rem">-${fmtY(depDed)}</span></div>
+      <div class="ye-result-row"><span style="padding-left:0.75rem;font-size:0.7rem">配偶者控除</span><span style="font-size:0.7rem">-${fmtY(spDed)}</span></div>
+      <div class="ye-result-row"><span style="padding-left:0.75rem;font-size:0.7rem">生命保険料控除</span><span style="font-size:0.7rem">-${fmtY(lifeDed)}</span></div>
+      <div class="ye-result-row"><span style="padding-left:0.75rem;font-size:0.7rem">地震保険料控除</span><span style="font-size:0.7rem">-${fmtY(eqDed)}</span></div>
+      <div class="ye-result-row"><span style="padding-left:0.75rem;font-size:0.7rem">社会保険料控除</span><span style="font-size:0.7rem">-${fmtY(annIns)}</span></div>
+      <div class="ye-result-row"><span style="padding-left:0.75rem;font-size:0.7rem">住宅ローン控除</span><span style="font-size:0.7rem">-${fmtY(housingDed)}</span></div>
+      <div class="ye-result-row ye-result-total"><span>課税総所得</span><span>${fmtY(taxableIncome)}</span></div>
+      <div class="ye-result-row ye-result-total"><span>年税額（復興税込）</span><span>${fmtY(annTax)}</span></div>
+      <div class="ye-result-row ye-result-total"><span>源泉徴収済み</span><span>${fmtY(withheld)}</span></div>
+      <div class="ye-result-row ye-result-total">
+        <span>還付予定額</span>
+        <span class="${refund>=0?'ye-refund-pos':'ye-refund-neg'}">${refund>=0?'+':''} ${fmtY(Math.abs(refund))}</span>
+      </div>
+      ${refund<0?'<p style="font-size:0.68rem;color:var(--accent);margin-top:0.35rem">⚠ 追加徴収が必要です（12月給与で徴収）</p>':''}`;
+  }
+  return {annGross,annTax,refund,taxableIncome,lifeDed,eqDed,housingDed:housingDed,annIns};
+}
+
+async function saveYearend(empId){
+  const result=calcYearend(empId);
+  if(!result)return;
+  const deps=parseInt($('ye_deps')?.value)||0;
+  const spIncome=(parseInt($('ye_sp_income')?.value)||0)*10000;
+  const lifePaid=parseInt($('ye_life')?.value)||0;
+  const eqPaid=parseInt($('ye_eq')?.value)||0;
+  const housingBal=parseInt($('ye_loan_bal')?.value)||0;
+  const housingDed=parseInt($('ye_loan_ded')?.value)||0;
+  const payload={
+    company_id:currentCompany.id,
+    employee_id:parseInt(empId)||empId,
+    year:yearendYear,
+    life_insurance:lifePaid,
+    earthquake_ins:eqPaid,
+    housing_loan:housingDed,
+    housing_loan_balance:housingBal,
+    social_ins_total:result.annIns,
+    spouse_income:spIncome,
+    ann_gross:result.annGross,
+    ann_tax_owed:result.annTax,
+    refund_amount:result.refund,
+    status:'submitted',
+    submitted_at:new Date().toISOString()
+  };
+  const {error}=await sb.from('yearend_adjustments').upsert(payload,{onConflict:'company_id,employee_id,year'});
+  if(error){showToast('保存失敗: '+error.message,'error');return;}
+  yearendRecords[empId]={...payload};
+  showToast('年末調整データを保存しました ✅','success');
+  renderYearendList();
+}
+
+async function confirmAllYearend(){
+  if(currentCompany.role!=='owner'){showToast('owner権限が必要です','error');return;}
+  showModal('年末調整一括確定',`${yearendYear}年分の年末調整をすべて確定しますか？この操作は取り消せません。`,'確定する','btn-green',async()=>{
+    const ids=Object.keys(yearendRecords);
+    if(!ids.length){showToast('確定するデータがありません','error');return;}
+    for(const eid of ids){
+      await sb.from('yearend_adjustments').update({status:'confirmed',confirmed_at:new Date().toISOString()})
+        .eq('company_id',currentCompany.id).eq('employee_id',eid).eq('year',yearendYear);
+    }
+    showToast('年末調整を一括確定しました','success');
+    renderYearendList();
+  });
+}
+
+async function genWithholdingPDF(empId){
+  const emp=employees.find(e=>String(e.id)===String(empId));
+  const ye=yearendRecords[empId];
+  if(!emp){showToast('従業員が見つかりません','error');return;}
+  const annGross=ye?.ann_gross||emp.gross*12;
+  const annTax=ye?.ann_tax_owed||emp.tax*12;
+  const refund=ye?.refund_amount||0;
+  const html=`
+    <div style="font-family:'Noto Sans JP',sans-serif;padding:24px;width:540px;border:2px solid #333">
+      <h2 style="text-align:center;font-size:14pt;margin-bottom:12px">源泉徴収票 ${yearendYear}年分</h2>
+      <table style="width:100%;border-collapse:collapse;font-size:9pt">
+        <tr><td style="border:1px solid #999;padding:6px;background:#f5f5f5;font-weight:700;width:45%">受給者氏名</td><td style="border:1px solid #999;padding:6px">${emp.name}</td></tr>
+        <tr><td style="border:1px solid #999;padding:6px;background:#f5f5f5;font-weight:700">支払者名称</td><td style="border:1px solid #999;padding:6px">${currentCompany.name}</td></tr>
+        <tr><td style="border:1px solid #999;padding:6px;background:#f5f5f5;font-weight:700">支払金額</td><td style="border:1px solid #999;padding:6px;font-family:monospace">${fmtY(annGross)}</td></tr>
+        <tr><td style="border:1px solid #999;padding:6px;background:#f5f5f5;font-weight:700">源泉徴収税額</td><td style="border:1px solid #999;padding:6px;font-family:monospace">${fmtY(annTax)}</td></tr>
+        <tr><td style="border:1px solid #999;padding:6px;background:#f5f5f5;font-weight:700">還付・追加徴収</td><td style="border:1px solid #999;padding:6px;font-family:monospace;color:${refund>=0?'#1e6e45':'#c0422a'}">${refund>=0?'+':''}${fmtY(Math.abs(refund))}</td></tr>
+        <tr><td style="border:1px solid #999;padding:6px;background:#f5f5f5;font-weight:700">発行日</td><td style="border:1px solid #999;padding:6px">${yearendYear}年12月31日</td></tr>
+      </table>
+      <p style="font-size:7pt;color:#777;margin-top:8px;text-align:right">※ 本票はシステム出力です。正式な法定調書は別途ご確認ください。</p>
+    </div>`;
+  const div=document.createElement('div');
+  div.style.cssText='position:fixed;left:-9999px;top:0;z-index:-1';
+  div.innerHTML=html;document.body.appendChild(div);
+  try{
+    if(!window.html2canvas||!window.jspdf){showToast('PDFライブラリ読み込み中です','error');return;}
+    const canvas=await html2canvas(div,{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#ffffff'});
+    const{jsPDF}=window.jspdf;
+    const pdf=new jsPDF({orientation:'landscape',unit:'mm',format:'a5'});
+    const imgData=canvas.toDataURL('image/jpeg',0.85);
+    pdf.addImage(imgData,'JPEG',10,10,180,canvas.height*(180/canvas.width));
+    pdf.save(`源泉徴収票_${emp.name}_${yearendYear}.pdf`);
+  }finally{document.body.removeChild(div);}
+}
+
+function exportYearendCSV(){
+  const rows=[['氏名','年間総収入','年税額','源泉徴収済','還付額','ステータス']];
+  employees.forEach(e=>{
+    const ye=yearendRecords[e.id];
+    rows.push([e.name,ye?.ann_gross||'',ye?.ann_tax_owed||'',ye?Math.round((ye.ann_tax_owed||0)*1):'',(ye?.refund_amount||'').toString(),ye?.status||'未入力']);
+  });
+  const bom='\uFEFF';
+  const csv=bom+rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download=`年末調整_${yearendYear}.csv`;a.click();
+}
+
+/* ══════════════════════════════════════
+   ⑥ 振込管理 (Sprint 8)
+══════════════════════════════════════ */
+let transferPeriod='';
+let transferData=[];
+
+function buildTransferPeriodSelector(){
+  const sel=$('transferPeriodSel'),now=new Date();
+  sel.innerHTML='';
+  for(let i=-2;i<=1;i++){
+    const d=new Date(now.getFullYear(),now.getMonth()+i,1);
+    const v=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const o=document.createElement('option');
+    o.value=v;o.textContent=v.replace('-','年')+'月';
+    if(i===0)o.selected=true;
+    sel.appendChild(o);
+  }
+  transferPeriod=sel.value;
+  sel.addEventListener('change',e=>{transferPeriod=e.target.value;renderTransferList();});
+}
+
+async function loadTransferData(){
+  // 確定済み給与historyから振込データを生成
+  const hist=await dbGet('payroll_history',{company_id:currentCompany.id,period:transferPeriod});
+  if(!hist||!hist.employees){showToast('確定済みの給与データが見つかりません。先に給与を確定してください。','error');return;}
+  transferData=hist.employees.map(e=>({
+    employee_id:e.id,
+    name:e.name,
+    dept:e.dept||'—',
+    amount:e.monthlyNet||0,
+    bank_name:e.bank_name||'',
+    branch_name:e.branch_name||'',
+    account_type:e.account_type||'ordinary',
+    account_no:e.account_no||'',
+    account_name:e.account_name||e.name,
+    status:'pending',
+    selected:true
+  }));
+  // DBにupsert
+  for(const t of transferData){
+    await sb.from('bank_transfers').upsert({
+      company_id:currentCompany.id,period:transferPeriod,
+      employee_id:parseInt(t.employee_id)||t.employee_id,
+      account_name:t.account_name,
+      amount:t.amount,status:'pending',
+      account_no:t.account_no||'',
+      bank_code:t.bank_code||'0000',
+      branch_code:t.branch_code||'000',
+      account_type:t.account_type||'ordinary'
+    },{onConflict:'company_id,period,employee_id'});
+  }
+  showToast(`${transferData.length}件の振込データを作成しました`,'success');
+  renderTransferList();
+}
+
+async function renderTransferList(){
+  const wrap=$('transferList');
+  if(!currentCompany)return;
+  const {data}=await sb.from('bank_transfers')
+    .select('*').eq('company_id',currentCompany.id).eq('period',transferPeriod);
+  transferData=(data||[]).map(r=>({...r,selected:r.status!=='completed'}));
+  if(!transferData.length){
+    wrap.innerHTML='<p style="font-size:0.8rem;color:var(--muted)">「振込データ作成」ボタンで確定済み給与から自動生成します</p>';
+    $('transferSummary').textContent='';return;
+  }
+  const total=transferData.filter(t=>t.selected).reduce((s,t)=>s+t.amount,0);
+  const cnt=transferData.filter(t=>t.selected).length;
+  $('transferSummary').textContent=`合計 ${fmtY(total)} / ${cnt}件`;
+  const rows=transferData.map((t,i)=>{
+    const statusCls=`badge-${t.status||'pending'}`;
+    const hasBankInfo=t.account_no&&t.account_no!=='';
+    return `<tr>
+      <td><input type="checkbox" class="transfer-check" data-idx="${i}" ${t.selected?'checked':''} ${t.status==='completed'?'disabled':''}></td>
+      <td>
+        <div style="font-weight:600;font-size:0.82rem">${esc(t.account_name||'—')}</div>
+        <div class="transfer-bank">${esc(t.dept||'—')}</div>
+      </td>
+      <td>
+        ${hasBankInfo
+          ?`<div style="font-size:0.75rem">${esc(t.bank_code||'')} ${esc(t.branch_code||'')} ${t.account_type==='checking'?'当座':'普通'} ${esc(t.account_no)}</div>`
+          :'<span style="color:var(--accent);font-size:0.72rem">⚠ 口座未登録</span>'}
+      </td>
+      <td class="transfer-amount">${fmtY(t.amount)}</td>
+      <td><span class="badge ${statusCls}">${(t.status||'PENDING').toUpperCase()}</span></td>
+    </tr>`;
+  }).join('');
+  wrap.innerHTML=`
+    <div class="transfer-total-bar">
+      <span>選択中合計</span>
+      <span class="transfer-total-amount" id="transferTotalAmt">${fmtY(total)}</span>
+      <span style="font-size:0.72rem;color:var(--muted)">${cnt}件</span>
+    </div>
+    <table class="transfer-tbl">
+      <thead><tr>
+        <th style="width:36px"><input type="checkbox" id="transferCheckAll" class="transfer-check" checked></th>
+        <th>受取人</th><th>口座情報</th><th style="text-align:right">振込金額</th><th>ステータス</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  // 全選択チェックボックス
+  const chkAll=$('transferCheckAll');
+  if(chkAll)chkAll.addEventListener('change',e=>{
+    transferData.forEach((t,i)=>{if(t.status!=='completed')t.selected=e.target.checked;});
+    renderTransferList();
+  });
+  wrap.querySelectorAll('.transfer-check[data-idx]').forEach(chk=>{
+    chk.addEventListener('change',e=>{
+      transferData[parseInt(e.target.dataset.idx)].selected=e.target.checked;
+      const total2=transferData.filter(t=>t.selected).reduce((s,t)=>s+t.amount,0);
+      const cnt2=transferData.filter(t=>t.selected).length;
+      const el=$('transferTotalAmt');
+      if(el)el.textContent=fmtY(total2);
+      $('transferSummary').textContent=`合計 ${fmtY(total2)} / ${cnt2}件`;
+    });
+  });
+}
+
+function generateFBFile(){
+  // 全銀協フォーマット（総合振込）固定120バイト
+  if(!transferData.length){showToast('振込データがありません','error');return;}
+  const selected=transferData.filter(t=>t.selected);
+  if(!selected.length){showToast('振込対象を選択してください','error');return;}
+  const now=new Date();
+  const pad=(s,n,right=false)=>{s=String(s||'');return right?s.slice(0,n).padEnd(n,' '):s.slice(0,n).padStart(n,'0');}
+  const padL=(s,n)=>pad(s,n,true);
+  const ym=`${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  // ヘッダレコード（120バイト）
+  const header=[
+    '1',       // データ区分
+    '21',      // 種別コード（総合振込）
+    '0',       // コード区分
+    padL(currentCompany.id.slice(0,10),10), // 依頼人コード
+    padL(currentCompany.name.slice(0,40),40), // 依頼人名
+    ym,        // 振込日
+    '0000',    // 仕向銀行番号
+    padL('',15), // 仕向銀行名（スペース）
+    '000',     // 仕向支店番号
+    padL('',15), // 仕向支店名（スペース）
+    padL('',4), // 預金種目（スペース）
+    padL('',7), // 口座番号（スペース）
+    padL('',17) // 予備
+  ].join('').slice(0,120).padEnd(120,' ');
+  // データレコード群
+  const dataRecords=selected.map((t,i)=>{
+    const acType=t.account_type==='checking'?'2':'1';
+    const rec=[
+      pad(t.bank_code||'0000',4),
+      padL(t.bank_name||'',15),
+      pad(t.branch_code||'000',3),
+      padL(t.branch_name||'',15),
+      padL('',4), // 手順（スペース）
+      acType,
+      pad(t.account_no||'0000000',7),
+      padL(String(t.account_name||'').toUpperCase(),30),
+      pad(t.amount,10),
+      '0', // 新規コード
+      padL('',10), // 顧客コード1
+      padL('',10), // 顧客コード2
+      '0', // 振込区分
+      padL('',7)  // 予備
+    ].join('').slice(0,120).padEnd(120,' ');
+    return rec;
+  });
+  // トレーラレコード
+  const totAmt=selected.reduce((s,t)=>s+t.amount,0);
+  const trailer=[
+    '8',
+    pad(selected.length,6),
+    pad(totAmt,12),
+    padL('',101)
+  ].join('').slice(0,120).padEnd(120,' ');
+  // エンドレコード
+  const end='9'.padEnd(120,' ');
+  const content=[header,...dataRecords,trailer,end].join('\r\n');
+  const blob=new Blob([content],{type:'text/plain;charset=Shift_JIS'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`FB振込_${transferPeriod}.txt`;a.click();
+  URL.revokeObjectURL(url);
+  showToast('全銀協FBファイルを生成しました 📥','success');
+}
+
+async function markTransferSent(){
+  if(currentCompany.role!=='owner'){showToast('owner権限が必要です','error');return;}
+  const selected=transferData.filter(t=>t.selected&&t.id);
+  if(!selected.length){showToast('マークする振込データを選択してください','error');return;}
+  showModal('振込済みマーク',`${selected.length}件を「振込済み」としてマークしますか？`,'マークする','btn-green',async()=>{
+    for(const t of selected){
+      await sb.from('bank_transfers').update({status:'sent',transferred_at:new Date().toISOString()}).eq('id',t.id);
+    }
+    showToast('振込済みにマークしました ✅','success');
+    renderTransferList();
+  });
 }
 document.querySelectorAll('.nav-tab').forEach(tab=>{tab.addEventListener('click',()=>showPage(tab.dataset.page));});
 
@@ -2048,6 +2986,10 @@ $('btnCSV').addEventListener('click',()=>{
   if(employees.length===0){showToast('データがありません','error');return;}
   exportCSV(employees,currentPeriod);
 });
+$('btnYayoi').addEventListener('click',()=>{
+  if(employees.length===0){showToast('データがありません','error');return;}
+  exportYayoiCSV(employees,currentPeriod);
+});
 $('btnImport').addEventListener('change',e=>{
   handleImportFile(e.target.files[0]);
   e.target.value='';
@@ -2067,6 +3009,58 @@ $('btnHistoryCSV').addEventListener('click',async()=>{
   if(row?.employees)exportCSV(row.employees,_historyPeriod);
   else showToast('データが見つかりません','error');
 });
+// ══ 勤怠管理 ══
+$('btnAttSave').addEventListener('click',saveAttRecords);
+$('btnAttExport').addEventListener('click',exportAttExcel);
+$('btnAttToPayroll').addEventListener('click',()=>{
+  if(!attEmpId){showToast('従業員を選択してください','error');return;}
+  // 残業時間を計算して給与計算ページの手当に反映
+  let otMin=0;
+  Object.values(attRecords).forEach(r=>{
+    const actual=calcActualMinutes(r.clock_in||'',r.clock_out||'',r.break_minutes??60);
+    otMin+=calcOvertimeMinutes(actual);
+  });
+  const otHours=otMin/60;
+  // 給与計算ページに移動して従業員を選択
+  showPage('payroll');
+  const emp=employees.find(e=>String(e.id)===String(attEmpId));
+  if(emp){
+    startEdit(emp.id);
+    // 残業手当を手当リストに追加
+    if(otHours>0){
+      const base=Number($('basePay')?.value)||0;
+      const monthHours=160; // 月所定
+      const hourly=Math.round(base/monthHours);
+      const otPay=Math.round(hourly*otHours*1.25);
+      allowances=allowances.filter(a=>a.name!=='残業手当');
+      allowances.push({name:'残業手当',amount:otPay});
+      renderAllowanceList();triggerAutoCalc();
+      showToast(`残業手当 ${fmtY(otPay)} を取込みました（${Math.round(otHours*10)/10}h × 1.25）`,'success');
+    }else{
+      showToast('残業なし（0時間）のため手当は追加されませんでした','');
+    }
+  }
+});
+$('attPeriodSelect').addEventListener('change',e=>{attPeriod=e.target.value;loadAttRecords();});
+$('attEmpSelect').addEventListener('change',e=>{attEmpId=e.target.value||null;loadAttRecords();});
+
+// ══ 年末調整 ══
+$('btnYearendPDF').addEventListener('click',()=>{
+  if(!yearendEditEmpId){showToast('従業員を選択してください','error');return;}
+  genWithholdingPDF(yearendEditEmpId);
+});
+$('btnYearendCSV').addEventListener('click',exportYearendCSV);
+$('btnYearendConfirm').addEventListener('click',confirmAllYearend);
+
+// ══ 振込管理 ══
+$('btnTransferLoad').addEventListener('click',()=>{
+  showModal('振込データ作成',`<b>${transferPeriod}</b>の確定済み給与から振込データを作成します。`,
+    '作成する','btn-blue',loadTransferData);
+});
+$('btnTransferFB').addEventListener('click',generateFBFile);
+$('btnTransferMarkSent').addEventListener('click',markTransferSent);
+$('transferPeriodSel').addEventListener('change',e=>{transferPeriod=e.target.value;renderTransferList();});
+
 $('btnFetchTaxRates').addEventListener('click',fetchLatestTaxRates);
 $('btnSaveTaxRates').addEventListener('click',()=>{
   ['hRate','pRate','eRate','mRate'].forEach(k=>{const el=$('tr_'+k);if(el)taxRates[k]=Number(el.value);});
