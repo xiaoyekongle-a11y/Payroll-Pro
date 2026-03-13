@@ -1,0 +1,1539 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PayrollAuto v4.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&family=Syne:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0d0f14;--paper:#f5f3ee;--cream:#ede9e0;
+  --accent:#c8502a;--gold:#b89a3e;--green:#2a7a50;--blue:#1a3a5c;
+  --muted:#7a7469;--border:#ccc8bf;
+  --font-display:'Syne',sans-serif;
+  --font-body:'Noto Sans JP',sans-serif;
+  --font-mono:'DM Mono',monospace;
+  --radius:4px;
+}
+html{font-size:15px}
+body{font-family:var(--font-body);background:var(--paper);color:var(--ink);min-height:100vh}
+
+/* ===== DARK MODE ===== */
+body.dark{--ink:#e8e4dc;--paper:#0d0f14;--cream:#1a1c23;--border:#2e3140;--muted:#5a5650}
+body.dark input,body.dark select,body.dark textarea{background:#0d0f14;color:#e8e4dc;border-color:#2e3140}
+
+/* ===== SCREENS ===== */
+.screen{display:none;min-height:100vh}
+.screen.active{display:flex}
+
+/* ===== AUTH SCREEN ===== */
+#authScreen{
+  flex-direction:column;align-items:center;justify-content:center;
+  background:var(--ink);color:var(--paper);padding:2rem;
+}
+.auth-logo{
+  font-family:var(--font-display);font-size:2rem;font-weight:900;
+  letter-spacing:-0.02em;margin-bottom:0.25rem;
+}
+.auth-logo span{color:var(--accent)}
+.auth-tagline{font-size:0.72rem;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:2.5rem}
+.auth-card{
+  background:var(--cream);color:var(--ink);
+  border-radius:6px;padding:2rem;width:100%;max-width:400px;
+  box-shadow:8px 8px 0 var(--accent);
+}
+body.dark .auth-card{background:#1a1c23;color:#e8e4dc}
+.auth-tabs{display:flex;gap:0;margin-bottom:1.5rem;border-bottom:2px solid var(--border)}
+.auth-tab{
+  flex:1;text-align:center;padding:0.65rem;font-size:0.75rem;font-weight:700;
+  letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;
+  border-bottom:3px solid transparent;margin-bottom:-2px;transition:all 0.15s;
+  color:var(--muted);
+}
+.auth-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.auth-panel{display:none}
+.auth-panel.active{display:block}
+.auth-field{margin-bottom:1rem}
+.auth-field label{display:block;font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem}
+.auth-field input,.auth-field select{
+  width:100%;padding:0.65rem 0.75rem;
+  border:2px solid var(--border);border-radius:var(--radius);
+  font-family:var(--font-body);font-size:0.88rem;
+  background:#fff;color:var(--ink);transition:border-color 0.15s;
+}
+body.dark .auth-field input,body.dark .auth-field select{background:#0d0f14;color:#e8e4dc}
+.auth-field input:focus,.auth-field select:focus{outline:none;border-color:var(--accent)}
+.auth-btn{
+  width:100%;padding:0.85rem;background:var(--accent);color:#fff;
+  border:none;border-radius:var(--radius);font-family:var(--font-display);
+  font-size:0.85rem;font-weight:800;letter-spacing:0.08em;cursor:pointer;
+  text-transform:uppercase;margin-top:0.5rem;transition:opacity 0.15s;
+}
+.auth-btn:hover{opacity:0.88}
+.auth-btn.secondary{background:var(--blue);margin-top:0.5rem}
+.auth-divider{text-align:center;font-size:0.68rem;color:var(--muted);margin:0.75rem 0;letter-spacing:0.1em}
+.auth-err{font-size:0.75rem;color:var(--accent);margin-top:0.5rem;display:none}
+.auth-invite-wrap{
+  background:#fff;border:1.5px dashed var(--border);border-radius:var(--radius);
+  padding:0.85rem;margin-top:1rem;
+}
+body.dark .auth-invite-wrap{background:#0d0f14}
+.auth-invite-wrap p{font-size:0.72rem;color:var(--muted);margin-bottom:0.5rem}
+
+/* ===== COMPANY SETUP SCREEN ===== */
+#setupScreen{
+  flex-direction:column;align-items:center;justify-content:center;
+  background:var(--paper);padding:2rem;
+}
+.setup-card{
+  background:#fff;border:2px solid var(--border);border-radius:6px;
+  padding:2rem;width:100%;max-width:480px;
+  box-shadow:6px 6px 0 var(--ink);
+}
+body.dark .setup-card{background:#1a1c23}
+.setup-title{font-family:var(--font-display);font-size:1.2rem;font-weight:900;margin-bottom:0.25rem}
+.setup-sub{font-size:0.72rem;color:var(--muted);margin-bottom:1.5rem}
+
+/* ===== COMPANY SELECT SCREEN ===== */
+#companySelectScreen{
+  flex-direction:column;align-items:center;justify-content:center;
+  background:var(--paper);padding:2rem;
+}
+.company-list{width:100%;max-width:520px}
+.company-card{
+  background:#fff;border:2px solid var(--border);border-radius:var(--radius);
+  padding:1.1rem 1.5rem;margin-bottom:0.75rem;cursor:pointer;
+  display:flex;align-items:center;gap:1rem;
+  box-shadow:3px 3px 0 var(--border);transition:all 0.15s;
+}
+body.dark .company-card{background:#1a1c23}
+.company-card:hover{box-shadow:5px 5px 0 var(--ink);transform:translate(-1px,-1px)}
+.company-avatar{
+  width:42px;height:42px;border-radius:var(--radius);
+  background:var(--ink);color:var(--paper);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-weight:900;font-size:1.1rem;flex-shrink:0;
+}
+.company-info{flex:1}
+.company-name{font-weight:700;font-size:0.95rem}
+.company-meta{font-size:0.7rem;color:var(--muted);margin-top:0.15rem;font-family:var(--font-mono)}
+.company-role{
+  font-size:0.6rem;font-family:var(--font-mono);font-weight:700;
+  padding:0.2em 0.5em;border-radius:2px;letter-spacing:0.06em;
+}
+.role-owner{background:var(--accent);color:#fff}
+.role-editor{background:var(--blue);color:#fff}
+.role-viewer{background:var(--muted);color:#fff}
+
+/* ===== APP LAYOUT ===== */
+#appScreen{flex-direction:column}
+.app-header{
+  background:var(--ink);color:var(--paper);
+  padding:0.6rem 1.5rem;display:flex;align-items:center;gap:1rem;
+  position:sticky;top:0;z-index:100;
+}
+.app-logo{font-family:var(--font-display);font-weight:900;font-size:0.95rem;letter-spacing:0.04em}
+.app-logo span{color:var(--accent)}
+.app-company{
+  font-size:0.7rem;color:var(--muted);font-family:var(--font-mono);
+  padding:0.2rem 0.6rem;border:1px solid #2e3140;border-radius:2px;
+}
+.header-spacer{flex:1}
+.header-role-badge{font-size:0.58rem;font-family:var(--font-mono);font-weight:700;padding:0.18em 0.55em;border-radius:2px;letter-spacing:0.06em}
+.header-avatar{
+  width:28px;height:28px;border-radius:50%;
+  background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-weight:900;font-size:0.75rem;cursor:pointer;
+}
+.header-btn{
+  background:none;border:1px solid #2e3140;border-radius:var(--radius);
+  color:var(--paper);font-size:0.68rem;padding:0.3rem 0.65rem;cursor:pointer;
+  font-family:var(--font-body);transition:border-color 0.15s;
+}
+.header-btn:hover{border-color:var(--muted)}
+
+/* ===== NAV TABS ===== */
+.nav-tabs{
+  background:#fff;border-bottom:2px solid var(--border);
+  display:flex;padding:0 1.5rem;overflow-x:auto;
+}
+body.dark .nav-tabs{background:#1a1c23}
+.nav-tab{
+  padding:0.75rem 1.1rem;font-size:0.72rem;font-weight:700;
+  letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;
+  border-bottom:3px solid transparent;margin-bottom:-2px;
+  white-space:nowrap;color:var(--muted);transition:all 0.15s;
+}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.nav-tab:hover:not(.active){color:var(--ink)}
+
+/* ===== PAGE CONTENT ===== */
+.page{display:none;padding:1.5rem;max-width:1200px;margin:0 auto;width:100%}
+.page.active{display:block}
+
+/* ===== PANELS ===== */
+.panel{background:#fff;border:2px solid var(--border);border-radius:var(--radius);box-shadow:4px 4px 0 var(--border);margin-bottom:1.25rem;overflow:hidden}
+body.dark .panel{background:#1a1c23;box-shadow:4px 4px 0 #1a1c23}
+.panel-header{
+  background:var(--ink);color:var(--paper);
+  padding:0.65rem 1.1rem;font-family:var(--font-display);
+  font-size:0.72rem;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;
+  display:flex;align-items:center;gap:0.5rem;
+}
+.panel-body{padding:1.1rem}
+
+/* ===== FORMS ===== */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem}
+.form-row.cols3{grid-template-columns:1fr 1fr 1fr}
+.form-group{margin-bottom:0.75rem}
+.form-group:last-child{margin-bottom:0}
+.form-group label{display:block;font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem}
+.form-group label .req{color:var(--accent);margin-left:2px}
+.form-group input,.form-group select,.form-group textarea{
+  width:100%;padding:0.55rem 0.7rem;
+  border:2px solid var(--border);border-radius:var(--radius);
+  font-family:var(--font-body);font-size:0.85rem;
+  background:#fff;color:var(--ink);transition:border-color 0.15s;
+}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(200,80,42,0.1)}
+
+/* ===== BUTTONS ===== */
+.btn{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.6rem 1.1rem;border-radius:var(--radius);
+  font-family:var(--font-display);font-size:0.75rem;font-weight:800;
+  letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;border:2px solid;
+  transition:all 0.15s;white-space:nowrap;
+}
+.btn:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--ink)}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-secondary{background:transparent;color:var(--ink);border-color:var(--border)}
+.btn-blue{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn-green{background:var(--green);color:#fff;border-color:var(--green)}
+.btn-danger{background:#c0392b;color:#fff;border-color:#c0392b}
+.btn-sm{padding:0.35rem 0.65rem;font-size:0.65rem}
+.btn-group{display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.75rem}
+
+/* ===== TABLES ===== */
+.tbl-wrap{overflow-x:auto}
+table.data-tbl{width:100%;border-collapse:collapse;font-size:0.8rem}
+table.data-tbl th{
+  background:var(--ink);color:var(--paper);
+  padding:0.55rem 0.75rem;text-align:left;
+  font-family:var(--font-mono);font-size:0.65rem;font-weight:500;letter-spacing:0.06em;
+  white-space:nowrap;
+}
+table.data-tbl td{padding:0.6rem 0.75rem;border-bottom:1px solid var(--border);vertical-align:middle}
+table.data-tbl tr:last-child td{border-bottom:none}
+table.data-tbl tr:hover td{background:var(--cream)}
+body.dark table.data-tbl tr:hover td{background:#1a1c23}
+.tbl-actions{display:flex;gap:0.3rem;flex-wrap:wrap}
+.tbl-btn{
+  padding:0.2rem 0.5rem;font-size:0.62rem;font-family:var(--font-mono);
+  border:1px solid var(--border);border-radius:2px;cursor:pointer;
+  background:#fff;color:var(--ink);white-space:nowrap;
+}
+body.dark .tbl-btn{background:#0d0f14;color:#e8e4dc}
+.tbl-btn:hover{border-color:var(--accent);color:var(--accent)}
+.tbl-btn.danger:hover{border-color:#c0392b;color:#c0392b}
+
+/* ===== BADGES ===== */
+.badge{display:inline-flex;align-items:center;font-size:0.6rem;font-family:var(--font-mono);font-weight:700;padding:0.15em 0.5em;border-radius:2px;letter-spacing:0.04em;white-space:nowrap}
+.badge-owner{background:var(--accent);color:#fff}
+.badge-editor{background:var(--blue);color:#fff}
+.badge-viewer{background:var(--muted);color:#fff}
+.badge-calc{background:#3a6fc4;color:#fff}
+.badge-pdf{background:var(--green);color:#fff}
+.badge-none{background:#e0e0e0;color:#666}
+.badge-archived{background:var(--gold);color:#fff}
+
+/* ===== PERIOD BAR ===== */
+.period-bar{
+  background:#fff;border:2px solid var(--border);border-radius:var(--radius);
+  padding:0.65rem 1.1rem;display:flex;align-items:center;gap:0.75rem;
+  margin-bottom:1rem;flex-wrap:wrap;
+}
+body.dark .period-bar{background:#1a1c23}
+.period-bar label{font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)}
+.period-bar select{
+  padding:0.35rem 0.55rem;border:1.5px solid var(--border);border-radius:var(--radius);
+  font-family:var(--font-mono);font-size:0.8rem;background:#fff;color:var(--ink);
+}
+body.dark .period-bar select{background:#0d0f14;color:#e8e4dc}
+.locked-badge{
+  display:flex;align-items:center;gap:0.3rem;
+  font-size:0.68rem;font-family:var(--font-mono);color:var(--accent);
+  background:rgba(200,80,42,0.1);padding:0.3rem 0.65rem;border-radius:var(--radius);
+  border:1px solid rgba(200,80,42,0.3);
+}
+
+/* ===== STAT CARDS ===== */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0.75rem;margin-bottom:1.25rem}
+.stat-card{
+  background:#fff;border:2px solid var(--border);border-radius:var(--radius);
+  padding:1rem;box-shadow:3px 3px 0 var(--border);
+}
+body.dark .stat-card{background:#1a1c23}
+.stat-label{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem}
+.stat-value{font-family:var(--font-mono);font-size:1.15rem;font-weight:500;color:var(--ink)}
+.stat-value.accent{color:var(--accent)}
+.stat-value.green{color:var(--green)}
+.stat-value.blue{color:var(--blue)}
+.stat-sub{font-size:0.62rem;color:var(--muted);margin-top:0.2rem;font-family:var(--font-mono)}
+
+/* ===== MODAL ===== */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.6);
+  display:none;align-items:center;justify-content:center;
+  z-index:999;padding:1rem;
+}
+.modal-overlay.show{display:flex}
+.modal{
+  background:#fff;border:2px solid var(--ink);border-radius:var(--radius);
+  padding:1.75rem;width:100%;max-width:460px;
+  box-shadow:8px 8px 0 var(--ink);
+}
+body.dark .modal{background:#1a1c23;color:#e8e4dc}
+.modal-lg{max-width:640px}
+.modal-xl{max-width:820px}
+.modal-title{font-family:var(--font-display);font-size:1rem;font-weight:900;margin-bottom:0.5rem}
+.modal-body{font-size:0.82rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.6}
+.modal-actions{display:flex;gap:0.5rem;justify-content:flex-end}
+
+/* ===== ACCORDION ===== */
+.accordion{border:2px solid var(--border);border-radius:var(--radius);margin-bottom:0.65rem;overflow:hidden}
+.accordion-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0.65rem 1rem;background:var(--cream);cursor:pointer;
+  font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+  user-select:none;
+}
+body.dark .accordion-header{background:#0d0f14}
+.accordion-header:hover{background:var(--border)}
+.accordion-arrow{font-size:0.6rem;transition:transform 0.2s}
+.accordion.open .accordion-arrow{transform:rotate(180deg)}
+.accordion-body{display:none;padding:0.85rem 1rem}
+.accordion.open .accordion-body{display:block}
+
+/* ===== PREVIEW BAR ===== */
+.calc-preview{
+  background:var(--cream);border:1.5px solid var(--border);border-radius:var(--radius);
+  padding:0.65rem 0.85rem;font-size:0.75rem;font-family:var(--font-mono);
+  line-height:2;margin-top:0.5rem;display:none;
+}
+
+/* ===== ALLOWANCE ===== */
+.allowance-row{display:grid;grid-template-columns:1fr 110px 26px;gap:0.4rem;align-items:center;margin-bottom:0.35rem}
+.allowance-row input{
+  padding:0.4rem 0.55rem;border:1.5px solid var(--border);border-radius:var(--radius);
+  font-size:0.8rem;font-family:var(--font-body);background:#fff;color:var(--ink);width:100%;
+}
+body.dark .allowance-row input{background:#0d0f14;color:#e8e4dc;border-color:#2e3140}
+.allowance-row input:focus{outline:none;border-color:var(--accent)}
+.al-del{background:none;border:1px solid var(--border);border-radius:2px;font-size:0.7rem;cursor:pointer;color:var(--muted);padding:0.28rem 0.4rem;line-height:1}
+.al-del:hover{color:var(--accent);border-color:var(--accent)}
+.add-allowance-btn{
+  background:none;border:1.5px dashed var(--border);border-radius:var(--radius);
+  font-size:0.7rem;color:var(--muted);cursor:pointer;padding:0.4rem;width:100%;
+  text-align:center;
+}
+.add-allowance-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ===== TOAST ===== */
+.toast{
+  position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;
+  background:var(--ink);color:var(--paper);
+  padding:0.7rem 1.1rem;border-radius:var(--radius);
+  font-size:0.78rem;font-family:var(--font-mono);
+  box-shadow:4px 4px 0 rgba(0,0,0,0.3);
+  animation:slideUp 0.2s ease;pointer-events:none;
+  max-width:320px;
+}
+.toast.success{border-left:3px solid var(--green)}
+.toast.error{border-left:3px solid var(--accent)}
+@keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===== TAX RATES PANEL ===== */
+.tax-rate-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0.75rem}
+.tax-rate-card{
+  background:var(--cream);border:1.5px solid var(--border);border-radius:var(--radius);padding:0.85rem;
+}
+body.dark .tax-rate-card{background:#0d0f14}
+.tax-rate-label{font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.4rem}
+.tax-rate-val{font-family:var(--font-mono);font-size:1rem;color:var(--ink);margin-bottom:0.15rem}
+.tax-rate-updated{font-size:0.6rem;color:var(--muted);font-family:var(--font-mono)}
+.tax-update-status{
+  display:flex;align-items:center;gap:0.5rem;
+  font-size:0.72rem;padding:0.5rem 0.85rem;border-radius:var(--radius);
+  margin-bottom:0.85rem;
+}
+.tax-update-status.fetching{background:rgba(26,58,92,0.1);color:var(--blue);border:1px solid rgba(26,58,92,0.2)}
+.tax-update-status.done{background:rgba(42,122,80,0.1);color:var(--green);border:1px solid rgba(42,122,80,0.2)}
+.tax-update-status.error{background:rgba(200,80,42,0.1);color:var(--accent);border:1px solid rgba(200,80,42,0.2)}
+
+/* ===== BUDGET / WALL ===== */
+.budget-progress{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:0.4rem}
+.budget-bar-fill{height:100%;border-radius:3px;transition:width 0.4s,background 0.3s}
+.budget-bar-fill.ok{background:var(--green)}
+.budget-bar-fill.warn{background:var(--gold)}
+.budget-bar-fill.over{background:var(--accent)}
+
+/* ===== INVITE CODE ===== */
+.invite-code-box{
+  font-family:var(--font-mono);font-size:1.2rem;font-weight:500;
+  letter-spacing:0.2em;background:var(--cream);border:2px dashed var(--border);
+  padding:0.75rem 1rem;border-radius:var(--radius);text-align:center;cursor:pointer;
+}
+.invite-code-box:hover{border-color:var(--accent)}
+
+/* ===== PRINT ===== */
+#printArea{display:none}
+@media print{
+  body>*:not(#printArea){display:none!important}
+  #printArea{display:block}
+  .slip-page{page-break-after:always;padding:2cm;font-family:'Noto Sans JP',sans-serif;max-width:21cm;margin:0 auto}
+  .slip-title{font-size:16pt;font-weight:700;margin-bottom:4pt;border-bottom:2pt solid #000;padding-bottom:6pt}
+  .slip-date{font-size:9pt;color:#666;margin-bottom:12pt}
+  .slip-info-table{width:100%;border-collapse:collapse;margin-bottom:12pt;font-size:9pt}
+  .slip-info-table td{padding:4pt 6pt;border:1pt solid #ccc}
+  .slip-info-table td.lbl{background:#f5f5f5;font-weight:700;width:80pt}
+  .slip-section-title{font-size:9pt;font-weight:700;background:#000;color:#fff;padding:3pt 6pt;margin:8pt 0 4pt}
+  .slip-row{display:flex;justify-content:space-between;padding:3pt 6pt;border-bottom:0.5pt solid #eee;font-size:9pt}
+  .slip-row .val{font-family:monospace;font-weight:700}
+  .slip-net{display:flex;justify-content:space-between;background:#000;color:#fff;padding:6pt;font-weight:700;font-size:11pt;margin-top:8pt}
+  .slip-footer{font-size:7pt;color:#888;margin-top:10pt}
+}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:640px){
+  .form-row{grid-template-columns:1fr}
+  .form-row.cols3{grid-template-columns:1fr}
+  .stat-grid{grid-template-columns:1fr 1fr}
+  .page{padding:1rem}
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div class="screen active" id="authScreen">
+  <div class="auth-logo">Payroll<span>Auto</span></div>
+  <div class="auth-tagline">Multi-Company Payroll SaaS — v4.0</div>
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <div class="auth-tab active" data-tab="login">ログイン</div>
+      <div class="auth-tab" data-tab="register">新規登録</div>
+      <div class="auth-tab" data-tab="join">招待で参加</div>
+    </div>
+    <div class="auth-panel active" id="panelLogin">
+      <div class="auth-field"><label>メールアドレス</label><input type="email" id="loginEmail" placeholder="email@example.com"></div>
+      <div class="auth-field"><label>パスワード</label><input type="password" id="loginPass" placeholder="••••••••"></div>
+      <button class="auth-btn" id="btnLogin">ログイン</button>
+      <div class="auth-err" id="loginErr"></div>
+    </div>
+    <div class="auth-panel" id="panelRegister">
+      <div class="auth-field"><label>会社名 <span style="color:var(--accent)">*</span></label><input type="text" id="regCompanyName" placeholder="株式会社〇〇"></div>
+      <div class="auth-field"><label>あなたの名前</label><input type="text" id="regUserName" placeholder="山田 太郎"></div>
+      <div class="auth-field"><label>メールアドレス</label><input type="email" id="regEmail" placeholder="email@example.com"></div>
+      <div class="auth-field"><label>パスワード（6文字以上）</label><input type="password" id="regPass" placeholder="••••••••"></div>
+      <button class="auth-btn" id="btnRegister">会社アカウントを作成</button>
+      <div class="auth-err" id="regErr"></div>
+    </div>
+    <div class="auth-panel" id="panelJoin">
+      <div class="auth-field"><label>あなたの名前</label><input type="text" id="joinUserName" placeholder="山田 太郎"></div>
+      <div class="auth-field"><label>メールアドレス</label><input type="email" id="joinEmail" placeholder="email@example.com"></div>
+      <div class="auth-field"><label>パスワード（6文字以上）</label><input type="password" id="joinPass" placeholder="••••••••"></div>
+      <div class="auth-field"><label>招待コード</label><input type="text" id="joinCode" placeholder="例：ABC12345" style="letter-spacing:0.15em;text-transform:uppercase"></div>
+      <button class="auth-btn" id="btnJoin">参加する</button>
+      <div class="auth-err" id="joinErr"></div>
+    </div>
+  </div>
+</div>
+
+<!-- COMPANY SELECT SCREEN -->
+<div class="screen" id="companySelectScreen">
+  <div style="width:100%;max-width:540px;padding:2rem">
+    <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:900;margin-bottom:0.25rem">会社を選択</div>
+    <div style="font-size:0.72rem;color:var(--muted);margin-bottom:1.5rem">参加している会社をクリックして開始</div>
+    <div id="companyListWrap"></div>
+    <button class="btn btn-secondary" id="btnNewCompany" style="width:100%;justify-content:center;margin-top:0.5rem">＋ 新しい会社を作成</button>
+    <button class="btn btn-secondary" id="btnSignOutFromSelect" style="width:100%;justify-content:center;margin-top:0.5rem">ログアウト</button>
+  </div>
+</div>
+
+<!-- SETUP SCREEN -->
+<div class="screen" id="setupScreen">
+  <div class="setup-card">
+    <div class="setup-title">会社情報を入力</div>
+    <div class="setup-sub">あなたは Owner（管理者）として登録されます</div>
+    <div class="form-group"><label>会社名 <span class="req">*</span></label><input type="text" id="setupCompanyName" placeholder="株式会社〇〇"></div>
+    <div class="form-group"><label>業種</label>
+      <select id="setupIndustry" style="width:100%;padding:0.55rem 0.7rem;border:2px solid var(--border);border-radius:var(--radius);font-family:var(--font-body);font-size:0.85rem">
+        <option value="">— 選択 —</option>
+        <option>IT・通信</option><option>製造業</option><option>小売・流通</option><option>医療・福祉</option><option>建設</option><option>サービス業</option><option>その他</option>
+      </select>
+    </div>
+    <div class="btn-group"><button class="btn btn-primary" id="btnCreateCompany">会社を作成</button></div>
+  </div>
+</div>
+
+<!-- APP SCREEN -->
+<div class="screen" id="appScreen">
+  <header class="app-header">
+    <div class="app-logo">Payroll<span>Auto</span></div>
+    <div class="app-company" id="headerCompanyName">—</div>
+    <div class="header-spacer"></div>
+    <span class="header-role-badge" id="headerRoleBadge"></span>
+    <div class="header-avatar" id="headerAvatar">U</div>
+    <button class="header-btn" id="btnSwitchCompany">会社切替</button>
+    <button class="header-btn" id="btnDarkMode">🌙</button>
+    <button class="header-btn" id="btnSignOut">ログアウト</button>
+  </header>
+  <nav class="nav-tabs">
+    <div class="nav-tab active" data-page="dashboard">ダッシュボード</div>
+    <div class="nav-tab" data-page="payroll">給与計算</div>
+    <div class="nav-tab" data-page="history">履歴</div>
+    <div class="nav-tab" data-page="taxrates">税率管理</div>
+    <div class="nav-tab owner-only" data-page="users">ユーザー管理</div>
+    <div class="nav-tab owner-only" data-page="settings">会社設定</div>
+  </nav>
+  <div id="pages" style="flex:1">
+    <div class="page active" id="pageDashboard">
+      <div class="stat-grid" id="dashStats"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div class="panel"><div class="panel-header">📊 今月の予実管理</div><div class="panel-body" id="dashBudget"></div></div>
+        <div class="panel"><div class="panel-header">⚠ 扶養の壁アラート</div><div class="panel-body" id="dashWall"></div></div>
+      </div>
+      <div class="panel" style="margin-top:1rem">
+        <div class="panel-header">📈 月別人件費推移</div>
+        <div class="panel-body"><canvas id="trendChart" height="80"></canvas></div>
+      </div>
+    </div>
+    <div class="page" id="pagePayroll">
+      <div class="period-bar">
+        <label>対象年月</label>
+        <select id="periodSelect"></select>
+        <div id="lockedMsg" class="locked-badge" style="display:none">🔒 確定済み</div>
+        <div style="flex:1"></div>
+        <button class="btn btn-sm btn-green" id="btnCommit">📥 確定保存</button>
+        <button class="btn btn-sm btn-secondary" id="btnLock">🔒 ロック</button>
+        <button class="btn btn-sm btn-danger" id="btnUnlock" style="display:none">🔓 解除</button>
+        <button class="btn btn-sm btn-blue" id="btnPDF">🖨 PDF</button>
+      </div>
+      <div style="display:grid;grid-template-columns:340px 1fr;gap:1rem;align-items:start">
+        <div>
+          <div style="margin-bottom:0.75rem">
+            <button class="btn btn-sm btn-secondary" id="btnCopyPrev" style="width:100%;justify-content:center">📋 前月の数値をコピー</button>
+          </div>
+          <div class="accordion open" id="acc1">
+            <div class="accordion-header" onclick="toggleAcc('acc1')">👤 基本情報 <span class="accordion-arrow">▼</span></div>
+            <div class="accordion-body">
+              <div class="form-group"><label>従業員名 <span class="req">*</span></label><input type="text" id="empName" placeholder="田中 太郎" autocomplete="off"></div>
+              <div class="form-row">
+                <div class="form-group"><label>部署</label><select id="deptSelect"><option value="">—</option></select></div>
+                <div class="form-group"><label>役職</label>
+                  <select id="posSelect"><option value="">—</option><option>一般</option><option>主任</option><option>係長</option><option>課長</option><option>部長</option></select>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>年齢</label><input type="number" id="empAge" value="35" min="15" max="100"></div>
+                <div class="form-group"><label>扶養家族数</label><input type="number" id="dependents" value="0" min="0" max="20"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>配偶者控除</label>
+                  <select id="spouseDeduct"><option value="0">なし</option><option value="380000">あり（38万）</option><option value="260000">特別（26万）</option></select>
+                </div>
+                <div class="form-group"><label>障害者控除</label>
+                  <select id="disabilityDeduct"><option value="0">なし</option><option value="270000">普通（27万）</option><option value="400000">特別（40万）</option></select>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="accordion open" id="acc2">
+            <div class="accordion-header" onclick="toggleAcc('acc2')">💴 支給項目 <span class="accordion-arrow">▼</span></div>
+            <div class="accordion-body">
+              <div class="form-group">
+                <label>基本給（円） <span class="req">*</span></label>
+                <input type="number" id="basePay" value="250000" min="0" step="1000">
+                <div id="basePayFmt" style="font-size:0.68rem;color:var(--muted);font-family:var(--font-mono);margin-top:0.2rem"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>業績係数</label><input type="number" id="perfScore" value="1.00" min="0" step="0.01"></div>
+                <div class="form-group"><label>ボーナス倍率</label><input type="number" id="bonusMag" value="2.0" min="0" step="0.1"></div>
+              </div>
+              <div style="margin-top:0.5rem">
+                <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.35rem">手当項目</div>
+                <div id="allowanceList"></div>
+                <button class="add-allowance-btn" id="btnAddAllowance">＋ 手当を追加</button>
+              </div>
+            </div>
+          </div>
+          <div class="accordion open" id="acc3">
+            <div class="accordion-header" onclick="toggleAcc('acc3')">🧾 控除・税率 <span class="accordion-arrow">▼</span></div>
+            <div class="accordion-body">
+              <div style="font-size:0.68rem;color:var(--blue);background:rgba(26,58,92,0.08);padding:0.4rem 0.6rem;border-radius:var(--radius);margin-bottom:0.65rem;font-family:var(--font-mono)">
+                ⚡ 税率管理ページの最新値を自動適用中
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>健康保険（%）</label><input type="number" id="healthRate" value="5.0" min="0" max="100" step="0.01"></div>
+                <div class="form-group"><label>厚生年金（%）</label><input type="number" id="pensionRate" value="9.15" min="0" max="100" step="0.01"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>雇用保険（%）</label><input type="number" id="employRate" value="0.6" min="0" max="100" step="0.01"></div>
+                <div class="form-group"><label>住民税率（%）</label><input type="number" id="municipalRate" value="10.0" min="0" max="20" step="0.1"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>端数処理</label>
+                  <select id="roundMode"><option value="round">四捨五入</option><option value="floor">切り捨て</option><option value="ceil">切り上げ</option></select>
+                </div>
+                <div class="form-group"><label>ステータス</label>
+                  <select id="empStatus"><option value="calc">計算済み</option><option value="pdf">PDF発行済み</option></select>
+                </div>
+              </div>
+              <div class="calc-preview" id="calcPreview"></div>
+            </div>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-primary" id="btnAdd">計算・登録</button>
+            <button class="btn btn-secondary" id="btnUpdate" style="display:none">更新</button>
+            <button class="btn btn-secondary" id="btnCancel" style="display:none">キャンセル</button>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">従業員一覧 <span id="empCount" style="font-size:0.65rem;margin-left:0.5rem;opacity:0.7"></span></div>
+          <div class="panel-body" style="padding:0">
+            <div class="tbl-wrap">
+              <table class="data-tbl">
+                <thead><tr><th>氏名</th><th>部署/役職</th><th>基本給</th><th>支給額</th><th>手取り</th><th>状態</th><th>操作</th></tr></thead>
+                <tbody id="empTbody"></tbody>
+                <tfoot id="empTfoot"></tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="page" id="pageHistory">
+      <div class="panel">
+        <div class="panel-header">📂 月次アーカイブ</div>
+        <div class="panel-body">
+          <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;flex-wrap:wrap">
+            <select id="historyPeriodSel" style="padding:0.4rem 0.65rem;border:1.5px solid var(--border);border-radius:var(--radius);font-family:var(--font-mono);font-size:0.82rem">
+              <option value="">— 年月を選択 —</option>
+            </select>
+            <button class="btn btn-sm btn-danger" id="btnHistoryPDF" style="display:none">🖨 PDF再発行</button>
+          </div>
+          <div id="historyContent"><p style="font-size:0.8rem;color:var(--muted)">年月を選択すると過去データが表示されます</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="page" id="pageTaxrates">
+      <div class="panel">
+        <div class="panel-header">⚡ 税率・料率管理</div>
+        <div class="panel-body">
+          <div id="taxUpdateStatus"></div>
+          <div style="display:flex;gap:0.5rem;margin-bottom:1.25rem;flex-wrap:wrap">
+            <button class="btn btn-sm btn-blue" id="btnFetchTaxRates">🔄 最新レートを自動取得</button>
+            <button class="btn btn-sm btn-secondary" id="btnSaveTaxRates">💾 現在の値を保存</button>
+          </div>
+          <div class="tax-rate-grid" id="taxRateGrid"></div>
+          <div style="margin-top:1.25rem">
+            <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.75rem">手動編集</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0.65rem" id="taxRateInputs"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="page" id="pageUsers">
+      <div class="panel">
+        <div class="panel-header">👤 ユーザー管理</div>
+        <div class="panel-body">
+          <div style="margin-bottom:1rem">
+            <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem">招待コード</div>
+            <div class="invite-code-box" id="inviteCodeBox" title="クリックでコピー">—</div>
+            <div style="font-size:0.68rem;color:var(--muted);margin-top:0.35rem">クリックでコピー。参加者に共有してください。</div>
+            <div style="margin-top:0.5rem">
+              <button class="btn btn-sm btn-secondary" id="btnRegenInvite">🔄 コード再生成</button>
+            </div>
+          </div>
+          <div id="userListWrap"></div>
+        </div>
+      </div>
+    </div>
+    <div class="page" id="pageSettings">
+      <div class="panel">
+        <div class="panel-header">⚙ 会社設定</div>
+        <div class="panel-body">
+          <div class="form-row">
+            <div class="form-group"><label>会社名</label><input type="text" id="settingsCompanyName"></div>
+            <div class="form-group"><label>業種</label><input type="text" id="settingsIndustry"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>部署リスト（改行区切り）</label>
+              <textarea id="settingsDepts" rows="5" style="width:100%;padding:0.55rem;border:2px solid var(--border);border-radius:var(--radius);font-family:var(--font-body);font-size:0.82rem;resize:vertical">営業部
+開発部
+管理部
+製造部
+企画部</textarea>
+            </div>
+            <div class="form-group"><label>月次予算（円）</label><input type="number" id="settingsBudget" step="10000" placeholder="例：2000000"></div>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-primary" id="btnSaveSettings">設定を保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle"></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="modalCancel">キャンセル</button>
+      <button class="btn btn-danger" id="modalConfirm">実行</button>
+    </div>
+  </div>
+</div>
+<div id="printArea"></div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+(() => {
+'use strict';
+
+const SUPABASE_URL  = 'https://ymyiymigtequcjbvhsgw.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlteWl5bWlndGVxdWNqYnZoc2d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNDkwOTIsImV4cCI6MjA4ODkyNTA5Mn0.Dcq5oOheOYt-ghPT73euWpOzprUtQCsPEnsHQo7I1j0';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+const $ = id => document.getElementById(id);
+
+function showToast(msg, type='') {
+  const t = document.createElement('div');
+  t.className = 'toast ' + type; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
+function showModal(title, body, confirmLabel, confirmClass, onConfirm) {
+  $('modalTitle').textContent = title;
+  $('modalBody').innerHTML = body;
+  const btn = $('modalConfirm');
+  btn.textContent = confirmLabel || '実行';
+  btn.className = 'btn ' + (confirmClass || 'btn-danger');
+  $('modalOverlay').classList.add('show');
+  const close = () => $('modalOverlay').classList.remove('show');
+  btn.onclick = () => { close(); onConfirm(); };
+  $('modalCancel').onclick = close;
+  $('modalOverlay').onclick = e => { if (e.target === $('modalOverlay')) close(); };
+}
+
+/* ── Supabase helpers ── */
+async function dbGet(table, match) {
+  try {
+    let q = sb.from(table).select('*');
+    for (const [k,v] of Object.entries(match)) q = q.eq(k,v);
+    const { data, error } = await q.maybeSingle();
+    if (error) throw error;
+    return data;
+  } catch(e) { console.warn('[PA]',table,e.message); return null; }
+}
+async function dbGetAll(table, match) {
+  try {
+    let q = sb.from(table).select('*');
+    for (const [k,v] of Object.entries(match)) q = q.eq(k,v);
+    const { data, error } = await q;
+    if (error) throw error;
+    return data||[];
+  } catch(e) { console.warn('[PA]',table,e.message); return []; }
+}
+async function dbDelete(table, match) {
+  try {
+    let q = sb.from(table).delete();
+    for (const [k,v] of Object.entries(match)) q = q.eq(k,v);
+    const { error } = await q;
+    if (error) throw error;
+    return true;
+  } catch(e) { console.error('[PA] del',table,e.message); return false; }
+}
+async function dbUpdate(table, match, data) {
+  try {
+    let q = sb.from(table).update(data);
+    for (const [k,v] of Object.entries(match)) q = q.eq(k,v);
+    const { error } = await q;
+    if (error) throw error;
+    return true;
+  } catch(e) { console.error('[PA] upd',table,e.message); showToast('更新失敗','error'); return false; }
+}
+
+/* ── Calc engine ── */
+function applyRound(v,mode){
+  if(!Number.isFinite(v))return 0;
+  if(mode==='floor')return Math.floor(v);
+  if(mode==='ceil')return Math.ceil(v);
+  return Math.round(v);
+}
+function calcIncomeTaxRate(t){
+  const b=[{l:1950000,r:.05,d:0},{l:3300000,r:.10,d:97500},{l:6950000,r:.20,d:427500},
+    {l:9000000,r:.23,d:636000},{l:18000000,r:.33,d:1536000},{l:40000000,r:.40,d:2796000},{l:Infinity,r:.45,d:4796000}];
+  for(const x of b)if(t<=x.l)return Math.max(0,t*x.r-x.d);
+  return 0;
+}
+function calc(base,perf,mag,hRate,pRate,eRate,mRate,rm,age,deps,spDed,disDed,alTotal=0){
+  age=age||35;deps=deps||0;spDed=spDed||0;disDed=disDed||0;
+  const b=Math.round(base)+Math.round(alTotal);
+  const gross=applyRound(b*perf,rm);
+  const aH=age<75,aP=age<70;
+  const ins=applyRound(gross*((aH?hRate/100:0)+(aP?pRate/100:0)+eRate/100),rm);
+  const taxMo=gross-ins;
+  const annG=taxMo*12;
+  let salDed;
+  if(annG<=1625000)salDed=550000;
+  else if(annG<=1800000)salDed=annG*.4-100000;
+  else if(annG<=3600000)salDed=annG*.3+80000;
+  else if(annG<=6600000)salDed=annG*.2+440000;
+  else if(annG<=8500000)salDed=annG*.1+1100000;
+  else salDed=1950000;
+  const totDed=salDed+480000+380000*deps+Number(spDed)+Number(disDed);
+  const tax=applyRound(calcIncomeTaxRate(Math.max(0,annG-totDed))/12,rm);
+  const mun=applyRound((applyRound(Math.max(0,annG-totDed-430000)*(mRate/100),rm)+5500)/12,rm);
+  const monthlyNet=taxMo-tax-mun;
+  const bG=applyRound(Math.round(base)*mag,rm);
+  const bI=applyRound(bG*((aH?hRate/100:0)+(aP?pRate/100:0)+eRate/100),rm);
+  const bT=applyRound(calcIncomeTaxRate(Math.max(0,(bG-bI)*12-totDed))/12,rm);
+  const bM=applyRound((bG-bI)*(mRate/100)/12,rm);
+  return{gross,insurance:ins,tax,municipal:mun,monthlyNet,bonusGross:bG,bonusIns:bI,bonusTax:bT,bonusMun:bM,bonusNet:bG-bI-bT-bM};
+}
+function fmtY(v){return'¥'+Math.round(v||0).toLocaleString('ja-JP');}
+
+/* ── State ── */
+let currentUser=null,currentCompany=null,employees=[],lockedPeriods=new Set();
+let taxRates={hRate:5.0,pRate:9.15,eRate:0.6,mRate:10.0};
+let currentPeriod='',editingId=null,allowances=[],trendChartObj=null;
+
+function generateInviteCode(){
+  const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:8},()=>c[Math.floor(Math.random()*c.length)]).join('');
+}
+
+/* ── Auth tabs ── */
+document.querySelectorAll('.auth-tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.auth-panel').forEach(p=>p.classList.remove('active'));
+    tab.classList.add('active');
+    $('panel'+tab.dataset.tab.charAt(0).toUpperCase()+tab.dataset.tab.slice(1)).classList.add('active');
+  });
+});
+function showAuthErr(id,msg){
+  const el=$(id);el.textContent=msg;el.style.display='block';
+  setTimeout(()=>el.style.display='none',5000);
+}
+
+$('btnLogin').addEventListener('click',async()=>{
+  const{error}=await sb.auth.signInWithPassword({email:$('loginEmail').value.trim(),password:$('loginPass').value});
+  if(error)showAuthErr('loginErr',error.message);
+});
+
+$('btnRegister').addEventListener('click',async()=>{
+  const cName=$('regCompanyName').value.trim(),uName=$('regUserName').value.trim()||'Owner';
+  const email=$('regEmail').value.trim(),pass=$('regPass').value;
+  if(!cName){showAuthErr('regErr','会社名を入力してください');return;}
+  if(pass.length<6){showAuthErr('regErr','パスワードは6文字以上にしてください');return;}
+  const{data,error}=await sb.auth.signUp({email,password:pass,options:{data:{name:uName}}});
+  if(error){showAuthErr('regErr',error.message);return;}
+  const uid=data.user?.id;
+  if(!uid){showAuthErr('regErr','ユーザー登録に失敗しました');return;}
+  await createCompany(uid,cName,uName);
+});
+
+$('btnJoin').addEventListener('click',async()=>{
+  const uName=$('joinUserName').value.trim()||'User';
+  const email=$('joinEmail').value.trim(),pass=$('joinPass').value;
+  const code=$('joinCode').value.trim().toUpperCase();
+  if(!code){showAuthErr('joinErr','招待コードを入力してください');return;}
+  const company=await dbGet('companies',{invite_code:code});
+  if(!company){showAuthErr('joinErr','招待コードが無効です');return;}
+  const{data,error}=await sb.auth.signUp({email,password:pass,options:{data:{name:uName}}});
+  if(error){showAuthErr('joinErr',error.message);return;}
+  const uid=data.user?.id;
+  if(!uid){showAuthErr('joinErr','ユーザー登録に失敗しました');return;}
+  const ex=await dbGet('company_users',{company_id:company.id,user_id:uid});
+  if(!ex)await sb.from('company_users').insert({company_id:company.id,user_id:uid,name:uName,role:'editor'});
+  showToast(`「${company.name}」に参加しました`,'success');
+});
+
+async function createCompany(uid,companyName,userName){
+  const invite_code=generateInviteCode();
+  const cid='co_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+  const{error:ce}=await sb.from('companies').insert({
+    id:cid,name:companyName,invite_code,owner_id:uid,
+    depts:['営業部','開発部','管理部','製造部','企画部'],budget:0
+  });
+  if(ce){showToast('会社作成に失敗しました: '+ce.message,'error');return;}
+  await sb.from('company_users').insert({company_id:cid,user_id:uid,name:userName,role:'owner'});
+  showToast(`会社「${companyName}」を作成しました`,'success');
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $(id).classList.add('active');
+}
+
+async function loadCompanyList(uid){
+  const members=await dbGetAll('company_users',{user_id:uid});
+  if(!members.length){showScreen('setupScreen');return;}
+  const companies=[];
+  for(const m of members){
+    const c=await dbGet('companies',{id:m.company_id});
+    if(c)companies.push({...c,role:m.role});
+  }
+  const wrap=$('companyListWrap');
+  wrap.innerHTML=companies.map(c=>`
+    <div class="company-card" data-cid="${c.id}">
+      <div class="company-avatar">${c.name.charAt(0).toUpperCase()}</div>
+      <div class="company-info">
+        <div class="company-name">${c.name}</div>
+        <div class="company-meta">${c.id}</div>
+      </div>
+      <span class="company-role role-${c.role}">${c.role.toUpperCase()}</span>
+    </div>`).join('');
+  wrap.querySelectorAll('.company-card').forEach(card=>{
+    card.addEventListener('click',async()=>{
+      const c=companies.find(x=>x.id===card.dataset.cid);
+      if(c)await openCompany(c);
+    });
+  });
+  showScreen('companySelectScreen');
+}
+
+async function openCompany(company){
+  const m=await dbGet('company_users',{company_id:company.id,user_id:currentUser.id});
+  currentCompany={
+    id:company.id,name:company.name,role:m?.role||company.role,
+    budget:company.budget||0,
+    depts:company.depts||['営業部','開発部','管理部','製造部','企画部'],
+    invite_code:company.invite_code||'',industry:company.industry||''
+  };
+  await initApp();
+}
+
+async function initApp(){
+  const role=currentCompany.role;
+  $('headerCompanyName').textContent=currentCompany.name;
+  $('headerRoleBadge').textContent=role.toUpperCase();
+  $('headerRoleBadge').className=`header-role-badge badge-${role}`;
+  $('headerAvatar').textContent=(currentUser.name||'U').charAt(0).toUpperCase();
+  document.querySelectorAll('.owner-only').forEach(el=>el.style.display=role==='owner'?'':'none');
+  await loadTaxRates();
+  buildPeriodSelector();
+  await loadLocks();
+  await loadEmployees();
+  populateDeptSelect();
+  if(role==='owner'){
+    $('settingsCompanyName').value=currentCompany.name;
+    $('settingsIndustry').value=currentCompany.industry||'';
+    $('settingsDepts').value=currentCompany.depts.join('\n');
+    $('settingsBudget').value=currentCompany.budget||'';
+    $('inviteCodeBox').textContent=currentCompany.invite_code||'—';
+    await renderUserList();
+  }
+  renderPayrollTable();renderDashboard();renderTaxRatePanel();
+  await renderHistorySelect();
+  showScreen('appScreen');showPage('dashboard');initDarkMode();
+}
+
+function buildPeriodSelector(){
+  const sel=$('periodSelect'),now=new Date();
+  sel.innerHTML='';
+  for(let i=-3;i<=3;i++){
+    const d=new Date(now.getFullYear(),now.getMonth()+i,1);
+    const v=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const o=document.createElement('option');
+    o.value=v;o.textContent=`${d.getFullYear()}年${d.getMonth()+1}月`;
+    if(i===0)o.selected=true;
+    sel.appendChild(o);
+  }
+  currentPeriod=sel.value;
+}
+function populateDeptSelect(){
+  const sel=$('deptSelect');
+  sel.innerHTML='<option value="">— 未設定 —</option>';
+  (currentCompany.depts||[]).forEach(d=>{const o=document.createElement('option');o.value=o.textContent=d;sel.appendChild(o);});
+}
+
+async function loadEmployees(){
+  const row=await dbGet('payroll_data',{company_id:currentCompany.id,period:currentPeriod});
+  employees=row?.employees||[];
+}
+async function saveEmployees(){
+  await sb.from('payroll_data').upsert({
+    company_id:currentCompany.id,period:currentPeriod,
+    employees,updated_at:new Date().toISOString()
+  },{onConflict:'company_id,period'});
+  await sb.from('payroll_snapshots').upsert({
+    company_id:currentCompany.id,period:currentPeriod,
+    tot_gross:employees.reduce((a,e)=>a+(e.gross||0),0),
+    tot_net:employees.reduce((a,e)=>a+(e.monthlyNet||0),0),
+    tot_ins:employees.reduce((a,e)=>a+(e.insurance||0),0),
+    emp_count:employees.length,saved_at:new Date().toISOString()
+  },{onConflict:'company_id,period'});
+}
+
+async function loadLocks(){
+  const rows=await dbGetAll('payroll_locks',{company_id:currentCompany.id});
+  lockedPeriods=new Set(rows.map(r=>r.period));
+  updateLockUI();
+}
+function isLocked(p){return lockedPeriods.has(p||currentPeriod);}
+function updateLockUI(){
+  const locked=isLocked(currentPeriod);
+  $('lockedMsg').style.display=locked?'flex':'none';
+  $('btnLock').style.display=locked?'none':'inline-flex';
+  $('btnUnlock').style.display=locked?'inline-flex':'none';
+  const canEdit=!locked&&currentCompany.role!=='viewer';
+  $('btnAdd').disabled=!canEdit;$('btnUpdate').disabled=!canEdit;
+}
+
+async function loadTaxRates(){
+  const row=await dbGet('tax_rates',{company_id:currentCompany.id});
+  if(row)taxRates={hRate:Number(row.h_rate),pRate:Number(row.p_rate),eRate:Number(row.e_rate),mRate:Number(row.m_rate),lastNote:row.last_note||'',lastUpdated:row.last_updated};
+  applyTaxRatesToForm();
+}
+async function saveTaxRates(){
+  await sb.from('tax_rates').upsert({
+    company_id:currentCompany.id,
+    h_rate:taxRates.hRate,p_rate:taxRates.pRate,e_rate:taxRates.eRate,m_rate:taxRates.mRate,
+    last_note:taxRates.lastNote||'',last_updated:new Date().toISOString()
+  },{onConflict:'company_id'});
+  showToast('税率を保存しました','success');
+}
+function applyTaxRatesToForm(){
+  $('healthRate').value=taxRates.hRate;$('pensionRate').value=taxRates.pRate;
+  $('employRate').value=taxRates.eRate;$('municipalRate').value=taxRates.mRate;
+}
+
+async function fetchLatestTaxRates(){
+  const statusEl=$('taxUpdateStatus');
+  statusEl.className='tax-update-status fetching';
+  statusEl.innerHTML='⏳ 最新の税率・料率を取得中...';
+  const PROXY_URL=''; // Firebase FunctionsデプロイURLをここに設定
+  if(!PROXY_URL){
+    taxRates={hRate:5.0,pRate:9.15,eRate:0.6,mRate:10.0,lastNote:'令和7年度標準値',lastUpdated:new Date().toISOString()};
+    applyTaxRatesToForm();await saveTaxRates();renderTaxRatePanel();
+    statusEl.className='tax-update-status done';
+    statusEl.innerHTML='✅ 令和7年度標準値を適用しました（Functions URL未設定）';
+    return;
+  }
+  try{
+    const res=await fetch(PROXY_URL,{method:'POST'});
+    const data=await res.json();
+    if(data.success&&data.rates){
+      const r=data.rates;
+      taxRates={hRate:Number(r.hRate)||5.0,pRate:Number(r.pRate)||9.15,eRate:Number(r.eRate)||0.6,mRate:Number(r.mRate)||10.0,lastNote:r.note||'',lastUpdated:new Date().toISOString()};
+      applyTaxRatesToForm();await saveTaxRates();renderTaxRatePanel();
+      statusEl.className='tax-update-status done';
+      statusEl.innerHTML=`✅ 取得完了（${r.year||'最新'}年度 — ${r.note||''}）`;
+    }
+  }catch(err){
+    statusEl.className='tax-update-status error';
+    statusEl.innerHTML='⚠ 取得に失敗しました。手動で入力してください。';
+  }
+}
+
+function renderTaxRatePanel(){
+  const items=[
+    {key:'hRate',label:'健康保険料率',unit:'%',desc:'協会けんぽ（被保険者）'},
+    {key:'pRate',label:'厚生年金保険料率',unit:'%',desc:'被保険者負担分'},
+    {key:'eRate',label:'雇用保険料率',unit:'%',desc:'一般事業・被保険者'},
+    {key:'mRate',label:'住民税率',unit:'%',desc:'標準税率（均等割別）'},
+  ];
+  const upd=taxRates.lastUpdated?new Date(taxRates.lastUpdated).toLocaleDateString('ja-JP'):'未取得';
+  $('taxRateGrid').innerHTML=items.map(it=>`
+    <div class="tax-rate-card">
+      <div class="tax-rate-label">${it.label}</div>
+      <div class="tax-rate-val">${taxRates[it.key]}${it.unit}</div>
+      <div class="tax-rate-updated">${it.desc}</div>
+      <div class="tax-rate-updated">更新: ${upd}</div>
+    </div>`).join('')+(taxRates.lastNote?`<div class="tax-rate-card" style="grid-column:1/-1"><div class="tax-rate-label">適用情報</div><div style="font-size:0.8rem">${taxRates.lastNote}</div></div>`:'');
+  $('taxRateInputs').innerHTML=items.map(it=>`
+    <div class="form-group">
+      <label>${it.label}（%）</label>
+      <input type="number" id="tr_${it.key}" value="${taxRates[it.key]}" step="0.01" min="0" max="100">
+    </div>`).join('');
+}
+
+function renderPayrollTable(){
+  const tbody=$('empTbody'),tfoot=$('empTfoot');
+  $('empCount').textContent=`${employees.length}名`;
+  if(employees.length===0){
+    tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--muted);font-size:0.8rem">従業員データがありません</td></tr>`;
+    tfoot.innerHTML='';return;
+  }
+  const canEdit=!isLocked()&&currentCompany.role!=='viewer';
+  tbody.innerHTML=employees.map(emp=>`
+    <tr>
+      <td><b>${emp.name}</b>${emp.allowanceTotal>0?`<br><small style="color:var(--muted);font-family:var(--font-mono);font-size:0.62rem">手当 ${fmtY(emp.allowanceTotal)}</small>`:''}
+      <td style="font-size:0.75rem">${emp.dept||'—'}<br><span style="color:var(--muted)">${emp.pos||'—'}</span></td>
+      <td style="font-family:var(--font-mono)">${fmtY(emp.base)}</td>
+      <td style="font-family:var(--font-mono)">${fmtY(emp.gross)}</td>
+      <td style="font-family:var(--font-mono);color:var(--green);font-weight:700">${fmtY(emp.monthlyNet)}</td>
+      <td><span class="badge badge-${emp.status||'calc'}">${emp.status==='pdf'?'PDF済':'計算済'}</span></td>
+      <td><div class="tbl-actions">
+        ${canEdit?`<button class="tbl-btn" data-id="${emp.id}" data-act="edit">編集</button>`:''}
+        <button class="tbl-btn" data-id="${emp.id}" data-act="slip">🖨 印刷</button>
+        ${canEdit?`<button class="tbl-btn danger" data-id="${emp.id}" data-act="del">削除</button>`:''}
+      </div></td>
+    </tr>`).join('');
+  const tG=employees.reduce((a,e)=>a+e.gross,0),tN=employees.reduce((a,e)=>a+e.monthlyNet,0),tI=employees.reduce((a,e)=>a+e.insurance,0);
+  tfoot.innerHTML=`<tr style="background:var(--cream)">
+    <td colspan="2" style="font-weight:700;font-family:var(--font-mono);font-size:0.72rem">TOTAL ${employees.length}名</td>
+    <td></td><td style="font-family:var(--font-mono);font-weight:700">${fmtY(tG)}</td>
+    <td style="font-family:var(--font-mono);font-weight:700;color:var(--green)">${fmtY(tN)}</td>
+    <td colspan="2" style="font-size:0.68rem;color:var(--muted);font-family:var(--font-mono)">社保合計 ${fmtY(tI)}</td>
+  </tr>`;
+  tbody.querySelectorAll('[data-act]').forEach(btn=>{
+    btn.addEventListener('click',function(){
+      const eid=Number(this.dataset.id),act=this.dataset.act;
+      if(act==='edit')startEdit(eid);
+      else if(act==='slip')printSlip(eid);
+      else if(act==='del')deleteEmp(eid);
+    });
+  });
+}
+
+function getFormValues(){
+  return{
+    name:$('empName').value.trim(),dept:$('deptSelect').value,pos:$('posSelect').value,
+    base:Number($('basePay').value),perf:Number($('perfScore').value),mag:Number($('bonusMag').value),
+    age:Number($('empAge').value)||35,dep:Number($('dependents').value)||0,
+    spDed:Number($('spouseDeduct').value)||0,disDed:Number($('disabilityDeduct').value)||0,
+    hRate:Number($('healthRate').value),pRate:Number($('pensionRate').value),
+    eRate:Number($('employRate').value),mRate:Number($('municipalRate').value),
+    rm:$('roundMode').value,status:$('empStatus').value,
+  };
+}
+function clearForm(){
+  $('empName').value='';$('deptSelect').value='';$('posSelect').value='';
+  $('basePay').value='250000';$('basePayFmt').textContent='';
+  $('perfScore').value='1.00';$('bonusMag').value='2.0';
+  $('empAge').value='35';$('dependents').value='0';
+  $('spouseDeduct').value='0';$('disabilityDeduct').value='0';$('empStatus').value='calc';
+  applyTaxRatesToForm();allowances=[];renderAllowanceList();
+  $('calcPreview').style.display='none';editingId=null;showEditMode(false);
+}
+function showEditMode(on){
+  $('btnAdd').style.display=on?'none':'inline-flex';
+  $('btnUpdate').style.display=on?'inline-flex':'none';
+  $('btnCancel').style.display=on?'inline-flex':'none';
+}
+function startEdit(id){
+  const emp=employees.find(e=>e.id===id);if(!emp)return;
+  editingId=id;
+  $('empName').value=emp.name;$('deptSelect').value=emp.dept||'';$('posSelect').value=emp.pos||'';
+  $('basePay').value=emp.base;$('basePayFmt').textContent='→ '+emp.base.toLocaleString('ja-JP')+'円';
+  $('perfScore').value=emp.perf;$('bonusMag').value=emp.mag;
+  $('empAge').value=emp.age||35;$('dependents').value=emp.dep||0;
+  $('spouseDeduct').value=emp.spDed||0;$('disabilityDeduct').value=emp.disDed||0;
+  $('healthRate').value=emp.hRate;$('pensionRate').value=emp.pRate;
+  $('employRate').value=emp.eRate;$('municipalRate').value=emp.mRate||10;
+  $('roundMode').value=emp.rm;$('empStatus').value=emp.status||'calc';
+  allowances=JSON.parse(JSON.stringify(emp.allowances||[]));
+  renderAllowanceList();showEditMode(true);showPage('payroll');
+  window.scrollTo({top:0,behavior:'smooth'});triggerAutoCalc();
+}
+function getAllowanceTotal(){return allowances.reduce((s,a)=>s+(Number(a.amount)||0),0);}
+function handleAdd(){
+  const f=getFormValues();
+  if(!f.name){showToast('従業員名を入力してください','error');return;}
+  if(f.base<=0){showToast('基本給を入力してください','error');return;}
+  if(isLocked()){showToast('この月は確定済みです','error');return;}
+  const al=getAllowanceTotal();
+  const r=calc(f.base,f.perf,f.mag,f.hRate,f.pRate,f.eRate,f.mRate,f.rm,f.age,f.dep,f.spDed,f.disDed,al);
+  const emp={id:Date.now()+Math.floor(Math.random()*999),...f,base:Math.round(f.base),allowances:JSON.parse(JSON.stringify(allowances)),allowanceTotal:al,...r};
+  if(employees.some(e=>e.name===f.name)){
+    showModal('重複確認',`「<b>${f.name}</b>」は既に登録されています。別に追加しますか？`,'追加する','btn-primary',()=>{employees.push(emp);saveAndRender();showToast(`${f.name} を登録しました`,'success');clearForm();});
+  }else{employees.push(emp);saveAndRender();showToast(`${f.name} を登録しました`,'success');clearForm();}
+}
+function handleUpdate(){
+  if(!editingId)return;
+  const f=getFormValues();
+  if(!f.name){showToast('従業員名を入力してください','error');return;}
+  const idx=employees.findIndex(e=>e.id===editingId);if(idx===-1)return;
+  const al=getAllowanceTotal();
+  const r=calc(f.base,f.perf,f.mag,f.hRate,f.pRate,f.eRate,f.mRate,f.rm,f.age,f.dep,f.spDed,f.disDed,al);
+  employees[idx]={...employees[idx],...f,base:Math.round(f.base),allowances:JSON.parse(JSON.stringify(allowances)),allowanceTotal:al,...r};
+  saveAndRender();showToast('更新しました','success');clearForm();
+}
+function deleteEmp(id){
+  const emp=employees.find(e=>e.id===id);if(!emp)return;
+  if(isLocked()){showToast('この月は確定済みです','error');return;}
+  showModal('削除確認',`<b>${emp.name}</b> を削除します。`,'削除する','btn-danger',()=>{
+    employees=employees.filter(e=>e.id!==id);saveAndRender();showToast(`${emp.name} を削除しました`,'success');
+  });
+}
+function saveAndRender(){saveEmployees();renderPayrollTable();renderDashboard();}
+
+let _autoTimer=null;
+function triggerAutoCalc(){
+  clearTimeout(_autoTimer);
+  _autoTimer=setTimeout(()=>{
+    const base=Number($('basePay').value);
+    if(!base||base<=0){$('calcPreview').style.display='none';return;}
+    const f=getFormValues(),al=getAllowanceTotal();
+    const r=calc(base,f.perf,f.mag,f.hRate,f.pRate,f.eRate,f.mRate,f.rm,f.age,f.dep,f.spDed,f.disDed,al);
+    const prev=$('calcPreview');prev.style.display='block';
+    const alStr=al>0?`　手当：<b>${fmtY(al)}</b>`:'';
+    prev.innerHTML=`支給額：<b>${fmtY(r.gross)}</b>${alStr}　社保：<b style="color:var(--accent)">${fmtY(r.insurance)}</b>　所得税：<b style="color:var(--accent)">${fmtY(r.tax)}</b>　住民税：<b style="color:var(--accent)">${fmtY(r.municipal)}</b>　<span style="color:var(--green)">→手取：<b>${fmtY(r.monthlyNet)}</b></span>`;
+    $('basePayFmt').textContent=base>0?'→ '+base.toLocaleString('ja-JP')+'円':'';
+  },300);
+}
+function renderAllowanceList(){
+  const list=$('allowanceList');if(!list)return;
+  list.innerHTML=allowances.map((a,i)=>`
+    <div class="allowance-row">
+      <input type="text" class="al-n" value="${a.name}" placeholder="手当名">
+      <input type="number" class="al-a" value="${a.amount}" placeholder="金額" min="0">
+      <button class="al-del" data-del="${i}">✕</button>
+    </div>`).join('');
+  list.querySelectorAll('.al-n').forEach((el,i)=>{el.oninput=e=>{allowances[i].name=e.target.value;triggerAutoCalc();};});
+  list.querySelectorAll('.al-a').forEach((el,i)=>{el.oninput=e=>{allowances[i].amount=Number(e.target.value)||0;triggerAutoCalc();};});
+  list.querySelectorAll('[data-del]').forEach(btn=>{btn.onclick=()=>{allowances.splice(Number(btn.dataset.del),1);renderAllowanceList();triggerAutoCalc();};});
+}
+
+function buildSlipHTML(emp,title,dateStr){
+  const iT=(emp.hRate||0)+(emp.pRate||0)+(emp.eRate||0)||1;
+  const deduct=emp.insurance+emp.tax+(emp.municipal||0);
+  const row=(l,v)=>`<div class="slip-row"><span>${l}</span><span class="val">${v}</span></div>`;
+  return`<div class="slip-page">
+    <div class="slip-title">${title}</div>
+    <div class="slip-date">出力日：${dateStr}　会社名：${currentCompany?.name||''}</div>
+    <table class="slip-info-table">
+      <tr><td class="lbl">氏名</td><td>${emp.name}</td><td class="lbl">年齢</td><td>${emp.age||'—'}歳</td></tr>
+      <tr><td class="lbl">部署</td><td>${emp.dept||'—'}</td><td class="lbl">役職</td><td>${emp.pos||'—'}</td></tr>
+      <tr><td class="lbl">扶養家族</td><td>${emp.dep||0}名</td><td class="lbl"></td><td></td></tr>
+    </table>
+    <div class="slip-section-title">支給項目</div>
+    ${row('基本給',fmtY(emp.base))}
+    ${(emp.allowances||[]).map(a=>row(a.name||'手当',fmtY(a.amount))).join('')}
+    ${row('業績手当',fmtY(emp.gross-emp.base-(emp.allowanceTotal||0)))}
+    ${row('支給額合計',fmtY(emp.gross))}
+    <div class="slip-section-title">控除項目</div>
+    ${row('健康保険料',fmtY(emp.insurance*(emp.hRate/iT)))}
+    ${row('厚生年金',fmtY(emp.insurance*(emp.pRate/iT)))}
+    ${row('雇用保険',fmtY(emp.insurance*(emp.eRate/iT)))}
+    ${row('所得税',fmtY(emp.tax))}
+    ${row('住民税',fmtY(emp.municipal||0))}
+    ${row('控除合計',fmtY(deduct))}
+    <div class="slip-net"><span>差引支給額（手取り）</span><span>${fmtY(emp.monthlyNet)}</span></div>
+    <div class="slip-footer">※本明細は給与計算システムPayrollAutoにより自動計算されたものです。</div>
+  </div>`;
+}
+function printSlip(id){
+  const emp=employees.find(e=>e.id===id);if(!emp)return;
+  const[y,m]=currentPeriod.split('-');
+  $('printArea').innerHTML=buildSlipHTML(emp,`給与明細書　${y}年${Number(m)}月分`,new Date().toLocaleDateString('ja-JP'));
+  setTimeout(()=>{window.print();setTimeout(()=>$('printArea').innerHTML='',1000);},300);
+}
+function exportAllPDF(){
+  if(employees.length===0){showToast('データがありません','error');return;}
+  const[y,m]=currentPeriod.split('-');
+  $('printArea').innerHTML=employees.map(e=>buildSlipHTML(e,`給与明細書　${y}年${Number(m)}月分`,new Date().toLocaleDateString('ja-JP'))).join('');
+  setTimeout(()=>{window.print();setTimeout(()=>$('printArea').innerHTML='',1000);},300);
+}
+
+async function commitMonthlyHistory(){
+  if(employees.length===0){showToast('データがありません','error');return;}
+  await sb.from('payroll_history').upsert({
+    company_id:currentCompany.id,period:currentPeriod,employees,
+    saved_at:new Date().toISOString(),
+    summary:{count:employees.length,totGross:employees.reduce((a,e)=>a+e.gross,0),totNet:employees.reduce((a,e)=>a+e.monthlyNet,0)}
+  },{onConflict:'company_id,period'});
+  await sb.from('payroll_locks').upsert({company_id:currentCompany.id,period:currentPeriod},{onConflict:'company_id,period'});
+  lockedPeriods.add(currentPeriod);updateLockUI();
+  await renderHistorySelect();
+  showToast(`${currentPeriod} を確定・保存しました 📥`,'success');
+}
+
+async function renderHistorySelect(){
+  const rows=await dbGetAll('payroll_history',{company_id:currentCompany.id});
+  rows.sort((a,b)=>b.period.localeCompare(a.period));
+  const sel=$('historyPeriodSel');
+  sel.innerHTML=rows.length===0?'<option value="">（履歴なし）</option>':
+    '<option value="">— 年月を選択 —</option>'+
+    rows.map(r=>`<option value="${r.period}">${r.period.replace('-','年')}月（${r.summary?.count||0}名）</option>`).join('');
+}
+let _historyPeriod=null;
+async function showHistoryData(period){
+  if(!period)return;
+  const row=await dbGet('payroll_history',{company_id:currentCompany.id,period});
+  const wrap=$('historyContent');
+  if(!row){wrap.innerHTML='<p style="color:var(--muted);font-size:0.8rem">データが見つかりません</p>';return;}
+  $('btnHistoryPDF').style.display='inline-flex';
+  const rows=(row.employees||[]).map(e=>`
+    <tr>
+      <td>${e.name}</td><td>${e.dept||'—'}</td><td>${e.pos||'—'}</td>
+      <td style="font-family:var(--font-mono);text-align:right">${fmtY(e.base)}</td>
+      <td style="font-family:var(--font-mono);text-align:right">${fmtY(e.gross)}</td>
+      <td style="font-family:var(--font-mono);text-align:right;color:var(--accent)">${fmtY(e.insurance)}</td>
+      <td style="font-family:var(--font-mono);text-align:right;color:var(--accent)">${fmtY(e.tax)}</td>
+      <td style="font-family:var(--font-mono);text-align:right;font-weight:700;color:var(--green)">${fmtY(e.monthlyNet)}</td>
+    </tr>`).join('');
+  wrap.innerHTML=`
+    <p style="font-size:0.72rem;color:var(--muted);margin-bottom:0.65rem">
+      保存日時：${new Date(row.saved_at).toLocaleString('ja-JP')} &nbsp;|&nbsp;
+      従業員数：${row.summary?.count||0}名 &nbsp;|&nbsp;
+      手取り合計：${fmtY(row.summary?.totNet||0)}
+      <span class="badge badge-archived" style="margin-left:0.4rem">ARCHIVED</span>
+    </p>
+    <div class="tbl-wrap">
+      <table class="data-tbl">
+        <thead><tr><th>氏名</th><th>部署</th><th>役職</th><th>基本給</th><th>支給額</th><th>社保</th><th>所得税</th><th>手取り</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+async function exportHistoryPDF(period){
+  const row=await dbGet('payroll_history',{company_id:currentCompany.id,period});
+  if(!row||!row.employees){showToast('データが見つかりません','error');return;}
+  const[y,m]=period.split('-');
+  $('printArea').innerHTML=row.employees.map(e=>buildSlipHTML(e,`給与明細書　${y}年${Number(m)}月分（再発行）`,new Date().toLocaleDateString('ja-JP'))).join('');
+  setTimeout(()=>{window.print();setTimeout(()=>$('printArea').innerHTML='',1000);},300);
+}
+
+function renderDashboard(){
+  const tG=employees.reduce((a,e)=>a+e.gross,0),tN=employees.reduce((a,e)=>a+e.monthlyNet,0);
+  const tI=employees.reduce((a,e)=>a+e.insurance,0),tT=employees.reduce((a,e)=>a+e.tax+(e.municipal||0),0);
+  $('dashStats').innerHTML=`
+    <div class="stat-card"><div class="stat-label">従業員数</div><div class="stat-value blue">${employees.length}名</div><div class="stat-sub">${currentPeriod}</div></div>
+    <div class="stat-card"><div class="stat-label">支給額合計</div><div class="stat-value">${fmtY(tG)}</div></div>
+    <div class="stat-card"><div class="stat-label">手取り合計</div><div class="stat-value green">${fmtY(tN)}</div></div>
+    <div class="stat-card"><div class="stat-label">社会保険合計</div><div class="stat-value accent">${fmtY(tI)}</div></div>
+    <div class="stat-card"><div class="stat-label">税金合計</div><div class="stat-value accent">${fmtY(tT)}</div></div>`;
+  const budget=currentCompany.budget||0;
+  if(budget>0){
+    const pct=Math.min(tG/budget*100,100),cls=pct>=95?'over':pct>=80?'warn':'ok';
+    $('dashBudget').innerHTML=`
+      <div style="font-size:0.75rem;margin-bottom:0.65rem">月次人件費予算：<b>${fmtY(budget)}</b></div>
+      <div style="font-size:0.72rem;display:flex;justify-content:space-between;margin-bottom:0.3rem">
+        <span>支給額合計</span><span style="font-family:var(--font-mono)">${fmtY(tG)}（${Math.round(pct)}%）</span>
+      </div>
+      <div class="budget-progress"><div class="budget-bar-fill ${cls}" style="width:${pct}%"></div></div>
+      ${pct>=95?'<div style="font-size:0.7rem;color:var(--accent);margin-top:0.5rem">⚠ 予算超過の恐れがあります</div>':''}`;
+  }else{$('dashBudget').innerHTML='<p style="font-size:0.78rem;color:var(--muted)">会社設定から予算を設定してください</p>';}
+  const wallEmps=employees.filter(e=>e.dep>0||e.spDed>0);
+  if(wallEmps.length>0){
+    $('dashWall').innerHTML=wallEmps.map(e=>{
+      const ae=(e.gross||0)*12,pct=Math.min(ae/1030000*100,100),cls=ae>=1030000?'over':pct>=80?'warn':'ok';
+      return`<div style="margin-bottom:0.75rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border)">
+        <div style="font-size:0.78rem;font-weight:700;margin-bottom:0.2rem">${e.name}</div>
+        <div style="font-size:0.68rem;color:var(--muted);font-family:var(--font-mono);margin-bottom:0.3rem">
+          年収見込：${fmtY(ae)}&nbsp;
+          ${ae>=1300000?'<span style="color:var(--accent);font-weight:700">⚠ 130万の壁超過</span>':
+            ae>=1030000?'<span style="color:var(--gold);font-weight:700">⚠ 103万の壁超過</span>':
+            `103万まであと${fmtY(Math.max(0,1030000-ae))}`}
+        </div>
+        <div class="budget-progress"><div class="budget-bar-fill ${cls}" style="width:${pct}%"></div></div>
+      </div>`;
+    }).join('');
+  }else{$('dashWall').innerHTML='<p style="font-size:0.78rem;color:var(--muted)">扶養家族のいる従業員がいません</p>';}
+  renderTrendChart();
+}
+
+async function renderTrendChart(){
+  const rows=await dbGetAll('payroll_snapshots',{company_id:currentCompany.id});
+  rows.sort((a,b)=>a.period.localeCompare(b.period));
+  const recent=rows.slice(-6);if(recent.length<2)return;
+  const isDark=document.body.classList.contains('dark');
+  const gc=isDark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)',tc=isDark?'#5a5650':'#7a7469';
+  if(trendChartObj){trendChartObj.destroy();trendChartObj=null;}
+  trendChartObj=new Chart($('trendChart'),{
+    type:'bar',
+    data:{
+      labels:recent.map(r=>r.period.replace('-','/')),
+      datasets:[
+        {label:'支給額',data:recent.map(r=>r.tot_gross),backgroundColor:'rgba(26,58,92,0.5)',borderColor:'#1a3a5c',borderWidth:1,borderRadius:2},
+        {label:'手取り',data:recent.map(r=>r.tot_net),backgroundColor:'rgba(42,122,80,0.6)',borderColor:'#2a7a50',borderWidth:1,borderRadius:2},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{labels:{color:tc,font:{size:10},boxWidth:10}},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmtY(ctx.parsed.y)}`}}},
+      scales:{x:{ticks:{color:tc,font:{size:10}},grid:{color:gc}},y:{ticks:{color:tc,callback:v=>'¥'+(v/10000).toFixed(0)+'万',font:{size:10}},grid:{color:gc}}}
+    }
+  });
+}
+
+async function renderUserList(){
+  const wrap=$('userListWrap');
+  const users=await dbGetAll('company_users',{company_id:currentCompany.id});
+  wrap.innerHTML=`
+    <table class="data-tbl">
+      <thead><tr><th>名前</th><th>役割</th><th>参加日</th><th>操作</th></tr></thead>
+      <tbody>${users.map(u=>`
+        <tr>
+          <td>${u.name||'—'}</td>
+          <td><span class="badge badge-${u.role}">${u.role.toUpperCase()}</span></td>
+          <td style="font-size:0.72rem;color:var(--muted)">${u.joined_at?new Date(u.joined_at).toLocaleDateString('ja-JP'):'—'}</td>
+          <td><div class="tbl-actions">
+            <select class="tbl-btn" data-uid="${u.user_id}" data-act="role">
+              <option value="owner" ${u.role==='owner'?'selected':''}>Owner</option>
+              <option value="editor" ${u.role==='editor'?'selected':''}>Editor</option>
+              <option value="viewer" ${u.role==='viewer'?'selected':''}>Viewer</option>
+            </select>
+            ${u.user_id!==currentUser.id?`<button class="tbl-btn danger" data-uid="${u.user_id}" data-act="remove">削除</button>`:''}
+          </div></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+  wrap.querySelectorAll('[data-act="role"]').forEach(sel=>{
+    sel.addEventListener('change',async()=>{
+      await dbUpdate('company_users',{company_id:currentCompany.id,user_id:sel.dataset.uid},{role:sel.value});
+      showToast('役割を変更しました','success');
+    });
+  });
+  wrap.querySelectorAll('[data-act="remove"]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      showModal('ユーザー削除','このユーザーを会社から削除しますか？','削除','btn-danger',async()=>{
+        await dbDelete('company_users',{company_id:currentCompany.id,user_id:btn.dataset.uid});
+        await renderUserList();showToast('削除しました','success');
+      });
+    });
+  });
+}
+
+async function copyPrevMonth(){
+  const rows=await dbGetAll('payroll_history',{company_id:currentCompany.id});
+  rows.sort((a,b)=>b.period.localeCompare(a.period));
+  if(!rows.length){showToast('前月の確定データがありません','error');return;}
+  const prev=rows[0];
+  if(!prev.employees||!prev.employees.length){showToast('前月データが見つかりません','error');return;}
+  const name=$('empName').value.trim();
+  const emp=name?prev.employees.find(e=>e.name===name):null;
+  if(emp){applyEmpToForm(emp,prev.period);return;}
+  const opts=prev.employees.map((e,i)=>`<option value="${i}">${e.name}（${e.dept||'—'}）</option>`).join('');
+  showModal('前月データ選択',
+    `<p style="font-size:0.78rem;margin-bottom:0.5rem">${prev.period} のデータからコピー先を選んでください</p>
+     <select id="prevSel" style="width:100%;padding:0.4rem;border:1.5px solid var(--border);border-radius:var(--radius)">${opts}</select>`,
+    'コピー','btn-primary',()=>applyEmpToForm(prev.employees[Number($('prevSel').value)],prev.period));
+}
+function applyEmpToForm(emp,from){
+  $('empName').value=emp.name;$('deptSelect').value=emp.dept||'';$('posSelect').value=emp.pos||'';
+  $('basePay').value=emp.base;$('perfScore').value=emp.perf;$('bonusMag').value=emp.mag;
+  $('empAge').value=emp.age||35;$('dependents').value=emp.dep||0;
+  $('spouseDeduct').value=emp.spDed||0;$('disabilityDeduct').value=emp.disDed||0;
+  $('healthRate').value=emp.hRate;$('pensionRate').value=emp.pRate;
+  $('employRate').value=emp.eRate;$('municipalRate').value=emp.mRate||10;
+  $('roundMode').value=emp.rm;
+  allowances=JSON.parse(JSON.stringify(emp.allowances||[]));
+  renderAllowanceList();triggerAutoCalc();
+  showToast(`${emp.name}（${from}）をコピーしました 📋`,'success');
+}
+
+function toggleAcc(id){const el=$(id);if(el)el.classList.toggle('open');}
+window.toggleAcc=toggleAcc;
+
+function initDarkMode(){
+  if(localStorage.getItem('pa_dark')==='1'){document.body.classList.add('dark');$('btnDarkMode').textContent='☀️';}
+}
+$('btnDarkMode').addEventListener('click',()=>{
+  document.body.classList.toggle('dark');
+  const on=document.body.classList.contains('dark');
+  $('btnDarkMode').textContent=on?'☀️':'🌙';
+  localStorage.setItem('pa_dark',on?'1':'0');
+  if(trendChartObj){trendChartObj.destroy();trendChartObj=null;renderTrendChart();}
+});
+
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  $('page'+id.charAt(0).toUpperCase()+id.slice(1)).classList.add('active');
+  document.querySelector(`[data-page="${id}"]`)?.classList.add('active');
+}
+document.querySelectorAll('.nav-tab').forEach(tab=>{tab.addEventListener('click',()=>showPage(tab.dataset.page));});
+
+$('btnAdd').addEventListener('click',handleAdd);
+$('btnUpdate').addEventListener('click',handleUpdate);
+$('btnCancel').addEventListener('click',clearForm);
+['basePay','perfScore','bonusMag','empAge','dependents','spouseDeduct','disabilityDeduct',
+ 'healthRate','pensionRate','employRate','municipalRate','roundMode'].forEach(id=>{
+  const el=$(id);if(el)el.addEventListener('input',triggerAutoCalc);
+});
+$('btnAddAllowance').addEventListener('click',()=>{allowances.push({name:'',amount:0});renderAllowanceList();});
+$('btnCopyPrev').addEventListener('click',copyPrevMonth);
+$('periodSelect').addEventListener('change',async e=>{
+  currentPeriod=e.target.value;await loadEmployees();await loadLocks();
+  renderPayrollTable();renderDashboard();
+});
+$('btnLock').addEventListener('click',()=>{
+  showModal('ロック確認',`<b>${currentPeriod}</b> を編集ロックしますか？`,'ロックする','btn-primary',async()=>{
+    await sb.from('payroll_locks').upsert({company_id:currentCompany.id,period:currentPeriod},{onConflict:'company_id,period'});
+    lockedPeriods.add(currentPeriod);updateLockUI();showToast('ロックしました');
+  });
+});
+$('btnUnlock').addEventListener('click',()=>{
+  showModal('解除確認','ロックを解除しますか？','解除する','btn-danger',async()=>{
+    await dbDelete('payroll_locks',{company_id:currentCompany.id,period:currentPeriod});
+    lockedPeriods.delete(currentPeriod);updateLockUI();showToast('解除しました');
+  });
+});
+$('btnCommit').addEventListener('click',()=>{
+  if(employees.length===0){showToast('データがありません','error');return;}
+  showModal('月次確定保存',`<b>${currentPeriod}</b>（${employees.length}名）を確定保存します。`,'確定保存','btn-green',commitMonthlyHistory);
+});
+$('btnPDF').addEventListener('click',exportAllPDF);
+$('historyPeriodSel').addEventListener('change',e=>{_historyPeriod=e.target.value;showHistoryData(e.target.value);});
+$('btnHistoryPDF').addEventListener('click',()=>{if(_historyPeriod)exportHistoryPDF(_historyPeriod);});
+$('btnFetchTaxRates').addEventListener('click',fetchLatestTaxRates);
+$('btnSaveTaxRates').addEventListener('click',()=>{
+  ['hRate','pRate','eRate','mRate'].forEach(k=>{const el=$('tr_'+k);if(el)taxRates[k]=Number(el.value);});
+  applyTaxRatesToForm();saveTaxRates();
+});
+$('btnSwitchCompany').addEventListener('click',()=>loadCompanyList(currentUser.id));
+$('btnSignOut').addEventListener('click',async()=>{await sb.auth.signOut();location.reload();});
+$('btnSignOutFromSelect').addEventListener('click',async()=>{await sb.auth.signOut();showScreen('authScreen');});
+$('btnNewCompany').addEventListener('click',()=>showScreen('setupScreen'));
+$('btnCreateCompany').addEventListener('click',async()=>{
+  const name=$('setupCompanyName').value.trim();
+  if(!name){showToast('会社名を入力してください','error');return;}
+  await createCompany(currentUser.id,name,currentUser.name||'Owner');
+  await loadCompanyList(currentUser.id);
+});
+$('btnSaveSettings').addEventListener('click',async()=>{
+  const name=$('settingsCompanyName').value.trim();
+  const depts=$('settingsDepts').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const budget=Number($('settingsBudget').value)||0;
+  if(!name){showToast('会社名を入力してください','error');return;}
+  await sb.from('companies').update({name,depts,budget,industry:$('settingsIndustry').value}).eq('id',currentCompany.id);
+  currentCompany.name=name;currentCompany.depts=depts;currentCompany.budget=budget;
+  $('headerCompanyName').textContent=name;populateDeptSelect();
+  showToast('設定を保存しました','success');
+});
+$('btnRegenInvite').addEventListener('click',async()=>{
+  const newCode=generateInviteCode();
+  await sb.from('companies').update({invite_code:newCode}).eq('id',currentCompany.id);
+  currentCompany.invite_code=newCode;$('inviteCodeBox').textContent=newCode;
+  showToast('招待コードを再生成しました','success');
+});
+$('inviteCodeBox').addEventListener('click',()=>{
+  navigator.clipboard?.writeText(currentCompany.invite_code||'');
+  showToast('コードをコピーしました','success');
+});
+
+sb.auth.onAuthStateChange(async(event,session)=>{
+  if(!session){showScreen('authScreen');return;}
+  const user=session.user;
+  currentUser={id:user.id,email:user.email,name:user.user_metadata?.name||user.email};
+  await loadCompanyList(user.id);
+});
+
+})();
+</script>
+</body>
+</html>
