@@ -1314,7 +1314,25 @@ function showPdfProgress(current,total,name){
 function hidePdfProgress(){const ov=$('pdfProgressOverlay');if(ov)ov.style.display='none';}
 
 /* ══ PDF生成（html2canvas + jsPDF） ══ */
-function buildSlipElement(emp, period) {
+// ロゴURLをbase64に変換（html2canvasのCORSエラー回避）
+async function fetchImageAsBase64(url) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('fetch failed');
+    const blob = await res.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch(e) {
+    console.warn('[PA] logo fetch failed:', e.message);
+    return null; // 失敗したらロゴなしにフォールバック
+  }
+}
+
+async function buildSlipElement(emp, period) {
   const [y, m] = period.split('-');
   const dateStr = new Date().toLocaleDateString('ja-JP');
   const co = currentCompany || {};
@@ -1324,9 +1342,16 @@ function buildSlipElement(emp, period) {
     `<tr><td style="padding:5px 8px;border-bottom:1px solid #eee;color:#555;font-size:12px">${l}</td>
          <td style="padding:5px 8px;border-bottom:1px solid #eee;text-align:right;font-family:monospace;font-size:12px;${bold?'font-weight:700':''}">${v}</td></tr>`;
 
-  const logoHtml = co.logo_url
-    ? `<img src="${co.logo_url}" style="max-height:48px;max-width:120px;object-fit:contain" crossorigin="anonymous">`
-    : `<div style="width:48px;height:48px;background:#0d0f14;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:18px">${(co.name||'P').charAt(0)}</div>`;
+  // ロゴをbase64変換（外部URLへのfetchをhtml2canvasに任せずJSで処理）
+  let logoHtml;
+  if (co.logo_url) {
+    const b64 = await fetchImageAsBase64(co.logo_url);
+    logoHtml = b64
+      ? `<img src="${b64}" style="max-height:48px;max-width:120px;object-fit:contain">`
+      : `<div style="width:48px;height:48px;background:#0d0f14;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:18px">${esc(co.name||'P').charAt(0)}</div>`;
+  } else {
+    logoHtml = `<div style="width:48px;height:48px;background:#0d0f14;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:18px">${esc(co.name||'P').charAt(0)}</div>`;
+  }
 
   const el = document.createElement('div');
   el.style.cssText = 'width:794px;min-height:1123px;padding:48px;background:#fff;font-family:"Noto Sans JP",sans-serif;box-sizing:border-box;position:fixed;left:-9999px;top:0;z-index:-1';
@@ -1409,13 +1434,14 @@ async function generatePDF(empList, period, filename) {
   for (let i = 0; i < empList.length; i++) {
     const emp = empList[i];
     showPdfProgress(i+1, empList.length, emp.name);
-    const el = buildSlipElement(emp, period);
+    const el = await buildSlipElement(emp, period);
     document.body.appendChild(el);
     try {
-      // フォント読み込み完了を待つ
       await document.fonts.ready;
       const canvas = await html2canvas(el, {
-        scale: 2, useCORS: true, allowTaint: false,
+        scale: 2,
+        useCORS: false,    // base64埋め込み済みなので不要
+        allowTaint: false,
         backgroundColor: '#ffffff',
         width: 794, windowWidth: 794,
         logging: false,
