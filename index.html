@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
+<!-- HTTPS強制リダイレクト -->
+<script>if(location.protocol==='http:'&&location.hostname!=='localhost'&&location.hostname!=='127.0.0.1'){location.replace('https:'+location.href.slice(5));}</script>
+<meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
 <title>PayrollAuto v4.0</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&family=Syne:wght@700;800;900&display=swap" rel="stylesheet">
@@ -870,10 +873,24 @@ function showAuthErr(id,msg){
 
 $('btnLogin').addEventListener('click',async()=>{
   const btn=$('btnLogin');
+  if(btn.disabled)return; // 二重押し防止
   btn.disabled=true;btn.textContent='ログイン中...';
-  const{error}=await sb.auth.signInWithPassword({email:$('loginEmail').value.trim(),password:$('loginPass').value});
-  btn.disabled=false;btn.textContent='ログイン';
-  if(error)showAuthErr('loginErr',error.message==='Invalid login credentials'?'メールアドレスまたはパスワードが正しくありません':error.message);
+  const{error}=await sb.auth.signInWithPassword({
+    email:$('loginEmail').value.trim(),
+    password:$('loginPass').value
+  });
+  if(error){
+    // エラー時だけボタンを復元
+    btn.disabled=false;btn.textContent='ログイン';
+    showAuthErr('loginErr',error.message==='Invalid login credentials'?'メールアドレスまたはパスワードが正しくありません':error.message);
+  } else {
+    // 成功時はonAuthStateChangeが画面遷移するのでボタンはそのまま
+    // 10秒経っても遷移しない場合の保険
+    btn.textContent='接続中...';
+    setTimeout(()=>{
+      if(btn.disabled){btn.disabled=false;btn.textContent='ログイン';}
+    },10000);
+  }
 });
 
 $('btnRegister').addEventListener('click',async()=>{
@@ -883,13 +900,16 @@ $('btnRegister').addEventListener('click',async()=>{
   if(!email){showAuthErr('regErr','メールアドレスを入力してください');return;}
   if(pass.length<6){showAuthErr('regErr','パスワードは6文字以上にしてください');return;}
   const btn=$('btnRegister');
+  if(btn.disabled)return;
   btn.disabled=true;btn.textContent='登録中...';
   const{data,error}=await sb.auth.signUp({email,password:pass,options:{data:{name:uName}}});
-  btn.disabled=false;btn.textContent='会社アカウントを作成';
-  if(error){showAuthErr('regErr',error.message);return;}
+  if(error){btn.disabled=false;btn.textContent='会社アカウントを作成';showAuthErr('regErr',error.message);return;}
   const uid=data.user?.id;
-  if(!uid){showAuthErr('regErr','ユーザー登録に失敗しました');return;}
+  if(!uid){btn.disabled=false;btn.textContent='会社アカウントを作成';showAuthErr('regErr','ユーザー登録に失敗しました');return;}
+  btn.textContent='会社を作成中...';
   await createCompany(uid,cName,uName);
+  // signUpはメール確認が必要な場合があるのでここで復元
+  btn.disabled=false;btn.textContent='会社アカウントを作成';
 });
 
 $('btnJoin').addEventListener('click',async()=>{
@@ -900,17 +920,19 @@ $('btnJoin').addEventListener('click',async()=>{
   if(!email){showAuthErr('joinErr','メールアドレスを入力してください');return;}
   if(pass.length<6){showAuthErr('joinErr','パスワードは6文字以上にしてください');return;}
   const btn=$('btnJoin');
-  btn.disabled=true;btn.textContent='参加中...';
+  if(btn.disabled)return;
+  btn.disabled=true;btn.textContent='コード確認中...';
   const company=await dbGet('companies',{invite_code:code});
   if(!company){btn.disabled=false;btn.textContent='参加する';showAuthErr('joinErr','招待コードが無効です');return;}
+  btn.textContent='参加中...';
   const{data,error}=await sb.auth.signUp({email,password:pass,options:{data:{name:uName}}});
-  btn.disabled=false;btn.textContent='参加する';
-  if(error){showAuthErr('joinErr',error.message);return;}
+  if(error){btn.disabled=false;btn.textContent='参加する';showAuthErr('joinErr',error.message);return;}
   const uid=data.user?.id;
-  if(!uid){showAuthErr('joinErr','ユーザー登録に失敗しました');return;}
+  if(!uid){btn.disabled=false;btn.textContent='参加する';showAuthErr('joinErr','ユーザー登録に失敗しました');return;}
   const ex=await dbGet('company_users',{company_id:company.id,user_id:uid});
   if(!ex)await sb.from('company_users').insert({company_id:company.id,user_id:uid,name:uName,role:'editor',joined_at:new Date().toISOString()});
-  showToast(`「${company.name}」に参加しました`,'success');
+  btn.disabled=false;btn.textContent='参加する';
+  showToast(`「${esc(company.name)}」に参加しました。ログインしてください。`,'success');
 });
 
 async function createCompany(uid,companyName,userName){
