@@ -256,11 +256,12 @@ body.dark .tbl-btn{background:#0d0f14;color:#e8e4dc}
 /* ===== PERIOD BAR ===== */
 .period-bar{
   background:#fff;border:2px solid var(--border);border-radius:var(--radius);
-  padding:0.65rem 1.1rem;display:flex;align-items:center;gap:0.75rem;
+  padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;
   margin-bottom:1rem;flex-wrap:wrap;
 }
 body.dark .period-bar{background:#1a1c23}
-.period-bar label{font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)}
+.period-bar-left{display:flex;align-items:center;gap:0.5rem}
+.period-label{font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)}
 .period-bar select{
   padding:0.35rem 0.55rem;border:1.5px solid var(--border);border-radius:var(--radius);
   font-family:var(--font-mono);font-size:0.8rem;background:#fff;color:var(--ink);
@@ -272,6 +273,27 @@ body.dark .period-bar select{background:#0d0f14;color:#e8e4dc}
   background:rgba(200,80,42,0.1);padding:0.3rem 0.65rem;border-radius:var(--radius);
   border:1px solid rgba(200,80,42,0.3);
 }
+/* ボタングループ */
+.btn-cluster{
+  display:flex;align-items:center;
+  border:1.5px solid var(--border);border-radius:var(--radius);
+  overflow:hidden;
+}
+.btn-cluster .btn{
+  border-radius:0;border:none;border-right:1.5px solid var(--border);
+  box-shadow:none;margin:0;
+}
+.btn-cluster .btn:last-child{border-right:none;}
+.btn-cluster .btn:hover{transform:none;box-shadow:none;opacity:0.82;}
+.cluster-label{
+  font-size:0.58rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+  color:var(--muted);padding:0 0.5rem;white-space:nowrap;
+  border-right:1.5px solid var(--border);
+  display:flex;align-items:center;background:var(--cream);
+}
+body.dark .cluster-label{background:#0d0f14;}
+body.dark .btn-cluster{border-color:#2e3140;}
+body.dark .btn-cluster .btn{border-color:#2e3140;}
 
 /* ===== STAT CARDS ===== */
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0.75rem;margin-bottom:1.25rem}
@@ -517,18 +539,29 @@ body.dark .tax-rate-card{background:#0d0f14}
     </div>
     <div class="page" id="pagePayroll">
       <div class="period-bar">
-        <label>対象年月</label>
-        <select id="periodSelect"></select>
-        <div id="lockedMsg" class="locked-badge" style="display:none">🔒 確定済み</div>
+        <div class="period-bar-left">
+          <label class="period-label">対象年月</label>
+          <select id="periodSelect"></select>
+          <div id="lockedMsg" class="locked-badge" style="display:none">🔒 確定済み</div>
+        </div>
         <div style="flex:1"></div>
-        <button class="btn btn-sm btn-green" id="btnCommit">📥 確定保存</button>
-        <button class="btn btn-sm btn-secondary" id="btnLock">🔒 ロック</button>
-        <button class="btn btn-sm btn-danger" id="btnUnlock" style="display:none">🔓 解除</button>
-        <button class="btn btn-sm btn-blue" id="btnPDF">🖨 PDF</button>
-        <button class="btn btn-sm btn-secondary" id="btnExcel">📗 Excel</button>
-        <button class="btn btn-sm btn-secondary" id="btnCSV">📄 CSV</button>
-        <label class="btn btn-sm btn-secondary" id="btnImportLabel" style="cursor:pointer;margin:0">📂 インポート<input type="file" id="btnImport" accept=".csv,.xlsx,.xls" style="display:none"></label>
-        <button class="btn btn-sm btn-secondary" id="btnTemplate" title="インポート用テンプレートをダウンロード">📋 テンプレ</button>
+        <div class="btn-cluster">
+          <span class="cluster-label">確定</span>
+          <button class="btn btn-sm btn-green" id="btnCommit">📥 保存</button>
+          <button class="btn btn-sm btn-secondary" id="btnLock">🔒 ロック</button>
+          <button class="btn btn-sm btn-danger" id="btnUnlock" style="display:none">🔓 解除</button>
+        </div>
+        <div class="btn-cluster">
+          <span class="cluster-label">出力</span>
+          <button class="btn btn-sm btn-blue" id="btnPDF">🖨 PDF</button>
+          <button class="btn btn-sm btn-secondary" id="btnExcel">📗 Excel</button>
+          <button class="btn btn-sm btn-secondary" id="btnCSV">📄 CSV</button>
+        </div>
+        <div class="btn-cluster">
+          <span class="cluster-label">入力</span>
+          <label class="btn btn-sm btn-secondary" style="cursor:pointer;margin:0;border-radius:0;border:none;border-right:1.5px solid var(--border)">📂 インポート<input type="file" id="btnImport" accept=".csv,.xlsx,.xls" style="display:none"></label>
+          <button class="btn btn-sm btn-secondary" id="btnTemplate">📋 テンプレ</button>
+        </div>
       </div>
       <div style="display:grid;grid-template-columns:340px 1fr;gap:1rem;align-items:start">
         <div>
@@ -631,9 +664,12 @@ body.dark .tax-rate-card{background:#0d0f14}
             <select id="historyPeriodSel" style="padding:0.4rem 0.65rem;border:1.5px solid var(--border);border-radius:var(--radius);font-family:var(--font-mono);font-size:0.82rem">
               <option value="">— 年月を選択 —</option>
             </select>
-            <button class="btn btn-sm btn-danger" id="btnHistoryPDF" style="display:none">🖨 PDF再発行</button>
-            <button class="btn btn-sm btn-secondary" id="btnHistoryExcel" style="display:none">📗 Excel</button>
-            <button class="btn btn-sm btn-secondary" id="btnHistoryCSV" style="display:none">📄 CSV</button>
+            <div class="btn-cluster" id="historyBtnGroup" style="display:none">
+              <span class="cluster-label">出力</span>
+              <button class="btn btn-sm btn-danger" id="btnHistoryPDF">🖨 PDF</button>
+              <button class="btn btn-sm btn-secondary" id="btnHistoryExcel">📗 Excel</button>
+              <button class="btn btn-sm btn-secondary" id="btnHistoryCSV">📄 CSV</button>
+            </div>
           </div>
           <div id="historyContent"><p style="font-size:0.8rem;color:var(--muted)">年月を選択すると過去データが表示されます</p></div>
         </div>
@@ -1319,11 +1355,16 @@ function showPdfProgress(current,total,name){
 function hidePdfProgress(){const ov=$('pdfProgressOverlay');if(ov)ov.style.display='none';}
 
 /* ══ PDF生成（html2canvas + jsPDF） ══ */
-// ロゴURLをbase64に変換（html2canvasのCORSエラー回避）
 async function fetchImageAsBase64(url) {
+  // 外部https://URLのみ許可（空・相対・同一オリジン・httpはすべてスキップ）
+  if(!url || typeof url !== 'string') return null;
+  const trimmed = url.trim();
+  if(!trimmed.startsWith('https://')) return null;
   try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('fetch failed');
+    const parsed = new URL(trimmed);
+    if(parsed.origin === location.origin) return null; // 同一オリジンはスキップ
+    const res = await fetch(trimmed);
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
     const blob = await res.blob();
     return await new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -1333,7 +1374,7 @@ async function fetchImageAsBase64(url) {
     });
   } catch(e) {
     console.warn('[PA] logo fetch failed:', e.message);
-    return null; // 失敗したらロゴなしにフォールバック
+    return null;
   }
 }
 
@@ -1505,9 +1546,7 @@ async function showHistoryData(period){
   const row=await dbGet('payroll_history',{company_id:currentCompany.id,period});
   const wrap=$('historyContent');
   if(!row){wrap.innerHTML='<p style="color:var(--muted);font-size:0.8rem">データが見つかりません</p>';return;}
-  $('btnHistoryPDF').style.display='inline-flex';
-  $('btnHistoryExcel').style.display='inline-flex';
-  $('btnHistoryCSV').style.display='inline-flex';
+  $('historyBtnGroup').style.display='flex';
   const rows=(row.employees||[]).map(e=>`
     <tr>
       <td>${e.name}</td><td>${e.dept||'—'}</td><td>${e.pos||'—'}</td>
