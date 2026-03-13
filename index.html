@@ -672,14 +672,21 @@ body.dark .tax-rate-card{background:#0d0f14}
             <div class="form-group"><label>業種</label><input type="text" id="settingsIndustry"></div>
           </div>
           <div class="form-row">
+            <div class="form-group"><label>住所</label><input type="text" id="settingsAddress" placeholder="東京都渋谷区〇〇1-2-3"></div>
+            <div class="form-group"><label>電話番号</label><input type="text" id="settingsPhone" placeholder="03-0000-0000"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>ロゴURL（任意）</label><input type="url" id="settingsLogoUrl" placeholder="https://example.com/logo.png"></div>
+            <div class="form-group"><label>月次予算（円）</label><input type="number" id="settingsBudget" step="10000" placeholder="例：2000000"></div>
+          </div>
+          <div class="form-row">
             <div class="form-group"><label>部署リスト（改行区切り）</label>
-              <textarea id="settingsDepts" rows="5" style="width:100%;padding:0.55rem;border:2px solid var(--border);border-radius:var(--radius);font-family:var(--font-body);font-size:0.82rem;resize:vertical">営業部
+              <textarea id="settingsDepts" rows="4" style="width:100%;padding:0.55rem;border:2px solid var(--border);border-radius:var(--radius);font-family:var(--font-body);font-size:0.82rem;resize:vertical">営業部
 開発部
 管理部
 製造部
 企画部</textarea>
             </div>
-            <div class="form-group"><label>月次予算（円）</label><input type="number" id="settingsBudget" step="10000" placeholder="例：2000000"></div>
           </div>
           <div class="btn-group">
             <button class="btn btn-primary" id="btnSaveSettings">設定を保存</button>
@@ -704,6 +711,8 @@ body.dark .tax-rate-card{background:#0d0f14}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 (() => {
 'use strict';
@@ -919,7 +928,8 @@ async function openCompany(company){
     id:company.id,name:company.name,role:m?.role||company.role,
     budget:company.budget||0,
     depts:company.depts||['営業部','開発部','管理部','製造部','企画部'],
-    invite_code:company.invite_code||'',industry:company.industry||''
+    invite_code:company.invite_code||'',industry:company.industry||'',
+    address:company.address||'',phone:company.phone||'',logo_url:company.logo_url||''
   };
   await initApp();
 }
@@ -939,6 +949,9 @@ async function initApp(){
   if(role==='owner'){
     $('settingsCompanyName').value=currentCompany.name;
     $('settingsIndustry').value=currentCompany.industry||'';
+    $('settingsAddress').value=currentCompany.address||'';
+    $('settingsPhone').value=currentCompany.phone||'';
+    $('settingsLogoUrl').value=currentCompany.logo_url||'';
     $('settingsDepts').value=currentCompany.depts.join('\n');
     $('settingsBudget').value=currentCompany.budget||'';
     $('inviteCodeBox').textContent=currentCompany.invite_code||'—';
@@ -1207,45 +1220,138 @@ function renderAllowanceList(){
   list.querySelectorAll('[data-del]').forEach(btn=>{btn.onclick=()=>{allowances.splice(Number(btn.dataset.del),1);renderAllowanceList();triggerAutoCalc();};});
 }
 
-function buildSlipHTML(emp,title,dateStr){
-  const iT=(emp.hRate||0)+(emp.pRate||0)+(emp.eRate||0)||1;
-  const deduct=emp.insurance+emp.tax+(emp.municipal||0);
-  const row=(l,v)=>`<div class="slip-row"><span>${l}</span><span class="val">${v}</span></div>`;
-  return`<div class="slip-page">
-    <div class="slip-title">${title}</div>
-    <div class="slip-date">出力日：${dateStr}　会社名：${currentCompany?.name||''}</div>
-    <table class="slip-info-table">
-      <tr><td class="lbl">氏名</td><td>${emp.name}</td><td class="lbl">年齢</td><td>${emp.age||'—'}歳</td></tr>
-      <tr><td class="lbl">部署</td><td>${emp.dept||'—'}</td><td class="lbl">役職</td><td>${emp.pos||'—'}</td></tr>
-      <tr><td class="lbl">扶養家族</td><td>${emp.dep||0}名</td><td class="lbl"></td><td></td></tr>
-    </table>
-    <div class="slip-section-title">支給項目</div>
-    ${row('基本給',fmtY(emp.base))}
-    ${(emp.allowances||[]).map(a=>row(a.name||'手当',fmtY(a.amount))).join('')}
-    ${row('業績手当',fmtY(emp.gross-emp.base-(emp.allowanceTotal||0)))}
-    ${row('支給額合計',fmtY(emp.gross))}
-    <div class="slip-section-title">控除項目</div>
-    ${row('健康保険料',fmtY(emp.insurance*(emp.hRate/iT)))}
-    ${row('厚生年金',fmtY(emp.insurance*(emp.pRate/iT)))}
-    ${row('雇用保険',fmtY(emp.insurance*(emp.eRate/iT)))}
-    ${row('所得税',fmtY(emp.tax))}
-    ${row('住民税',fmtY(emp.municipal||0))}
-    ${row('控除合計',fmtY(deduct))}
-    <div class="slip-net"><span>差引支給額（手取り）</span><span>${fmtY(emp.monthlyNet)}</span></div>
-    <div class="slip-footer">※本明細は給与計算システムPayrollAutoにより自動計算されたものです。</div>
-  </div>`;
+/* ══ PDF生成（html2canvas + jsPDF） ══ */
+function buildSlipElement(emp, period) {
+  const [y, m] = period.split('-');
+  const title = `給与明細書　${y}年${Number(m)}月分`;
+  const dateStr = new Date().toLocaleDateString('ja-JP');
+  const co = currentCompany || {};
+  const iT = (emp.hRate||0)+(emp.pRate||0)+(emp.eRate||0)||1;
+  const deduct = emp.insurance+emp.tax+(emp.municipal||0);
+  const row = (l,v,bold=false) =>
+    `<tr><td style="padding:5px 8px;border-bottom:1px solid #eee;color:#555;font-size:12px">${l}</td>
+         <td style="padding:5px 8px;border-bottom:1px solid #eee;text-align:right;font-family:monospace;font-size:12px;${bold?'font-weight:700':''}">${v}</td></tr>`;
+
+  const logoHtml = co.logo_url
+    ? `<img src="${co.logo_url}" style="max-height:48px;max-width:120px;object-fit:contain" crossorigin="anonymous">`
+    : `<div style="width:48px;height:48px;background:#0d0f14;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:18px">${(co.name||'P').charAt(0)}</div>`;
+
+  const el = document.createElement('div');
+  el.style.cssText = 'width:794px;min-height:1123px;padding:48px;background:#fff;font-family:"Noto Sans JP",sans-serif;box-sizing:border-box;position:absolute;left:-9999px;top:0';
+  el.innerHTML = `
+    <!-- ヘッダー -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0d0f14;padding-bottom:16px;margin-bottom:24px">
+      <div style="display:flex;align-items:center;gap:14px">
+        ${logoHtml}
+        <div>
+          <div style="font-size:18px;font-weight:900;letter-spacing:-0.02em">${co.name||''}</div>
+          ${co.address?`<div style="font-size:11px;color:#666;margin-top:2px">${co.address}</div>`:''}
+          ${co.phone?`<div style="font-size:11px;color:#666">${co.phone}</div>`:''}
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:20px;font-weight:900;letter-spacing:0.04em">給 与 明 細 書</div>
+        <div style="font-size:12px;color:#888;margin-top:4px">${y}年${Number(m)}月分</div>
+        <div style="font-size:11px;color:#aaa;margin-top:2px">出力日：${dateStr}</div>
+      </div>
+    </div>
+
+    <!-- 従業員情報 -->
+    <div style="background:#f8f7f4;border-radius:4px;padding:14px 18px;margin-bottom:20px;display:flex;gap:32px">
+      <div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;color:#888;text-transform:uppercase;margin-bottom:4px">氏名</div>
+        <div style="font-size:20px;font-weight:700">${emp.name} <span style="font-size:13px;color:#888">様</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;align-content:center">
+        <div style="font-size:11px;color:#888">部署</div><div style="font-size:12px;font-weight:600">${emp.dept||'—'}</div>
+        <div style="font-size:11px;color:#888">役職</div><div style="font-size:12px;font-weight:600">${emp.pos||'—'}</div>
+        <div style="font-size:11px;color:#888">年齢</div><div style="font-size:12px;font-weight:600">${emp.age||'—'}歳</div>
+        <div style="font-size:11px;color:#888">扶養家族</div><div style="font-size:12px;font-weight:600">${emp.dep||0}名</div>
+      </div>
+    </div>
+
+    <!-- 支給・控除テーブル（横並び） -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <!-- 支給項目 -->
+      <div>
+        <div style="background:#0d0f14;color:#fff;padding:6px 10px;font-size:11px;font-weight:700;letter-spacing:0.1em">支 給 項 目</div>
+        <table style="width:100%;border-collapse:collapse">
+          ${row('基本給', fmtY(emp.base))}
+          ${(emp.allowances||[]).map(a=>row(a.name||'手当',fmtY(a.amount))).join('')}
+          ${emp.gross-emp.base-(emp.allowanceTotal||0) !== 0 ? row('業績手当',fmtY(emp.gross-emp.base-(emp.allowanceTotal||0))) : ''}
+          ${row('<b>支給額合計</b>', `<b>${fmtY(emp.gross)}</b>`, true)}
+        </table>
+      </div>
+      <!-- 控除項目 -->
+      <div>
+        <div style="background:#0d0f14;color:#fff;padding:6px 10px;font-size:11px;font-weight:700;letter-spacing:0.1em">控 除 項 目</div>
+        <table style="width:100%;border-collapse:collapse">
+          ${row('健康保険料', fmtY(emp.insurance*(emp.hRate/iT)))}
+          ${row('厚生年金保険料', fmtY(emp.insurance*(emp.pRate/iT)))}
+          ${row('雇用保険料', fmtY(emp.insurance*(emp.eRate/iT)))}
+          ${row('所得税', fmtY(emp.tax))}
+          ${row('住民税', fmtY(emp.municipal||0))}
+          ${row('<b>控除額合計</b>', `<b>${fmtY(deduct)}</b>`, true)}
+        </table>
+      </div>
+    </div>
+
+    <!-- 差引支給額 -->
+    <div style="background:#0d0f14;color:#fff;padding:16px 20px;border-radius:4px;display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <div style="font-size:13px;font-weight:700;letter-spacing:0.08em">差 引 支 給 額（手 取 り）</div>
+      <div style="font-size:28px;font-weight:900;font-family:monospace;letter-spacing:0.04em">${fmtY(emp.monthlyNet)}</div>
+    </div>
+
+    <!-- 税率情報 -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px">
+      ${[['健康保険率',`${emp.hRate}%`],['厚生年金率',`${emp.pRate}%`],['雇用保険率',`${emp.eRate}%`],['住民税率',`${emp.mRate||10}%`]]
+        .map(([l,v])=>`<div style="background:#f0f0ef;border-radius:3px;padding:4px 10px;font-size:10px;color:#666">${l}：<b style="color:#333">${v}</b></div>`).join('')}
+    </div>
+
+    <!-- フッター -->
+    <div style="border-top:1px solid #eee;padding-top:12px;font-size:10px;color:#aaa;display:flex;justify-content:space-between">
+      <span>※本明細はPayrollAutoにより自動計算されたものです。</span>
+      <span>${co.name||''}</span>
+    </div>`;
+  return el;
 }
-function printSlip(id){
-  const emp=employees.find(e=>e.id===id);if(!emp)return;
-  const[y,m]=currentPeriod.split('-');
-  $('printArea').innerHTML=buildSlipHTML(emp,`給与明細書　${y}年${Number(m)}月分`,new Date().toLocaleDateString('ja-JP'));
-  setTimeout(()=>{window.print();setTimeout(()=>$('printArea').innerHTML='',1000);},300);
+
+async function generatePDF(empList, period, filename) {
+  showToast('PDF生成中...', '');
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const W = 210, H = 297;
+
+  for (let i = 0; i < empList.length; i++) {
+    const emp = empList[i];
+    const el = buildSlipElement(emp, period);
+    document.body.appendChild(el);
+    try {
+      const canvas = await html2canvas(el, {
+        scale: 2, useCORS: true, backgroundColor: '#ffffff',
+        width: 794, windowWidth: 794,
+      });
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+      if (i > 0) pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', 0, 0, W, H);
+    } finally {
+      document.body.removeChild(el);
+    }
+  }
+  pdf.save(filename);
+  showToast(`PDF (${empList.length}名) をダウンロードしました ✅`, 'success');
 }
-function exportAllPDF(){
-  if(employees.length===0){showToast('データがありません','error');return;}
-  const[y,m]=currentPeriod.split('-');
-  $('printArea').innerHTML=employees.map(e=>buildSlipHTML(e,`給与明細書　${y}年${Number(m)}月分`,new Date().toLocaleDateString('ja-JP'))).join('');
-  setTimeout(()=>{window.print();setTimeout(()=>$('printArea').innerHTML='',1000);},300);
+
+async function printSlip(id) {
+  const emp = employees.find(e => e.id === id);
+  if (!emp) return;
+  const [y, m] = currentPeriod.split('-');
+  await generatePDF([emp], currentPeriod, `給与明細_${emp.name}_${y}${m}.pdf`);
+}
+async function exportAllPDF() {
+  if (employees.length === 0) { showToast('データがありません', 'error'); return; }
+  const [y, m] = currentPeriod.split('-');
+  await generatePDF(employees, currentPeriod, `給与明細一括_${y}${m}.pdf`);
 }
 
 async function commitMonthlyHistory(){
@@ -1303,8 +1409,7 @@ async function exportHistoryPDF(period){
   const row=await dbGet('payroll_history',{company_id:currentCompany.id,period});
   if(!row||!row.employees){showToast('データが見つかりません','error');return;}
   const[y,m]=period.split('-');
-  $('printArea').innerHTML=row.employees.map(e=>buildSlipHTML(e,`給与明細書　${y}年${Number(m)}月分（再発行）`,new Date().toLocaleDateString('ja-JP'))).join('');
-  setTimeout(()=>{window.print();setTimeout(()=>$('printArea').innerHTML='',1000);},300);
+  await generatePDF(row.employees, period, `給与明細一括_${y}${m}_再発行.pdf`);
 }
 
 function renderDashboard(){
@@ -1509,9 +1614,13 @@ $('btnSaveSettings').addEventListener('click',async()=>{
   const name=$('settingsCompanyName').value.trim();
   const depts=$('settingsDepts').value.split('\n').map(s=>s.trim()).filter(Boolean);
   const budget=Number($('settingsBudget').value)||0;
+  const address=$('settingsAddress').value.trim();
+  const phone=$('settingsPhone').value.trim();
+  const logo_url=$('settingsLogoUrl').value.trim();
   if(!name){showToast('会社名を入力してください','error');return;}
-  await sb.from('companies').update({name,depts,budget,industry:$('settingsIndustry').value}).eq('id',currentCompany.id);
+  await sb.from('companies').update({name,depts,budget,industry:$('settingsIndustry').value,address,phone,logo_url}).eq('id',currentCompany.id);
   currentCompany.name=name;currentCompany.depts=depts;currentCompany.budget=budget;
+  currentCompany.address=address;currentCompany.phone=phone;currentCompany.logo_url=logo_url;
   $('headerCompanyName').textContent=name;populateDeptSelect();
   showToast('設定を保存しました','success');
 });
