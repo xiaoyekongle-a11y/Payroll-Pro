@@ -509,7 +509,7 @@ body.dark .tax-rate-card{background:#0d0f14}
       </div>
       <div class="panel" style="margin-top:1rem">
         <div class="panel-header">📈 月別人件費推移</div>
-        <div class="panel-body"><canvas id="trendChart" height="80"></canvas></div>
+        <div class="panel-body"><canvas id="trendChart" height="80"></canvas><p id="trendChartMsg" style="display:none;font-size:0.78rem;color:var(--muted);padding:0.5rem 0">2ヶ月以上のデータが揃うとグラフが表示されます</p></div>
       </div>
     </div>
     <div class="page" id="pagePayroll">
@@ -1553,15 +1553,20 @@ async function renderTrendChart(){
     const rows=await dbGetAll('payroll_snapshots',{company_id:currentCompany.id});
     rows.sort((a,b)=>a.period.localeCompare(b.period));
     const recent=rows.slice(-6);
+    const canvas=$('trendChart');
+    // canvasがDOMにない場合（ページ遷移で消えた等）は何もしない
+    if(!canvas)return;
+    const msg=$('trendChartMsg');
     if(recent.length<2){
-      $('trendChart').parentElement.innerHTML='<p style="font-size:0.78rem;color:var(--muted);padding:0.5rem 0">2ヶ月以上のデータが揃うとグラフが表示されます</p>';
+      canvas.style.display='none';
+      if(msg)msg.style.display='block';
       return;
     }
+    canvas.style.display='block';
+    if(msg)msg.style.display='none';
     const isDark=document.body.classList.contains('dark');
     const gc=isDark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)',tc=isDark?'#5a5650':'#7a7469';
     if(trendChartObj){trendChartObj.destroy();trendChartObj=null;}
-    const canvas=$('trendChart');
-    if(!canvas)return;
     trendChartObj=new Chart(canvas,{
       type:'bar',
       data:{
