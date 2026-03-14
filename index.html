@@ -2214,17 +2214,67 @@ $('btnJoin').addEventListener('click',async()=>{
   const btn=$('btnJoin');
   if(btn.disabled)return;
   btn.disabled=true;btn.textContent='コード確認中...';
-  const company=await dbGet('companies',{invite_code:code});
-  if(!company){btn.disabled=false;btn.textContent='参加する';showAuthErr('joinErr','招待コードが無効です。再確認してください');return;}
-  btn.textContent='参加中...';
-  const{data,error}=await sb.auth.signUp({email,password:pass,options:{data:{name:uName}}});
-  if(error){btn.disabled=false;btn.textContent='参加する';showAuthErr('joinErr',authErrMsg(error.message));return;}
-  const uid=data.user?.id;
+
+  // ── 手順1: まず新規登録 or ログインを試みる ──
+  let uid=null;
+  let isExistingUser=false;
+
+  // 新規登録を試みる
+  const{data:signUpData,error:signUpErr}=await sb.auth.signUp({email,password:pass,options:{data:{name:uName}}});
+  if(signUpErr){
+    // 既にアカウントがある場合はログインを試みる
+    if(signUpErr.message.includes('already registered')||signUpErr.message.includes('User already registered')){
+      const{data:loginData,error:loginErr}=await sb.auth.signInWithPassword({email,password:pass});
+      if(loginErr){
+        btn.disabled=false;btn.textContent='参加する';
+        showAuthErr('joinErr','このメールアドレスは既に登録されています。パスワードを確認してください');
+        return;
+      }
+      uid=loginData.user?.id;
+      isExistingUser=true;
+    } else {
+      btn.disabled=false;btn.textContent='参加する';
+      showAuthErr('joinErr',authErrMsg(signUpErr.message));
+      return;
+    }
+  } else {
+    uid=signUpData.user?.id;
+  }
+
   if(!uid){btn.disabled=false;btn.textContent='参加する';showAuthErr('joinErr','ユーザー登録に失敗しました');return;}
+
+  btn.textContent='会社を検索中...';
+
+  // ── 手順2: ログイン後に招待コードで会社を検索（RLS通過）──
+  const company=await dbGet('companies',{invite_code:code});
+  if(!company){
+    // ログイン済みの場合はサインアウトしない（既存ユーザーのまま）
+    if(!isExistingUser) await sb.auth.signOut();
+    btn.disabled=false;btn.textContent='参加する';
+    showAuthErr('joinErr','招待コードが無効です。再確認してください');
+    return;
+  }
+
+  // ── 手順3: company_usersに追加 ──
+  btn.textContent='参加中...';
   const ex=await dbGet('company_users',{company_id:company.id,user_id:uid});
-  if(!ex)await sb.from('company_users').insert({company_id:company.id,user_id:uid,name:uName,role:'editor',joined_at:new Date().toISOString()});
+  if(ex){
+    // 既に参加済み
+    btn.disabled=false;btn.textContent='参加する';
+    showToast(`「${esc(company.name)}」には既に参加しています。ログインしてください。`,'success');
+    if(!isExistingUser) await sb.auth.signOut();
+    return;
+  }
+  await sb.from('company_users').insert({
+    company_id:company.id,user_id:uid,name:uName,role:'editor',
+    joined_at:new Date().toISOString()
+  });
+
   btn.disabled=false;btn.textContent='参加する';
-  showToast(`「${esc(company.name)}」に参加しました。ログインしてください。`,'success');
+  showToast(`「${esc(company.name)}」に参加しました！ログインしてください。`,'success');
+
+  // 新規ユーザーはサインアウトしてログイン画面へ（メール確認が必要な場合があるため）
+  if(!isExistingUser) await sb.auth.signOut();
 });
 
 async function createCompany(uid,companyName,userName){
