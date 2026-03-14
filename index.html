@@ -1155,8 +1155,8 @@ body.dark .hoshu-tbl tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
     <button class="header-btn" id="btnSignOut">ログアウト</button>
   </header>
   <nav class="nav-tabs">
-    <div class="nav-tab active" data-page="autocalc" style="color:var(--blue);font-weight:800">⚡ AutoCalc</div>
-    <div class="nav-tab" data-page="dashboard">ダッシュボード</div>
+    <div class="nav-tab active" data-page="dashboard">ダッシュボード</div>
+    <div class="nav-tab" data-page="autocalc" style="color:var(--blue);font-weight:800">⚡ AutoCalc</div>
     <div class="nav-tab" data-page="payroll">給与計算</div>
     <div class="nav-tab" data-page="history">履歴</div>
     <div class="nav-tab" data-page="attendance">勤怠管理</div>
@@ -2272,7 +2272,7 @@ async function initApp(){
   buildYearendYearSelector();
   buildTransferPeriodSelector();
   buildShahouPeriodSelector();
-  showScreen('appScreen');showPage('autocalc');initDarkMode();
+  showScreen('appScreen');showPage('dashboard');initDarkMode();
 }
 
 function buildPeriodSelector(){
@@ -5023,6 +5023,23 @@ async function acRunCalc(){
   const barWrap = document.getElementById('acProgressWrap');
   if(barWrap) barWrap.style.display='block';
 
+  // ファイル未読み込みチェック
+  if(!acExcelRows.length){
+    showToast('先に業績名簿をアップロードしてください','error');
+    if(btn){ btn.disabled=false; btn.textContent='⚡ 給与計算を実行する'; }
+    if(barWrap) barWrap.style.display='none';
+    return;
+  }
+
+  // 列マッピングを自動確定（未確定の場合は自動推定を使用）
+  if(Object.keys(acColMapping).length === 0){
+    if(!acSaveMapping()){
+      if(btn){ btn.disabled=false; btn.textContent='⚡ 給与計算を実行する'; }
+      if(barWrap) barWrap.style.display='none';
+      return;
+    }
+  }
+
   const get = (row,key) => {
     const idx = acColMapping[key];
     return (idx>=0 && idx<row.length) ? row[idx] : '';
@@ -5087,8 +5104,17 @@ async function acRunCalc(){
   if(barWrap) barWrap.style.display='none';
 
   if(acResults.length === 0){
-    showToast('計算できるデータがありませんでした','error');
+    // どの行がスキップされたか調べる
+    const nameIdx = acColMapping['name'];
+    const baseIdx = acColMapping['base'];
+    const sample = acExcelRows.slice(0,3).map((row,i)=>{
+      const n = nameIdx>=0 ? row[nameIdx] : '?';
+      const b = baseIdx>=0 ? row[baseIdx] : '?';
+      return `行${i+1}: 氏名="${n}" 基本給="${b}"`;
+    }).join(' / ');
+    showToast(`計算できるデータがありませんでした。列マッピングを確認してください。(${sample})`, 'error');
     if(btn){ btn.disabled=false; btn.textContent='⚡ 給与計算を実行する'; }
+    if(barWrap) barWrap.style.display='none';
     return;
   }
 
