@@ -119,6 +119,8 @@ body.dark input::placeholder{ color:var(--muted-2) }
 .screen.active{ display:flex }
 #appScreen{ height:100vh;overflow:hidden;flex-direction:column }
 #appScreen>#pages{ overflow-y:auto;flex:1;scroll-behavior:smooth }
+/* pagePayrollは自身でheight:calc(100vh - header - nav)を持ち、
+   #pagesのスクロールに乗らず内部で完結する設計 */
 /* スクロールバーを細く・洗練 */
 #appScreen>#pages::-webkit-scrollbar{ width:5px }
 #appScreen>#pages::-webkit-scrollbar-track{ background:transparent }
@@ -334,6 +336,7 @@ body.dark .nav-tabs{ background:var(--surface) }
 .page{
   display:none;padding:1.5rem;
   max-width:1280px;margin:0 auto;width:100%;
+  align-self:flex-start;  /* flexコンテナ内で上詰め */
 }
 .page.active{
   display:block;
@@ -481,13 +484,13 @@ body.dark .form-group input:focus,body.dark .form-group select:focus{
 @keyframes spin{ to{transform:rotate(360deg)} }
 
 /* ═══════════ PERIOD BAR ═══════════ */
+/* stickyを廃止 → ページトップに自然配置。
+   スティッキーにするとテーブルthと重なって二重に見える問題が発生するため */
 .period-bar{
   background:var(--surface);border:1px solid var(--border);
   border-radius:var(--r-lg);padding:0.55rem 0.9rem;
   display:flex;align-items:center;gap:0.6rem;
   margin-bottom:1.1rem;flex-wrap:wrap;box-shadow:var(--sh-sm);
-  /* ヘッダー+ナビ分下にスティッキー */
-  position:sticky;top:calc(var(--header-h) + var(--nav-h));z-index:50;
 }
 body.dark .period-bar{ background:var(--surface) }
 .period-bar-left{ display:flex;align-items:center;gap:0.5rem }
@@ -541,7 +544,7 @@ table.data-tbl th{
   padding:0.5rem 0.8rem;text-align:left;
   font-size:0.68rem;font-weight:700;letter-spacing:0.04em;
   white-space:nowrap;border-bottom:2px solid var(--border);
-  border-right:1px solid var(--border-2);position:sticky;top:0;
+  border-right:1px solid var(--border-2);
 }
 table.data-tbl th:last-child{ border-right:none }
 body.dark table.data-tbl th{ background:var(--surface-2);color:var(--muted) }
@@ -956,7 +959,7 @@ body.dark .att-absence-sel{ background:var(--surface-2) }
 .hoshu-tbl th{
   background:var(--surface-2);padding:0.3rem 0.5rem;text-align:center;
   font-size:0.6rem;font-weight:700;color:var(--muted);
-  border-bottom:2px solid var(--border);position:sticky;top:0;
+  border-bottom:2px solid var(--border);
 }
 .hoshu-tbl td{ padding:0.3rem 0.5rem;border-bottom:1px solid var(--border-2);text-align:center }
 .hoshu-tbl tr:nth-child(even) td{ background:var(--surface-2) }
@@ -1029,7 +1032,13 @@ body.dark .att-absence-sel{ background:var(--surface-2) }
   .slip-footer{ font-size:7pt;color:#888;margin-top:10pt }
 }
 
-/* ═══════════ RESPONSIVE ═══════════ */
+/* pagePayrollは独自flexレイアウトのためpaddingをリセット */
+#pagePayroll{
+  padding:0;
+  max-width:100%;
+  overflow:clip; /* #pagesのスクロールに乗らない */
+}
+#pagePayroll .period-bar{ margin:0;border-radius:0;border-left:none;border-right:none;border-top:none }
 @media(max-width:900px){
   #pagePayroll>div:last-of-type{ grid-template-columns:1fr !important }
 }
@@ -1242,8 +1251,9 @@ body.dark .att-absence-sel{ background:var(--surface-2) }
         </div>
       </div>
     </div>
-    <div class="page" id="pagePayroll">
-      <div class="period-bar">
+    <div class="page" id="pagePayroll" style="display:flex;flex-direction:column;height:calc(100vh - var(--header-h) - var(--nav-h));padding-bottom:0;max-width:100%">
+      <!-- ── period-bar: 常に上部固定、スクロールしない ── -->
+      <div class="period-bar" style="flex-shrink:0;margin-bottom:0.75rem;border-radius:0;border-left:none;border-right:none;border-top:none;box-shadow:0 2px 4px rgba(0,0,0,0.06)">
         <div class="period-bar-left">
           <label class="period-label">対象年月</label>
           <select id="periodSelect"></select>
@@ -1269,8 +1279,9 @@ body.dark .att-absence-sel{ background:var(--surface-2) }
           <button class="btn btn-sm btn-secondary" id="btnTemplate">📋 テンプレ</button>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:340px 1fr;gap:1rem;align-items:start">
-        <div>
+      <!-- ── 下段: フォーム左 + テーブル右、それぞれ独立スクロール ── -->
+      <div style="display:grid;grid-template-columns:340px 1fr;gap:1rem;flex:1;min-height:0;overflow:hidden;padding:0 1.5rem 1rem;align-items:stretch">
+        <div style="overflow-y:auto;min-height:0;padding-right:2px">
           <div style="margin-bottom:0.75rem">
             <button class="btn btn-sm btn-secondary" id="btnCopyPrev" style="width:100%;justify-content:center">📋 前月の数値をコピー</button>
           </div>
@@ -1348,12 +1359,12 @@ body.dark .att-absence-sel{ background:var(--surface-2) }
             <button class="btn btn-secondary" id="btnCancel" style="display:none">キャンセル</button>
           </div>
         </div>
-        <div class="panel">
+        <div class="panel" style="overflow:hidden;display:flex;flex-direction:column">
           <div class="panel-header">従業員一覧 <span id="empCount" style="font-size:0.65rem;margin-left:0.5rem;opacity:0.7"></span></div>
-          <div class="panel-body" style="padding:0">
+          <div class="panel-body" style="padding:0;flex:1;overflow-y:auto">
             <div class="tbl-wrap">
               <table class="data-tbl">
-                <thead><tr><th data-sort="name">氏名 ↕</th><th>部署/役職</th><th data-sort="base" class="num">基本給 ↕</th><th data-sort="gross" class="num">支給額 ↕</th><th data-sort="monthlyNet" class="num">手取り ↕</th><th>状態</th><th>操作</th></tr></thead>
+                <thead><tr><th style="position:sticky;top:0;z-index:2" data-sort="name">氏名 ↕</th><th style="position:sticky;top:0;z-index:2">部署/役職</th><th style="position:sticky;top:0;z-index:2" data-sort="base" class="num">基本給 ↕</th><th style="position:sticky;top:0;z-index:2" data-sort="gross" class="num">支給額 ↕</th><th style="position:sticky;top:0;z-index:2" data-sort="monthlyNet" class="num">手取り ↕</th><th style="position:sticky;top:0;z-index:2">状態</th><th style="position:sticky;top:0;z-index:2">操作</th></tr></thead>
                 <tbody id="empTbody"></tbody>
                 <tfoot id="empTfoot"></tfoot>
               </table>
