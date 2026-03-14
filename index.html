@@ -2222,8 +2222,14 @@ $('btnJoin').addEventListener('click',async()=>{
   // 新規登録を試みる
   const{data:signUpData,error:signUpErr}=await sb.auth.signUp({email,password:pass,options:{data:{name:uName}}});
   if(signUpErr){
-    // 既にアカウントがある場合はログインを試みる
-    if(signUpErr.message.includes('already registered')||signUpErr.message.includes('User already registered')){
+    // 既にアカウントがある場合（422またはalready registeredメッセージ）はログインを試みる
+    const isExisting =
+      signUpErr.status===422 ||
+      signUpErr.message?.toLowerCase().includes('already registered') ||
+      signUpErr.message?.toLowerCase().includes('already been registered') ||
+      signUpErr.message?.toLowerCase().includes('email already') ||
+      signUpErr.message?.toLowerCase().includes('user already');
+    if(isExisting){
       const{data:loginData,error:loginErr}=await sb.auth.signInWithPassword({email,password:pass});
       if(loginErr){
         btn.disabled=false;btn.textContent='参加する';
@@ -2265,16 +2271,29 @@ $('btnJoin').addEventListener('click',async()=>{
     if(!isExistingUser) await sb.auth.signOut();
     return;
   }
-  await sb.from('company_users').insert({
+  const{error:insertErr}=await sb.from('company_users').insert({
     company_id:company.id,user_id:uid,name:uName,role:'editor',
     joined_at:new Date().toISOString()
   });
+  if(insertErr){
+    console.warn('[PA] company_users insert error:', insertErr.message);
+    btn.disabled=false;btn.textContent='参加する';
+    showAuthErr('joinErr','会社への参加処理に失敗しました: '+insertErr.message);
+    if(!isExistingUser) await sb.auth.signOut();
+    return;
+  }
 
   btn.disabled=false;btn.textContent='参加する';
-  showToast(`「${esc(company.name)}」に参加しました！ログインしてください。`,'success');
 
-  // 新規ユーザーはサインアウトしてログイン画面へ（メール確認が必要な場合があるため）
-  if(!isExistingUser) await sb.auth.signOut();
+  if(isExistingUser){
+    // 既存ユーザーはログイン済みなのでそのまま会社リストを再読み込み
+    showToast(`「${esc(company.name)}」に参加しました！`,'success');
+    await loadCompanyList(uid);
+  } else {
+    // 新規ユーザーはメール確認が必要な場合があるためサインアウト
+    showToast(`「${esc(company.name)}」に参加しました！ログインしてください。`,'success');
+    await sb.auth.signOut();
+  }
 });
 
 async function createCompany(uid,companyName,userName){
