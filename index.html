@@ -5069,11 +5069,25 @@ async function acRunCalc(){
 
   if(barWrap) barWrap.style.display='none';
 
-  // 結果表示
+  if(acResults.length === 0){
+    showToast('計算できるデータがありませんでした','error');
+    if(btn){ btn.disabled=false; btn.textContent='🚀 計算実行'; }
+    return;
+  }
+
+  // 結果表示してSTEP5へ
   acShowResults(aiAffected, aiLogs);
   if(btn){ btn.disabled=false; btn.textContent='🚀 計算実行'; }
   showToast(acResults.length+'名の計算が完了しました ✅','success');
-  acGoStep(4);
+
+  // STEP5のサマリー更新
+  const summaryEl = document.getElementById('acOutputSummary');
+  if(summaryEl){
+    const tG = acResults.reduce((a,e)=>a+e.gross,0);
+    summaryEl.textContent = acResults.length+'名 / 支給総額 '+fmtY(tG);
+  }
+
+  acGoStep(5);
 }
 
 function acMatchTarget(target, emp){
@@ -5114,6 +5128,12 @@ function acShowResults(aiN, aiLogs){
         </tbody>
       </table>
     </div>`;
+
+  // パネルと「出力へ」ボタンを表示
+  const resultPanel = document.getElementById('acResultPanel');
+  const step4Btns   = document.getElementById('acStep4Btns');
+  if(resultPanel) resultPanel.style.display = 'block';
+  if(step4Btns)   step4Btns.style.display   = 'flex';
 
   // AIログ
   const logEl = document.getElementById('acAiLog');
