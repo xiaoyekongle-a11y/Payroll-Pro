@@ -101,8 +101,10 @@ body.dark input,body.dark select,body.dark textarea{
 }
 
 /* ===== SCREENS ===== */
-.screen{display:none;min-height:100vh}
+.screen{display:none}
 .screen.active{display:flex}
+#appScreen{height:100vh;overflow:hidden}
+#appScreen > #pages{overflow-y:auto;flex:1}
 
 /* ===== AUTH SCREEN ===== */
 /* 認証画面 — 弥生風：白+青の帯 */
@@ -323,7 +325,6 @@ body.dark .nav-tabs{background:var(--surface)}
 /* ===== PAGE CONTENT ===== */
 .page{
   display:none;padding:1.5rem;max-width:1240px;margin:0 auto;width:100%;
-  min-height:calc(100vh - var(--header-h) - var(--nav-h));
 }
 .page.active{
   display:block;
@@ -1170,7 +1171,7 @@ body.dark .hoshu-tbl tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
     <div class="nav-tab owner-only" data-page="users">ユーザー管理</div>
     <div class="nav-tab owner-only" data-page="settings">会社設定</div>
   </nav>
-  <div id="pages" style="flex:1;overflow-y:auto;">
+  <div id="pages">
     <div class="page active" id="pageDashboard">
       <div class="stat-grid" id="dashStats">
         <!-- ローディングスケルトン -->
