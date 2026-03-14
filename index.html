@@ -1142,7 +1142,7 @@ body.dark .att-absence-sel{ background:var(--surface-2) }
 <div class="screen" id="setupScreen">
   <div class="setup-card">
     <div class="setup-card-inner">
-    <div class="setup-title">会社情報を入力</div>
+    <div class="setup-title">新しい会社を追加</div>
     <div class="setup-sub">あなたは Owner（管理者）として登録されます</div>
     <div class="form-group"><label>会社名 <span class="req">*</span></label><input type="text" id="setupCompanyName" placeholder="株式会社〇〇"></div>
     <div class="form-group"><label>業種</label>
@@ -2176,22 +2176,48 @@ $('btnLogin').addEventListener('click',async()=>{
 });
 
 $('btnRegister').addEventListener('click',async()=>{
-  const cName=$('regCompanyName').value.trim(),uName=$('regUserName').value.trim()||'Owner';
-  const email=$('regEmail').value.trim(),pass=$('regPass').value;
+  const cName=$('regCompanyName').value.trim();
+  const uName=$('regUserName').value.trim()||'Owner';
+  const email=$('regEmail').value.trim();
+  const pass=$('regPass').value;
   if(!cName){showAuthErr('regErr','会社名を入力してください');return;}
   if(!email){showAuthErr('regErr','メールアドレスを入力してください');return;}
   if(pass.length<6){showAuthErr('regErr','パスワードは6文字以上にしてください');return;}
   const btn=$('btnRegister');
   if(btn.disabled)return;
   btn.disabled=true;btn.textContent='登録中...';
-  const{data,error}=await sb.auth.signUp({email,password:pass,options:{data:{name:uName}}});
-  if(error){btn.disabled=false;btn.textContent='会社アカウントを作成';showAuthErr('regErr',authErrMsg(error.message));return;}
-  const uid=data.user?.id;
-  if(!uid){btn.disabled=false;btn.textContent='会社アカウントを作成';showAuthErr('regErr','ユーザー登録に失敗しました');return;}
+
+  // ① アカウント作成
+  const{data:suData,error:suErr}=await sb.auth.signUp({
+    email,password:pass,
+    options:{data:{name:uName,pending_company:cName}}
+  });
+  if(suErr){
+    btn.disabled=false;btn.textContent='会社アカウントを作成';
+    showAuthErr('regErr',authErrMsg(suErr.message));return;
+  }
+
+  // ② 即ログインしてセッションを確立（メール確認OFFの場合に必要）
+  btn.textContent='ログイン中...';
+  const{data:siData,error:siErr}=await sb.auth.signInWithPassword({email,password:pass});
+  if(siErr){
+    // サインインに失敗 = メール確認が必要な設定になっている
+    btn.disabled=false;btn.textContent='会社アカウントを作成';
+    showAuthErr('regErr','確認メールを送信しました。メールのリンクをクリック後にログインしてください。');
+    return;
+  }
+
+  // ③ セッション確立後に会社を作成（RLSが通る）
   btn.textContent='会社を作成中...';
-  await createCompany(uid,cName,uName);
+  const uid=siData.user?.id;
+  if(!uid){btn.disabled=false;btn.textContent='会社アカウントを作成';showAuthErr('regErr','ユーザーIDが取得できませんでした');return;}
+
+  const ok=await createCompany(uid,cName,uName);
   btn.disabled=false;btn.textContent='会社アカウントを作成';
-  showToast('アカウントを作成しました。確認メールをご確認ください。','success');
+  if(ok!==false){
+    // onAuthStateChangeが自動でloadCompanyListを呼ぶので何もしなくてOK
+    showToast(`「${cName}」のアカウントを作成しました`,'success');
+  }
 });
 
 $('btnJoin').addEventListener('click',async()=>{
@@ -2221,28 +2247,27 @@ async function createCompany(uid,companyName,userName){
   const invite_code=generateInviteCode();
   const cid='co_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
 
-  // ① companiesテーブルに挿入
+  // companies テーブルへ挿入
   const{error:ce}=await sb.from('companies').insert({
     id:cid,name:companyName,invite_code,owner_id:uid,
     depts:['営業部','開発部','管理部','製造部','企画部'],budget:0
   });
   if(ce){
-    console.error('[PA] companies insert error:', ce);
-    showToast('会社作成に失敗しました: '+ce.message,'error');
+    console.error('[Salario] companies insert:', ce.message);
+    showToast('会社作成に失敗: '+ce.message,'error');
     return false;
   }
 
-  // ② company_usersにOwnerとして登録
+  // company_users テーブルへ挿入
   const{error:ue}=await sb.from('company_users').insert({
     company_id:cid,user_id:uid,name:userName,role:'owner'
   });
   if(ue){
-    console.error('[PA] company_users insert error:', ue);
-    showToast('メンバー登録に失敗しました: '+ue.message,'error');
-    // companiesは作成済みなので一応続行
+    console.error('[Salario] company_users insert:', ue.message);
+    showToast('メンバー登録に失敗: '+ue.message,'error');
+    return false;
   }
 
-  showToast(`会社「${companyName}」を作成しました`,'success');
   return true;
 }
 
@@ -2254,9 +2279,23 @@ function showScreen(id){
 async function loadCompanyList(uid){
   const members=await dbGetAll('company_users',{user_id:uid});
   if(!members.length){
-    // 所属会社がない → 会社作成画面へ
-    showScreen('setupScreen');
-    return;
+    // pending_company があれば自動で会社作成を試みる
+    // （signUpしたがcreateCompanyが失敗していた場合のリカバリ）
+    const pendingCo=currentUser&&(await sb.auth.getUser())?.data?.user?.user_metadata?.pending_company;
+    if(pendingCo){
+      showToast('会社を自動作成しています...','');
+      const ok=await createCompany(uid,pendingCo,currentUser.name||'Owner');
+      if(ok!==false){
+        // 作成成功→再度リストを取得
+        const retry=await dbGetAll('company_users',{user_id:uid});
+        if(retry.length){
+          // 再帰せず直接続きを実行するため再代入
+          members.push(...retry);
+        }
+      }
+    }
+    // それでも0件ならsetupScreenへ
+    if(!members.length){showScreen('setupScreen');return;}
   }
   // 一括で会社情報を取得（N+1回避）
   const cids=members.map(m=>m.company_id);
@@ -4101,17 +4140,20 @@ $('btnSaveTaxRates').addEventListener('click',()=>{
 $('btnSwitchCompany').addEventListener('click',()=>loadCompanyList(currentUser.id));
 $('btnSignOut').addEventListener('click',async()=>{_lastHandledUserId=null;await sb.auth.signOut();location.reload();});
 $('btnSignOutFromSelect').addEventListener('click',async()=>{_lastHandledUserId=null;await sb.auth.signOut();showScreen('authScreen');});
-$('btnNewCompany').addEventListener('click',()=>showScreen('setupScreen'));
+$('btnNewCompany').addEventListener('click',()=>{
+  $('setupCompanyName').value=''; // 入力欄をリセット
+  showScreen('setupScreen');
+});
 $('btnCreateCompany').addEventListener('click',async()=>{
   const name=$('setupCompanyName').value.trim();
   if(!name){showToast('会社名を入力してください','error');return;}
   if(!currentUser){showToast('ログイン情報が取得できていません。再ログインしてください','error');return;}
-
   const btn=$('btnCreateCompany');
   btn.disabled=true;btn.textContent='作成中...';
   try{
     const ok=await createCompany(currentUser.id,name,currentUser.name||'Owner');
     if(ok!==false){
+      showToast(`「${name}」を作成しました`,'success');
       await loadCompanyList(currentUser.id);
     }
   }finally{
