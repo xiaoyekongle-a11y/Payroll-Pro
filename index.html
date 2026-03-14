@@ -1444,23 +1444,7 @@ body.dark .att-absence-sel{ background:var(--surface-2) }
       </div>
     </div>
     <div class="page" id="pageSettings">
-      <!-- ── プラン管理パネル ── -->
-      <div class="panel" style="margin-bottom:1.1rem">
-        <div class="panel-header">💳 プラン・お支払い管理</div>
-        <div class="panel-body">
-          <div id="planStatusBlock" style="display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap;margin-bottom:1.1rem">
-            <!-- JSで動的に描画 -->
-            <div class="skeleton skeleton-card" style="width:180px;height:80px"></div>
-          </div>
-          <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
-            <button class="btn btn-primary" onclick="showPlanModal()">🔄 プランを変更する</button>
-            <button class="btn btn-secondary" onclick="openCustomerPortal()">📄 請求履歴・支払い方法</button>
-          </div>
-          <p style="font-size:0.68rem;color:var(--muted);margin-top:0.65rem">
-            プランのアップグレード・ダウングレード・キャンセルはいつでも可能です。
-          </p>
-        </div>
-      </div>
+
       <!-- ── 会社設定パネル ── -->
       <div class="panel">
         <div class="panel-header">🏢 会社設定</div>
@@ -2335,11 +2319,7 @@ async function openCompany(company){
     invite_code:company.invite_code||'',industry:company.industry||'',
     address:company.address||'',phone:company.phone||'',logo_url:company.logo_url||'',
     // プラン情報
-    plan:company.plan||'trial',
-    maxEmployees:company.max_employees||5,
-    subscriptionStatus:company.subscription_status||'trialing',
-    planExpiresAt:company.plan_expires_at||null,
-    trialEndsAt:company.trial_ends_at||null,
+
     isActive:true, // initApp内で再評価
   };
   await initApp();
@@ -2357,12 +2337,10 @@ async function initApp(){
   document.querySelectorAll('.editor-only').forEach(el=>el.style.display=isEditor?'':'none');
 
   // プランステータス評価・バナー表示
-  evaluatePlanStatus();
 
   // Stripeチェックアウト完了検知
   const urlParams = new URLSearchParams(location.search);
   if(urlParams.get('checkout')==='success'){
-    showToast('🎉 プランへのご登録ありがとうございます！','success');
     history.replaceState(null,'',location.pathname);
     // DB更新を待ってリロード
     setTimeout(()=>location.reload(), 2000);
@@ -2666,8 +2644,6 @@ function handleAdd(){
   if(!f.name){showToast('従業員名を入力してください','error');return;}
   if(f.base<=0){showToast('基本給を入力してください','error');return;}
   if(isLocked()){showToast('この月は確定済みです','error');return;}
-  // プラン上限チェック
-  if(!checkEmpLimit()) return;
   const al=getAllowanceTotal();
   const r=calc(f.base,f.perf,f.mag,f.hRate,f.pRate,f.eRate,f.mRate,f.rm,f.age,f.dep,f.spDed,f.disDed,al);
   const emp={id:Date.now()+Math.floor(Math.random()*999),...f,base:Math.round(f.base),allowances:JSON.parse(JSON.stringify(allowances)),allowanceTotal:al,...r};
@@ -3330,7 +3306,6 @@ function showPage(id){
   if(id==='attendance')renderAttCalendar();
   if(id==='yearend')renderYearendList();
   if(id==='transfer')renderTransferList();
-  if(id==='settings')renderPlanStatusBlock();
   if(id==='shahou'){renderHoshuTable();checkShahouChanges();}
   if(id==='dashboard'){
     if(deptDonutObj){deptDonutObj.destroy();deptDonutObj=null;}
@@ -4900,299 +4875,15 @@ Object.defineProperty(window, 'taxRates', {
 //  💳 PLAN & BILLING MANAGEMENT
 // ═══════════════════════════════════════════════════
 
-const PLAN_INFO = {
-  trial: { label:'トライアル', max:5,   color:'var(--amber)',  icon:'⏳' },
-  free:  { label:'期限切れ',  max:0,   color:'var(--red)',    icon:'❌' },
-  ume:   { label:'🥉 梅',     max:5,   color:'#8b6914',       icon:'🥉' },
-  take:  { label:'🥈 竹',     max:30,  color:'var(--accent)', icon:'🥈' },
-  matsu: { label:'🥇 松',     max:100, color:'#b59500',       icon:'🥇' },
-};
-
-function evaluatePlanStatus(){
-  const co = currentCompany;
-  if(!co) return;
-
-  const plan = co.plan || 'trial';
-  const status = co.subscriptionStatus || 'trialing';
-  const now = Date.now();
-
-  // 有効性判定
-  let isActive = false;
-  let daysLeft = null;
-
-  if(plan === 'trial'){
-    const trialEnd = co.trialEndsAt ? new Date(co.trialEndsAt).getTime() : now + 86400000*14;
-    daysLeft = Math.max(0, Math.ceil((trialEnd - now) / 86400000));
-    isActive = daysLeft > 0;
-  } else if(['active','past_due'].includes(status)){
-    const expiry = co.planExpiresAt ? new Date(co.planExpiresAt).getTime() : null;
-    isActive = !expiry || expiry > now;
-    if(expiry) daysLeft = Math.max(0, Math.ceil((expiry - now) / 86400000));
-  }
-
-  currentCompany.isActive = isActive;
-  currentCompany.daysLeft = daysLeft;
-  renderPlanBanner(plan, isActive, daysLeft, status);
-}
-
-function renderPlanBanner(plan, isActive, daysLeft, status){
-  // 既存バナーを削除
-  document.getElementById('planBanner')?.remove();
-
-  const info = PLAN_INFO[plan] || PLAN_INFO.trial;
-  const isOwner = currentCompany.role === 'owner';
-
-  // アクティブで残り日数が多いなら非表示（松プランで7日以上なら静かに）
-  if(isActive && plan !== 'trial' && plan !== 'free' && (daysLeft === null || daysLeft > 7)) return;
-
-  const banner = document.createElement('div');
-  banner.id = 'planBanner';
-
-  let msg = '', btnLabel = '', btnAction = '', bgColor = '', textColor = '#fff';
-
-  if(!isActive || plan === 'free'){
-    bgColor = 'var(--red)';
-    msg = '⚠ プランの有効期限が切れています。引き続きご利用いただくにはプランをご選択ください。';
-    btnLabel = 'プランを選ぶ';
-    btnAction = 'showPlanModal()';
-  } else if(plan === 'trial'){
-    bgColor = 'var(--amber)';
-    msg = `⏳ トライアル期間中です（残り <b>${daysLeft}日</b> / 5名まで）`;
-    btnLabel = 'プランにアップグレード';
-    btnAction = 'showPlanModal()';
-  } else if(status === 'past_due'){
-    bgColor = 'var(--red)';
-    msg = '⚠ お支払いが確認できていません。請求情報をご確認ください。';
-    btnLabel = '支払い情報を更新';
-    btnAction = 'openCustomerPortal()';
-  } else if(daysLeft !== null && daysLeft <= 7){
-    bgColor = 'var(--amber)';
-    msg = `📅 プランの更新日まであと <b>${daysLeft}日</b> です。`;
-    btnLabel = '請求管理';
-    btnAction = 'openCustomerPortal()';
-  }
-
-  banner.style.cssText = `
-    background:${bgColor};color:#fff;
-    padding:0.55rem 1.25rem;
-    display:flex;align-items:center;gap:0.75rem;
-    font-size:0.78rem;flex-shrink:0;
-    position:sticky;top:calc(var(--header-h) + var(--nav-h));
-    z-index:90;
-  `;
-  banner.innerHTML = `
-    <span style="flex:1;line-height:1.5">${msg}</span>
-    ${isOwner && btnLabel ? `<button onclick="${btnAction}" style="
-      background:rgba(255,255,255,0.25);color:#fff;border:1.5px solid rgba(255,255,255,0.5);
-      border-radius:var(--r);padding:0.3rem 0.85rem;font-size:0.72rem;font-weight:700;
-      cursor:pointer;white-space:nowrap;
-    ">${btnLabel}</button>` : ''}
-    <button onclick="this.parentElement.remove()" style="
-      background:none;border:none;color:rgba(255,255,255,0.7);font-size:1rem;cursor:pointer;padding:0;
-    ">✕</button>
-  `;
-
-  // nav-tabsの直後に挿入
-  const nav = document.querySelector('.nav-tabs');
-  if(nav && nav.nextSibling){
-    nav.parentNode.insertBefore(banner, nav.nextSibling);
-  }
-}
-
-// 従業員追加前のプランチェック
-function checkEmpLimit(){
-  const co = currentCompany;
-  if(!co) return true;
-  if(!co.isActive){
-    showPlanModal();
-    return false;
-  }
-  const max = co.maxEmployees || PLAN_INFO[co.plan||'trial'].max;
-  if(co.plan === 'matsu') return true; // 松は追加課金で無制限
-  if(employees.length >= max){
-    showModal(
-      'プランの上限に達しました',
-      `<div style="text-align:center;padding:0.5rem 0">
-        <div style="font-size:2rem;margin-bottom:0.5rem">${PLAN_INFO[co.plan]?.icon||'⚠'}</div>
-        <p style="margin-bottom:0.75rem">現在の <b>${PLAN_INFO[co.plan]?.label}</b> は <b>${max}名</b> まで登録可能です。</p>
-        <p style="font-size:0.82rem;color:var(--muted)">上位プランにアップグレードすると<br>さらに多くの従業員を登録できます。</p>
-      </div>`,
-      'プランを変更する', 'btn-primary', ()=>showPlanModal()
-    );
-    return false;
-  }
-  return true;
-}
-
-// 設定ページのプランステータスブロックを描画
-function renderPlanStatusBlock(){
-  const el = document.getElementById('planStatusBlock');
-  if(!el || !currentCompany) return;
-
-  const co = currentCompany;
-  const plan = co.plan || 'trial';
-  const info = PLAN_INFO[plan] || PLAN_INFO.trial;
-  const empCount = employees.length;
-  const maxEmp = co.maxEmployees || info.max;
-  const pct = maxEmp > 0 ? Math.min(100, Math.round(empCount / maxEmp * 100)) : 100;
-  const barColor = pct >= 90 ? 'var(--red)' : pct >= 70 ? 'var(--amber)' : 'var(--green)';
-  const statusLabel = {
-    trialing:'トライアル中', active:'有効', past_due:'支払い遅延',
-    canceled:'キャンセル済', incomplete:'未完了', paused:'一時停止'
-  }[co.subscriptionStatus||'trialing'] || '—';
-
-  const expiryStr = co.plan === 'trial'
-    ? (co.trialEndsAt ? `トライアル終了: ${new Date(co.trialEndsAt).toLocaleDateString('ja-JP')}` : '')
-    : (co.planExpiresAt ? `次回更新: ${new Date(co.planExpiresAt).toLocaleDateString('ja-JP')}` : '');
-
-  el.innerHTML = `
-    <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-lg);padding:1rem 1.25rem;display:flex;align-items:center;gap:1.25rem;flex:1;min-width:260px">
-      <div style="font-size:2.2rem">${info.icon}</div>
-      <div style="flex:1">
-        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.2rem">現在のプラン</div>
-        <div style="font-size:1.1rem;font-weight:900;color:${info.color}">${info.label}</div>
-        <div style="font-size:0.7rem;color:var(--muted);margin-top:0.1rem">${statusLabel}${expiryStr ? ' · ' + expiryStr : ''}</div>
-      </div>
-    </div>
-    <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-lg);padding:1rem 1.25rem;flex:1;min-width:200px">
-      <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem">従業員数</div>
-      <div style="font-family:var(--font-mono);font-size:1.2rem;font-weight:500;margin-bottom:0.4rem">
-        <span style="color:${barColor}">${empCount}</span>
-        <span style="color:var(--muted);font-size:0.85rem"> / ${plan==='matsu'?'100+':maxEmp} 名</span>
-      </div>
-      <div style="height:6px;background:var(--border-2);border-radius:99px;overflow:hidden">
-        <div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px;transition:width 0.5s"></div>
-      </div>
-      ${plan==='matsu' && empCount>100 ? `<div style="font-size:0.65rem;color:var(--amber);margin-top:0.3rem">+${empCount-100}名分の追加料金が発生しています</div>` : ''}
-    </div>
-  `;
-}
-
-// ── プラン選択モーダル ──────────────────────────────
-function showPlanModal(){
-  const co = currentCompany;
-  const current = co?.plan || 'trial';
-
-  const plans = [
-    {
-      id:'ume', icon:'🥉', name:'梅', price:'¥980',
-      period:'/月', max:'5名', color:'#8b6914',
-      features:['従業員5名まで','給与計算・PDF出力','CSV/Excel出力','メールサポート'],
-    },
-    {
-      id:'take', icon:'🥈', name:'竹', price:'¥2,980',
-      period:'/月', max:'30名', color:'var(--accent)',
-      badge:'⭐ 人気No.1',
-      features:['従業員30名まで','全機能利用可能','勤怠管理','年末調整','振込管理','優先サポート'],
-    },
-    {
-      id:'matsu', icon:'🥇', name:'松', price:'¥9,800',
-      period:'/月', max:'100名+', color:'#b59500',
-      features:['従業員100名まで','100名超は+¥98/名','AI AutoCalc無制限','社保自動化','専任サポート','SLA 99.9%'],
-    },
-  ];
-
-  const cardsHtml = plans.map(p=>`
-    <div style="
-      border:2px solid ${p.id===current?p.color:'var(--border)'};
-      border-radius:var(--r-lg);padding:1.25rem;
-      background:${p.id===current?`${p.color}10`:'var(--surface)'};
-      position:relative;flex:1;min-width:200px;
-    ">
-      ${p.badge?`<div style="
-        position:absolute;top:-12px;left:50%;transform:translateX(-50%);
-        background:var(--accent);color:#fff;font-size:0.65rem;font-weight:800;
-        padding:0.2em 0.8em;border-radius:var(--r-full);white-space:nowrap;
-      ">${p.badge}</div>`:''}
-      <div style="text-align:center;margin-bottom:0.85rem">
-        <div style="font-size:2rem">${p.icon}</div>
-        <div style="font-weight:900;font-size:1rem;color:${p.color}">${p.name}</div>
-        <div style="font-size:1.6rem;font-weight:900;font-family:var(--font-mono);color:var(--ink);margin:0.25rem 0">${p.price}</div>
-        <div style="font-size:0.68rem;color:var(--muted)">${p.period} ・ ${p.max}</div>
-      </div>
-      <ul style="list-style:none;font-size:0.75rem;color:var(--ink-sub);margin-bottom:1rem">
-        ${p.features.map(f=>`<li style="padding:0.2rem 0">✓ ${f}</li>`).join('')}
-      </ul>
-      ${p.id===current
-        ? `<div style="text-align:center;font-size:0.72rem;color:${p.color};font-weight:700">✓ 現在のプラン</div>`
-        : `<button onclick="startCheckout('${p.id}')" style="
-            width:100%;padding:0.65rem;background:${p.color};color:#fff;
-            border:none;border-radius:var(--r);font-weight:700;font-size:0.8rem;cursor:pointer;
-          ">このプランを選ぶ <span style="opacity:0.8">→</span></button>`
-      }
-    </div>
-  `).join('');
-
-  const trialNote = current==='trial'
-    ? `<p style="text-align:center;font-size:0.72rem;color:var(--muted);margin-bottom:1rem">
-        🎁 <b>14日間の無料トライアル中</b>です。今すぐ登録してもトライアル終了後に課金されます。
-       </p>` : '';
-
-  showModal(
-    '💳 プランを選択',
-    `${trialNote}
-    <div style="display:flex;gap:0.85rem;flex-wrap:wrap;margin-bottom:0.5rem">${cardsHtml}</div>
-    <p style="font-size:0.68rem;color:var(--muted);text-align:center;margin-top:0.75rem">
-      すべてのプランに14日間無料トライアル付き。いつでもキャンセル可能。
-    </p>`,
-    '', '', ()=>{}
-  );
-  // 確認ボタン不要なので非表示
-  setTimeout(()=>{
-    $('modalConfirm').style.display='none';
-    $('modalCancel').textContent='閉じる';
-  },0);
-}
-
-// Stripe Checkoutへリダイレクト
-async function startCheckout(plan){
-  if(!currentCompany || !currentUser) return;
-  $('modalOverlay').classList.remove('show');
-
-  const btn = document.querySelector(`button[onclick="startCheckout('${plan}')"]`);
-  if(btn){ btn.disabled=true; btn.textContent='処理中...'; }
-
-  try {
-    const resp = await fetch('/api/create-checkout',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        company_id: currentCompany.id,
-        plan,
-        user_email: currentUser.email,
-      }),
-    });
-    const data = await resp.json();
-    if(!resp.ok) throw new Error(data.error || 'チェックアウト作成失敗');
-    window.location.href = data.url;
-  } catch(e){
-    showToast('エラー: '+e.message, 'error');
-    if(btn){ btn.disabled=false; btn.textContent='このプランを選ぶ →'; }
-  }
-}
-
-// カスタマーポータル（請求管理・キャンセル）
-async function openCustomerPortal(){
-  if(!currentCompany) return;
-  showToast('請求管理ページを開いています...', '');
-  try {
-    const resp = await fetch('/api/customer-portal',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ company_id: currentCompany.id }),
-    });
-    const data = await resp.json();
-    if(!resp.ok) throw new Error(data.error || 'ポータル取得失敗');
-    window.open(data.url, '_blank');
-  } catch(e){
-    showToast('エラー: '+e.message, 'error');
-  }
-}
-
-// グローバル公開
+// ── プラン機能は無効化（全機能無料開放）──
+function evaluatePlanStatus(){ /* 無効化 */ }
+function renderPlanBanner(){ /* 無効化 */ }
+function checkEmpLimit(){ return true; } // 常にtrue（制限なし）
+function renderPlanStatusBlock(){ /* 無効化 */ }
+function showPlanModal(){ showToast('現在すべての機能を無料でご利用いただけます','success'); }
+function startCheckout(){ /* 無効化 */ }
+function openCustomerPortal(){ /* 無効化 */ }
 window.showPlanModal = showPlanModal;
-window.startCheckout = startCheckout;
-window.openCustomerPortal = openCustomerPortal;
 
 })();
 </script>
