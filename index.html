@@ -4822,7 +4822,7 @@ function acInitStep1(){
     {label:'雇用保険料率',    val:(typeof taxRates!=='undefined'?taxRates.eRate:'—')+'%', sub:'一般事業'},
     {label:'住民税率',        val:(typeof taxRates!=='undefined'?taxRates.mRate:'—')+'%', sub:'標準税率'},
   ];
-  const el = document.getElementById('acTaxRatesSummary');
+  const el = document.getElementById('acRateDisplay');
   if(!el) return;
   el.innerHTML = items.map(it=>`
     <div style="background:#fff;border:1.5px solid var(--border);border-radius:4px;padding:0.75rem 1rem;display:flex;justify-content:space-between;align-items:center">
@@ -4870,10 +4870,14 @@ function acHandleFile(file){
 }
 
 function acOnFileLoaded(fname){
-  const nameEl = document.getElementById('acFileName');
-  const nextBtn = document.getElementById('acBtnToStep2');
-  if(nameEl) nameEl.textContent = fname;
+  const titleEl = document.getElementById('acDropzoneTitle');
+  const subEl   = document.getElementById('acDropzoneSub');
+  const nextBtn = document.getElementById('acBtnGoStep4');
+  if(titleEl) titleEl.textContent = '✅ ' + fname;
+  if(subEl)   subEl.textContent   = acExcelRows.length + '名 読み込み済み';
   if(nextBtn) nextBtn.disabled = false;
+  // マッピングパネル表示・列マッピング初期化
+  acInitStep2();
   // プレビュー表示
   const preview = acExcelRows.slice(0,5);
   const previewEl = document.getElementById('acPreviewTable');
@@ -4902,8 +4906,10 @@ const AC_COL_KEYS = [
 ];
 
 function acInitStep2(){
-  const container = document.getElementById('acColMappingContainer');
+  const container = document.getElementById('acMappingFields');
   if(!container) return;
+  const mappingPanel = document.getElementById('acMappingPanel');
+  if(mappingPanel) mappingPanel.style.display = 'block';
   // 自動マッピング候補
   const autoMap = {
     name:   ['氏名','名前','従業員名','名称','name'],
@@ -5234,15 +5240,19 @@ function acExportTransfer(){
 // ── リセット ──
 function acReset(){
   acStep=1; acExcelHeaders=[]; acExcelRows=[]; acColMapping={}; acResults=[];
-  const nameEl=document.getElementById('acFileName');
-  const nextBtn=document.getElementById('acBtnToStep2');
+  const titleEl=document.getElementById('acDropzoneTitle');
+  const subEl=document.getElementById('acDropzoneSub');
+  const nextBtn=document.getElementById('acBtnGoStep4');
   const previewEl=document.getElementById('acPreviewTable');
+  const mappingPanel=document.getElementById('acMappingPanel');
   const aiInst=document.getElementById('acAiInstruction');
   const logEl=document.getElementById('acAiLog');
   const dz=document.getElementById('acDropzone');
-  if(nameEl) nameEl.textContent='';
+  if(titleEl) titleEl.textContent='Excelファイルをドロップ、またはクリックして選択';
+  if(subEl)   subEl.textContent='.xlsx / .xls / .csv 対応';
   if(nextBtn) nextBtn.disabled=true;
   if(previewEl) previewEl.innerHTML='';
+  if(mappingPanel) mappingPanel.style.display='none';
   if(aiInst) aiInst.value='';
   if(logEl){ logEl.style.display='none'; logEl.innerHTML=''; }
   if(dz) dz.className='ac-dropzone';
@@ -5267,24 +5277,27 @@ document.addEventListener('DOMContentLoaded',()=>{
   }
 
   // ステップナビ
-  document.getElementById('acBtnToStep2')?.addEventListener('click',()=>{
-    acInitStep2(); acGoStep(2);
+  document.getElementById('acBtnGoStep2')?.addEventListener('click',()=>{
+    acGoStep(2);
   });
   document.getElementById('acBtnBackStep1')?.addEventListener('click',()=>acGoStep(1));
-  document.getElementById('acBtnToStep3')?.addEventListener('click',()=>{
-    if(acSaveMapping()){ acInitStep3(); acGoStep(3); }
+  document.getElementById('acBtnGoStep3')?.addEventListener('click',()=>{
+    acGoStep(3);
   });
   document.getElementById('acBtnBackStep2')?.addEventListener('click',()=>acGoStep(2));
-  document.getElementById('acBtnToCalc')?.addEventListener('click',()=>acGoStep(3));
+  document.getElementById('acBtnGoStep4')?.addEventListener('click',()=>{
+    if(acSaveMapping()){ acGoStep(4); }
+  });
   document.getElementById('acBtnCalc')?.addEventListener('click',acRunCalc);
   document.getElementById('acBtnBackStep3')?.addEventListener('click',()=>acGoStep(3));
-  document.getElementById('acBtnReset')?.addEventListener('click',acReset);
+  document.getElementById('acBtnGoStep5')?.addEventListener('click',()=>acGoStep(5));
+  document.getElementById('acBtnRestart')?.addEventListener('click',acReset);
+  document.getElementById('acBtnTemplate')?.addEventListener('click',downloadImportTemplate);
 
-  // 出力ボタン
-  document.getElementById('acBtnExportExcel')?.addEventListener('click',acExportExcel);
-  document.getElementById('acBtnExportLedger')?.addEventListener('click',acExportLedger);
-  document.getElementById('acBtnExportCSV')?.addEventListener('click',acExportCSV);
-  document.getElementById('acBtnExportTransfer')?.addEventListener('click',acExportTransfer);
+  // 出力ボタン（STEP5）
+  document.getElementById('acBtnDlSlip')?.addEventListener('click',acExportExcel);
+  document.getElementById('acBtnDlLedger')?.addEventListener('click',acExportLedger);
+  document.getElementById('acBtnDlTransfer')?.addEventListener('click',acExportTransfer);
 
   // AI指示サンプル
   document.querySelectorAll('.ac-ai-ex').forEach(el=>{
