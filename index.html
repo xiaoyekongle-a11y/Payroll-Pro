@@ -1155,8 +1155,8 @@ body.dark .hoshu-tbl tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
     <button class="header-btn" id="btnSignOut">ログアウト</button>
   </header>
   <nav class="nav-tabs">
-    <div class="nav-tab active" data-page="dashboard">ダッシュボード</div>
-    <div class="nav-tab" data-page="autocalc" style="color:var(--blue);font-weight:800">⚡ AutoCalc</div>
+    <div class="nav-tab active" data-page="autocalc" style="color:var(--blue);font-weight:800">⚡ AutoCalc</div>
+    <div class="nav-tab" data-page="dashboard">ダッシュボード</div>
     <div class="nav-tab" data-page="payroll">給与計算</div>
     <div class="nav-tab" data-page="history">履歴</div>
     <div class="nav-tab" data-page="attendance">勤怠管理</div>
@@ -1610,51 +1610,31 @@ body.dark .hoshu-tbl tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
     <div style="margin-bottom:1.1rem">
       <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:var(--blue)">⚡ AutoCalc — 給与自動計算</div>
       <div style="font-size:0.75rem;color:var(--muted);margin-top:0.2rem">
-        業績名簿（Excel）をアップロードするだけで給与明細Excelを自動生成します
+        業績名簿（Excel）を投げて、追加指示を書くだけで給与明細Excelが出てきます
       </div>
     </div>
 
-    <!-- ステップインジケーター -->
+    <!-- ステップインジケーター（3ステップ） -->
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:0.85rem 1.25rem;margin-bottom:1.1rem;box-shadow:var(--shadow);display:flex;align-items:center;gap:0;overflow-x:auto" id="acStepBar">
-      <div class="ac-step active" id="acStep1"><div class="ac-step-num">1</div><div class="ac-step-label">税率確認</div></div>
-      <div class="ac-step" id="acStep2"><div class="ac-step-num">2</div><div class="ac-step-label">配分設定</div></div>
-      <div class="ac-step" id="acStep3"><div class="ac-step-num">3</div><div class="ac-step-label">名簿アップロード</div></div>
-      <div class="ac-step" id="acStep4"><div class="ac-step-num">4</div><div class="ac-step-label">AI指示・実行</div></div>
-      <div class="ac-step" id="acStep5"><div class="ac-step-num">5</div><div class="ac-step-label">Excel出力</div></div>
+      <div class="ac-step active" id="acStep1"><div class="ac-step-num">1</div><div class="ac-step-label">設定</div></div>
+      <div class="ac-step-connector"></div>
+      <div class="ac-step" id="acStep2"><div class="ac-step-num">2</div><div class="ac-step-label">名簿 → 計算</div></div>
+      <div class="ac-step-connector"></div>
+      <div class="ac-step" id="acStep3"><div class="ac-step-num">3</div><div class="ac-step-label">Excel出力</div></div>
     </div>
 
-    <!-- STEP 1: 税率確認 -->
+    <!-- STEP 1: 設定（税率確認 + 配分設定 を1画面に統合） -->
     <div id="acPanelStep1">
       <div class="panel">
-        <div class="panel-header">⚙ STEP 1 — 社会保険料率・税率確認</div>
+        <div class="panel-header">⚙ STEP 1 — 計算設定</div>
         <div class="panel-body">
-          <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.85rem">
-            「税率管理」ページの最新値を自動適用しています。変更する場合は税率管理ページで行ってください。
-          </div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0.65rem;margin-bottom:1.25rem" id="acRateDisplay"></div>
 
-          <!-- AI機能ステータス -->
-          <div style="background:linear-gradient(135deg,#e8f4ff,#f0f7ff);border:1.5px solid rgba(30,95,168,0.2);border-radius:6px;padding:0.9rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.75rem">
-            <span style="font-size:1.1rem">✅</span>
-            <div>
-              <div style="font-size:0.78rem;font-weight:700;color:#1a3a5c">AI指示機能（Groq / Llama）は有効です</div>
-              <div style="font-size:0.68rem;color:var(--muted);margin-top:0.2rem">APIキーはサーバー側で管理されています。ブラウザに保存する必要はありません。</div>
-            </div>
-          </div>
+          <!-- 税率サマリー -->
+          <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.5rem">社会保険料率（税率管理ページで変更可）</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.5rem;margin-bottom:1.1rem" id="acRateDisplay"></div>
 
-          <div style="text-align:right">
-            <button class="btn btn-primary" id="acBtnGoStep2">次へ：配分設定 →</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- STEP 2: 給与配分設定 -->
-    <div id="acPanelStep2" style="display:none">
-      <div class="panel">
-        <div class="panel-header">💰 STEP 2 — 給与・ボーナス配分設定</div>
-        <div class="panel-body">
-          <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.6rem;padding-bottom:0.3rem;border-bottom:1px solid var(--border-light)">業績係数の計算方法</div>
+          <!-- 配分設定 -->
+          <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.5rem;padding-bottom:0.3rem;border-bottom:1px solid var(--border-light)">業績係数</div>
           <div class="form-row" style="margin-bottom:0.85rem">
             <div class="form-group">
               <label>計算方法</label>
@@ -1674,10 +1654,10 @@ body.dark .hoshu-tbl tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
             </div>
           </div>
 
-          <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.6rem;padding-bottom:0.3rem;border-bottom:1px solid var(--border-light)">ボーナス設定</div>
+          <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.5rem;padding-bottom:0.3rem;border-bottom:1px solid var(--border-light)">ボーナス</div>
           <div class="form-row" style="margin-bottom:0.85rem">
             <div class="form-group">
-              <label>ボーナス計算方法</label>
+              <label>計算方法</label>
               <select id="acBonusMethod">
                 <option value="multiplier">基本給×倍率</option>
                 <option value="fixed_pool">総額プールを業績比で分配</option>
@@ -1698,8 +1678,8 @@ body.dark .hoshu-tbl tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
             </div>
           </div>
 
-          <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.6rem;padding-bottom:0.3rem;border-bottom:1px solid var(--border-light)">共通手当・対象月</div>
-          <div class="form-row">
+          <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.5rem;padding-bottom:0.3rem;border-bottom:1px solid var(--border-light)">共通手当・対象月</div>
+          <div class="form-row" style="margin-bottom:1rem">
             <div class="form-group">
               <label>通勤手当（円/人・月）</label>
               <input type="number" id="acAllowCommute" value="0" step="1000" min="0">
@@ -1714,111 +1694,94 @@ body.dark .hoshu-tbl tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
             </div>
           </div>
 
-          <div class="btn-group">
-            <button class="btn btn-secondary btn-sm" id="acBtnBackStep1">← 戻る</button>
-            <button class="btn btn-primary" id="acBtnGoStep3">次へ：名簿アップロード →</button>
+          <!-- 設定記憶バッジ -->
+          <div id="acSettingSavedBadge" style="display:none;font-size:0.68rem;color:var(--green);margin-bottom:0.75rem">✅ 前回の設定を読み込みました</div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <button class="btn btn-secondary btn-sm" id="acBtnSaveSetting">💾 設定を保存</button>
+            <button class="btn btn-primary" id="acBtnGoStep2">次へ：名簿アップロード →</button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- STEP 3: Excelアップロード -->
-    <div id="acPanelStep3" style="display:none">
-      <div class="panel">
-        <div class="panel-header">📂 STEP 3 — 業績名簿（Excel）アップロード</div>
+    <!-- STEP 2: 名簿アップロード + AI指示 + 計算実行（1画面） -->
+    <div id="acPanelStep2" style="display:none">
+      <div class="panel" style="margin-bottom:0.85rem">
+        <div class="panel-header">📂 業績名簿をアップロード</div>
         <div class="panel-body">
-          <div style="background:var(--blue-light);border:1px solid rgba(30,95,168,0.2);border-radius:var(--radius);padding:0.65rem 0.9rem;margin-bottom:0.85rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem">
-            <div>
-              <div style="font-size:0.78rem;font-weight:700;color:var(--blue)">📋 名簿フォーマット</div>
-              <div style="font-size:0.7rem;color:var(--muted);margin-top:0.1rem">1行目がヘッダー行のExcel（.xlsx/.xls）またはCSVをアップロード</div>
-            </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.75rem">
+            <div style="font-size:0.75rem;color:var(--muted)">1行目がヘッダー行のExcel（.xlsx/.xls）またはCSV</div>
             <button class="btn btn-secondary btn-sm" id="acBtnTemplate">⬇ テンプレDL</button>
           </div>
 
           <!-- ドロップゾーン -->
-          <div id="acDropzone" style="border:2px dashed var(--border);border-radius:var(--radius-lg);padding:2rem 1.5rem;text-align:center;cursor:pointer;transition:all var(--t);background:var(--surface-sub);position:relative">
+          <div id="acDropzone" style="border:2px dashed var(--border);border-radius:var(--radius-lg);padding:1.5rem;text-align:center;cursor:pointer;transition:all var(--t);background:var(--surface-sub);position:relative">
             <input type="file" id="acFileInput" accept=".xlsx,.xls,.csv" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%">
-            <div id="acDropzoneIcon" style="font-size:2.2rem;margin-bottom:0.4rem;opacity:0.5">📊</div>
-            <div id="acDropzoneTitle" style="font-weight:700;font-size:0.88rem;margin-bottom:0.2rem">Excelファイルをドロップ、またはクリックして選択</div>
-            <div id="acDropzoneSub" style="font-size:0.72rem;color:var(--muted)">.xlsx / .xls / .csv 対応</div>
+            <div id="acDropzoneIcon" style="font-size:2rem;margin-bottom:0.3rem;opacity:0.5">📊</div>
+            <div id="acDropzoneTitle" style="font-weight:700;font-size:0.85rem;margin-bottom:0.15rem">Excelファイルをドロップ、またはクリックして選択</div>
+            <div id="acDropzoneSub" style="font-size:0.7rem;color:var(--muted)">.xlsx / .xls / .csv 対応</div>
           </div>
 
-          <!-- カラムマッピング -->
-          <div id="acMappingPanel" style="display:none;margin-top:1rem">
-            <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.6rem;padding-bottom:0.3rem;border-bottom:1px solid var(--border-light)">列マッピング設定</div>
-            <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.65rem">どの列がどの項目か確認・修正してください</div>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0.5rem" id="acMappingFields"></div>
-
-            <div style="margin-top:0.85rem">
-              <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.5rem;padding-bottom:0.3rem;border-bottom:1px solid var(--border-light)">データプレビュー（先頭5行）</div>
+          <!-- 列マッピング（アップロード後に表示） -->
+          <div id="acMappingPanel" style="display:none;margin-top:0.85rem">
+            <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.4rem">列マッピング確認</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0.4rem" id="acMappingFields"></div>
+            <div style="margin-top:0.65rem">
+              <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.3rem">データプレビュー（先頭5行）</div>
               <div class="tbl-wrap" id="acPreviewTable"></div>
             </div>
           </div>
-
-          <div class="btn-group">
-            <button class="btn btn-secondary btn-sm" id="acBtnBackStep2">← 戻る</button>
-            <button class="btn btn-primary" id="acBtnGoStep4" disabled>次へ：AI指示・実行 →</button>
-          </div>
         </div>
       </div>
-    </div>
 
-    <!-- STEP 4: AI指示・計算実行 -->
-    <div id="acPanelStep4" style="display:none">
+      <!-- AI指示 + 計算実行 -->
       <div class="panel">
-        <div class="panel-header">🤖 STEP 4 — 追加指示と計算実行</div>
+        <div class="panel-header">🤖 追加指示 → 計算実行</div>
         <div class="panel-body">
-          <!-- AI指示パネル -->
-          <div style="background:linear-gradient(135deg,var(--blue-light),rgba(30,95,168,0.03));border:1px solid rgba(30,95,168,0.18);border-radius:var(--radius-lg);padding:0.9rem 1rem;margin-bottom:0.85rem">
-            <div style="font-size:0.72rem;font-weight:700;color:var(--blue);margin-bottom:0.45rem">✨ 追加指示（自然言語でOK・書かなくてもOK）</div>
-            <textarea id="acAiInstruction" rows="4" style="width:100%;padding:0.5rem 0.65rem;border:1px solid var(--border);border-radius:var(--radius);font-family:var(--font-body);font-size:0.82rem;background:#fff;color:var(--ink);resize:vertical;line-height:1.6" placeholder="例：
-• 営業部の業績係数を一律1.1倍にする
-• 部長以上は係数の最低値を1.0に保証する
-• 全員に特別手当5,000円を追加する
-• 田中太郎の残業手当を30,000円追加"></textarea>
-            <div style="display:flex;flex-wrap:wrap;gap:0.35rem;margin-top:0.5rem" id="acAiExamples">
-              <span class="ac-ai-ex" data-text="営業部の業績係数を1.1倍にする">営業部+10%</span>
-              <span class="ac-ai-ex" data-text="全員に特別手当5,000円を追加する">特別手当一律</span>
-              <span class="ac-ai-ex" data-text="部長・課長以上は業績係数を最低1.0にする">管理職最低保証</span>
-              <span class="ac-ai-ex" data-text="ボーナスは上位20%に係数1.5、それ以外は1.0にする">上位集中配分</span>
-              <span class="ac-ai-ex" data-text="勤続3年以上に皆勤手当3,000円を追加する">皆勤手当</span>
-            </div>
+          <div style="font-size:0.72rem;font-weight:700;color:var(--blue);margin-bottom:0.4rem">追加指示（自然言語でOK・書かなくてもOK）</div>
+          <textarea id="acAiInstruction" rows="3" style="width:100%;padding:0.5rem 0.65rem;border:1px solid var(--border);border-radius:var(--radius);font-family:var(--font-body);font-size:0.82rem;background:#fff;color:var(--ink);resize:vertical;line-height:1.6;margin-bottom:0.5rem" placeholder="例：営業部の業績係数を一律1.1倍にする / 全員に特別手当5,000円を追加する / 田中太郎の残業手当を30,000円追加"></textarea>
+          <div style="display:flex;flex-wrap:wrap;gap:0.35rem;margin-bottom:1rem" id="acAiExamples">
+            <span class="ac-ai-ex" data-text="営業部の業績係数を1.1倍にする">営業部+10%</span>
+            <span class="ac-ai-ex" data-text="全員に特別手当5,000円を追加する">特別手当一律</span>
+            <span class="ac-ai-ex" data-text="部長・課長以上は業績係数を最低1.0にする">管理職最低保証</span>
+            <span class="ac-ai-ex" data-text="ボーナスは上位20%に係数1.5、それ以外は1.0にする">上位集中配分</span>
           </div>
 
-          <div style="text-align:center;margin:1rem 0">
-            <button class="btn btn-primary btn-lg" id="acBtnCalc" style="min-width:220px;font-size:0.9rem">
+          <div style="text-align:center;margin-bottom:0.75rem">
+            <button class="btn btn-primary btn-lg" id="acBtnCalc" disabled style="min-width:220px;font-size:0.9rem">
               ⚡ 給与計算を実行する
             </button>
           </div>
 
           <!-- 進捗 -->
-          <div id="acProgressWrap" style="display:none;margin:0.75rem 0">
+          <div id="acProgressWrap" style="display:none;margin:0.5rem 0">
             <div style="height:6px;background:var(--border);border-radius:99px;overflow:hidden">
-              <div id="acProgressBar" style="height:100%;background:linear-gradient(90deg,var(--blue),#4a8fd4);border-radius:99px;transition:width 0.4s ease;width:0%"></div>
+              <div id="acProgressBar" style="height:100%;background:var(--blue);border-radius:99px;transition:width 0.4s ease;width:0%"></div>
             </div>
-            <div id="acProgressText" style="font-size:0.68rem;color:var(--muted);font-family:var(--font-mono);margin-top:0.25rem;text-align:right">計算中...</div>
+            <div id="acProgressText" style="font-size:0.68rem;color:var(--muted);font-family:var(--font-mono);margin-top:0.2rem;text-align:right">計算中...</div>
           </div>
 
           <!-- 計算結果 -->
           <div id="acResultPanel" style="display:none">
-            <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.6rem;padding-bottom:0.3rem;border-bottom:1px solid var(--border-light)">計算結果サマリー</div>
-            <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:0.85rem" id="acResultSummary"></div>
+            <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin:0.75rem 0 0.4rem;padding-bottom:0.3rem;border-bottom:1px solid var(--border-light)">計算結果</div>
+            <div id="acResultSummary"></div>
             <div class="tbl-wrap" id="acResultTable"></div>
-            <div id="acAiLog" style="display:none;margin-top:0.75rem;font-size:0.74rem;font-family:var(--font-mono);background:var(--surface-sub);border:1px solid var(--border);border-radius:var(--radius);padding:0.65rem;line-height:1.8"></div>
+            <div id="acAiLog" style="display:none;margin-top:0.5rem;font-size:0.74rem;font-family:var(--font-mono);background:var(--surface-sub);border:1px solid var(--border);border-radius:var(--radius);padding:0.65rem;line-height:1.8"></div>
           </div>
 
           <div class="btn-group" id="acStep4Btns" style="display:none">
-            <button class="btn btn-secondary btn-sm" id="acBtnBackStep3">← 戻る</button>
-            <button class="btn btn-green" id="acBtnGoStep5">📥 Excelで出力する →</button>
+            <button class="btn btn-secondary btn-sm" id="acBtnBackStep1">← 設定に戻る</button>
+            <button class="btn btn-green" id="acBtnGoStep3">📥 Excelで出力する →</button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- STEP 5: Excel出力 -->
-    <div id="acPanelStep5" style="display:none">
+    <!-- STEP 3: Excel出力 -->
+    <div id="acPanelStep3" style="display:none">
       <div class="panel">
-        <div class="panel-header">📥 STEP 5 — Excel出力 <span class="badge badge-confirmed">完了</span></div>
+        <div class="panel-header">📥 STEP 3 — Excel出力</div>
         <div class="panel-body">
           <div style="text-align:center;padding:0.75rem 0 1.25rem">
             <div style="font-size:2rem;margin-bottom:0.4rem">🎉</div>
@@ -2309,7 +2272,7 @@ async function initApp(){
   buildYearendYearSelector();
   buildTransferPeriodSelector();
   buildShahouPeriodSelector();
-  showScreen('appScreen');showPage('dashboard');initDarkMode();
+  showScreen('appScreen');showPage('autocalc');initDarkMode();
 }
 
 function buildPeriodSelector(){
@@ -4813,7 +4776,7 @@ const acSleep = ms => new Promise(r => setTimeout(r, ms));
 
 // ── ステップ切替 ──
 function acGoStep(n){
-  [1,2,3,4,5].forEach(i=>{
+  [1,2,3].forEach(i=>{
     const panel = document.getElementById('acPanelStep'+i);
     if(panel) panel.style.display = i===n ? 'block' : 'none';
     const stepEl = document.getElementById('acStep'+i);
@@ -4823,7 +4786,43 @@ function acGoStep(n){
   window.scrollTo({top:0, behavior:'instant'});
 }
 
-// STEP1初期化
+// ── 設定の保存・復元 ──
+const AC_SETTING_KEY = 'salario_ac_setting';
+function acSaveSetting(){
+  try {
+    const s = {
+      perfMethod:  document.getElementById('acPerfMethod')?.value,
+      perfMin:     document.getElementById('acPerfMin')?.value,
+      perfMax:     document.getElementById('acPerfMax')?.value,
+      bonusMethod: document.getElementById('acBonusMethod')?.value,
+      bonusParam:  document.getElementById('acBonusParam')?.value,
+      bonusTarget: document.getElementById('acBonusTarget')?.value,
+      commute:     document.getElementById('acAllowCommute')?.value,
+      housing:     document.getElementById('acAllowHousing')?.value,
+    };
+    localStorage.setItem(AC_SETTING_KEY, JSON.stringify(s));
+    showToast('設定を保存しました','success');
+  } catch(e){ console.warn('[AC] save setting failed', e); }
+}
+function acLoadSetting(){
+  try {
+    const raw = localStorage.getItem(AC_SETTING_KEY);
+    if(!raw) return false;
+    const s = JSON.parse(raw);
+    const set = (id, v) => { const el = document.getElementById(id); if(el && v!=null) el.value = v; };
+    set('acPerfMethod',  s.perfMethod);
+    set('acPerfMin',     s.perfMin);
+    set('acPerfMax',     s.perfMax);
+    set('acBonusMethod', s.bonusMethod);
+    set('acBonusParam',  s.bonusParam);
+    set('acBonusTarget', s.bonusTarget);
+    set('acAllowCommute',s.commute);
+    set('acAllowHousing',s.housing);
+    return true;
+  } catch(e){ return false; }
+}
+
+// STEP1初期化（税率表示 + 設定復元）
 function acInitStep1(){
   const items = [
     {label:'健康保険料率',    val:(typeof taxRates!=='undefined'?taxRates.hRate:'—')+'%', sub:'被保険者負担'},
@@ -4832,15 +4831,26 @@ function acInitStep1(){
     {label:'住民税率',        val:(typeof taxRates!=='undefined'?taxRates.mRate:'—')+'%', sub:'標準税率'},
   ];
   const el = document.getElementById('acRateDisplay');
-  if(!el) return;
-  el.innerHTML = items.map(it=>`
-    <div style="background:#fff;border:1.5px solid var(--border);border-radius:4px;padding:0.75rem 1rem;display:flex;justify-content:space-between;align-items:center">
-      <div>
-        <div style="font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">${it.label}</div>
-        <div style="font-size:0.68rem;color:var(--muted)">${it.sub}</div>
-      </div>
-      <div style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700">${it.val}</div>
-    </div>`).join('');
+  if(el){
+    el.innerHTML = items.map(it=>`
+      <div style="background:#fff;border:1.5px solid var(--border);border-radius:4px;padding:0.75rem 1rem;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">${it.label}</div>
+          <div style="font-size:0.68rem;color:var(--muted)">${it.sub}</div>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700">${it.val}</div>
+      </div>`).join('');
+  }
+  // 前回設定を復元
+  const restored = acLoadSetting();
+  const badge = document.getElementById('acSettingSavedBadge');
+  if(badge) badge.style.display = restored ? 'block' : 'none';
+  // 対象月のデフォルトを今月に
+  const monthEl = document.getElementById('acTargetMonth');
+  if(monthEl && !monthEl.value){
+    const now = new Date();
+    monthEl.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  }
 }
 
 // ── ファイル読み込み ──
@@ -4881,10 +4891,10 @@ function acHandleFile(file){
 function acOnFileLoaded(fname){
   const titleEl = document.getElementById('acDropzoneTitle');
   const subEl   = document.getElementById('acDropzoneSub');
-  const nextBtn = document.getElementById('acBtnGoStep4');
+  const calcBtn = document.getElementById('acBtnCalc');
   if(titleEl) titleEl.textContent = '✅ ' + fname;
   if(subEl)   subEl.textContent   = acExcelRows.length + '名 読み込み済み';
-  if(nextBtn) nextBtn.disabled = false;
+  if(calcBtn) calcBtn.disabled = false; // ファイル読み込み後に計算ボタンを有効化
   // マッピングパネル表示・列マッピング初期化
   acInitStep2();
   // プレビュー表示
@@ -4976,28 +4986,35 @@ async function acRunCalc(){
   if(btn){ btn.disabled=true; btn.textContent='計算中...'; }
 
   const instruction = (document.getElementById('acAiInstruction')?.value||'').trim();
-  const perfMethod  = document.getElementById('acPerfMethod')?.value  || 'fixed';
-  const perfMin     = Number(document.getElementById('acPerfMin')?.value)  || 0.8;
-  const perfMax     = Number(document.getElementById('acPerfMax')?.value)  || 1.3;
-  const bonusMethod = document.getElementById('acBonusMethod')?.value || 'mag';
-  const bonusParam  = Number(document.getElementById('acBonusParam')?.value) || 2.0;
-  const bonusTarget = document.getElementById('acBonusTarget')?.value || 'all';
-  const commute     = Number(document.getElementById('acCommute')?.value) || 0;
-  const housing     = Number(document.getElementById('acHousing')?.value) || 0;
+  const perfMethod  = document.getElementById('acPerfMethod')?.value   || 'direct';
+  const perfMin     = Number(document.getElementById('acPerfMin')?.value)   || 0.8;
+  const perfMax     = Number(document.getElementById('acPerfMax')?.value)   || 1.3;
+  const bonusMethod = document.getElementById('acBonusMethod')?.value  || 'multiplier';
+  const bonusParam  = Number(document.getElementById('acBonusParam')?.value)  || 2.0;
+  const bonusTarget = document.getElementById('acBonusTarget')?.value  || 'both';
+  const commute     = Number(document.getElementById('acAllowCommute')?.value) || 0;
+  const housing     = Number(document.getElementById('acAllowHousing')?.value) || 0;
 
-  // AI指示を解析
+  // AI指示を解析（失敗しても必ずパターンマッチで続行）
   let aiRules = [];
   let aiLogs  = [];
+  let usedAI  = false;
 
   if(instruction){
     try {
       aiRules = await acCallAI(instruction);
       aiLogs  = aiRules.map(r=>`[AI] ${r.label}`);
+      usedAI  = true;
     } catch(e) {
       console.warn('[AC] AI解析失敗、パターンマッチにフォールバック:', e.message);
       const fallback = acParseManual(instruction);
       aiRules = fallback.rules;
       aiLogs  = fallback.logs;
+      if(aiRules.length > 0){
+        showToast('AI解析失敗。パターンマッチで'+aiRules.length+'件のルールを検出しました','');
+      } else {
+        showToast('AI解析失敗。指示なしで計算します（AIキーを確認してください）','error');
+      }
     }
   }
 
@@ -5071,23 +5088,24 @@ async function acRunCalc(){
 
   if(acResults.length === 0){
     showToast('計算できるデータがありませんでした','error');
-    if(btn){ btn.disabled=false; btn.textContent='🚀 計算実行'; }
+    if(btn){ btn.disabled=false; btn.textContent='⚡ 給与計算を実行する'; }
     return;
   }
 
-  // 結果表示してSTEP5へ
+  // 結果をSTEP2画面内に表示
   acShowResults(aiAffected, aiLogs);
-  if(btn){ btn.disabled=false; btn.textContent='🚀 計算実行'; }
+  if(btn){ btn.disabled=false; btn.textContent='⚡ 給与計算を実行する'; }
   showToast(acResults.length+'名の計算が完了しました ✅','success');
 
-  // STEP5のサマリー更新
+  // STEP3（出力）のサマリー更新
   const summaryEl = document.getElementById('acOutputSummary');
   if(summaryEl){
     const tG = acResults.reduce((a,e)=>a+e.gross,0);
     summaryEl.textContent = acResults.length+'名 / 支給総額 '+fmtY(tG);
   }
-
-  acGoStep(5);
+  // 「出力へ」ボタンを表示（STEP2内に留まる・ユーザーが結果確認後に進める）
+  const step4Btns = document.getElementById('acStep4Btns');
+  if(step4Btns) step4Btns.style.display = 'flex';
 }
 
 function acMatchTarget(target, emp){
@@ -5271,25 +5289,32 @@ function acReset(){
   acStep=1; acExcelHeaders=[]; acExcelRows=[]; acColMapping={}; acResults=[];
   const titleEl=document.getElementById('acDropzoneTitle');
   const subEl=document.getElementById('acDropzoneSub');
-  const nextBtn=document.getElementById('acBtnGoStep4');
+  const calcBtn=document.getElementById('acBtnCalc');
   const previewEl=document.getElementById('acPreviewTable');
   const mappingPanel=document.getElementById('acMappingPanel');
   const aiInst=document.getElementById('acAiInstruction');
   const logEl=document.getElementById('acAiLog');
+  const resultPanel=document.getElementById('acResultPanel');
+  const step4Btns=document.getElementById('acStep4Btns');
   const dz=document.getElementById('acDropzone');
   if(titleEl) titleEl.textContent='Excelファイルをドロップ、またはクリックして選択';
   if(subEl)   subEl.textContent='.xlsx / .xls / .csv 対応';
-  if(nextBtn) nextBtn.disabled=true;
+  if(calcBtn) calcBtn.disabled=true;
   if(previewEl) previewEl.innerHTML='';
   if(mappingPanel) mappingPanel.style.display='none';
   if(aiInst) aiInst.value='';
   if(logEl){ logEl.style.display='none'; logEl.innerHTML=''; }
+  if(resultPanel) resultPanel.style.display='none';
+  if(step4Btns) step4Btns.style.display='none';
   if(dz) dz.className='ac-dropzone';
   acGoStep(1);
 }
 
 // ── イベントバインド（DOM準備後）──
 document.addEventListener('DOMContentLoaded',()=>{
+
+  // AutoCalc初期化（ページ表示時に設定を復元）
+  acInitStep1();
 
   // ドロップゾーン
   const dz = document.getElementById('acDropzone');
@@ -5305,25 +5330,16 @@ document.addEventListener('DOMContentLoaded',()=>{
     fi.addEventListener('change',e=>{const f=e.target.files[0];if(f)acHandleFile(f);e.target.value='';});
   }
 
-  // ステップナビ
-  document.getElementById('acBtnGoStep2')?.addEventListener('click',()=>{
-    acGoStep(2);
-  });
+  // ステップナビ（3ステップ）
+  document.getElementById('acBtnGoStep2')?.addEventListener('click',()=>acGoStep(2));
   document.getElementById('acBtnBackStep1')?.addEventListener('click',()=>acGoStep(1));
-  document.getElementById('acBtnGoStep3')?.addEventListener('click',()=>{
-    acGoStep(3);
-  });
-  document.getElementById('acBtnBackStep2')?.addEventListener('click',()=>acGoStep(2));
-  document.getElementById('acBtnGoStep4')?.addEventListener('click',()=>{
-    if(acSaveMapping()){ acGoStep(4); }
-  });
+  document.getElementById('acBtnGoStep3')?.addEventListener('click',()=>acGoStep(3));
   document.getElementById('acBtnCalc')?.addEventListener('click',acRunCalc);
-  document.getElementById('acBtnBackStep3')?.addEventListener('click',()=>acGoStep(3));
-  document.getElementById('acBtnGoStep5')?.addEventListener('click',()=>acGoStep(5));
   document.getElementById('acBtnRestart')?.addEventListener('click',acReset);
   document.getElementById('acBtnTemplate')?.addEventListener('click',downloadImportTemplate);
+  document.getElementById('acBtnSaveSetting')?.addEventListener('click',acSaveSetting);
 
-  // 出力ボタン（STEP5）
+  // 出力ボタン（STEP3）
   document.getElementById('acBtnDlSlip')?.addEventListener('click',acExportExcel);
   document.getElementById('acBtnDlLedger')?.addEventListener('click',acExportLedger);
   document.getElementById('acBtnDlTransfer')?.addEventListener('click',acExportTransfer);
