@@ -2123,7 +2123,6 @@ function showAuthErr(id,msg){
 
 // Supabase認証エラーを日本語化するヘルパー
 function authErrMsg(err) {
-  // errはstringまたはErrorオブジェクト、またはSupabaseのerrorオブジェクトの可能性がある
   const msg = (typeof err === 'string' ? err : err?.message || err?.error_description || '') || '';
   if(!msg) return '不明なエラーが発生しました';
   const m = msg.toLowerCase();
@@ -2141,7 +2140,7 @@ function authErrMsg(err) {
   if(m.includes('over_email_send_rate_limit') ||
      m.includes('rate limit'))                     return 'メール送信の上限に達しました。しばらく待ってから再試行してください';
   if(m.includes('network') || m.includes('fetch')) return 'ネットワークエラーが発生しました。接続を確認してください';
-  return msg || '不明なエラーが発生しました';
+  return msg;
 }
 
 $('btnLogin').addEventListener('click',async()=>{
@@ -2158,13 +2157,13 @@ $('btnLogin').addEventListener('click',async()=>{
     showAuthErr('loginErr', authErrMsg(error.message));
   } else {
     btn.textContent='接続中...';
-    // 10秒以内に画面遷移しなければボタンを復元（固まり防止）
+    // 5秒以内に画面遷移しなければボタンを復元
     setTimeout(()=>{
       if(btn.disabled){
         btn.disabled=false;btn.textContent='ログイン';
         showAuthErr('loginErr','接続がタイムアウトしました。再度お試しください。');
       }
-    },10000);
+    },5000);
   }
 });
 
@@ -2219,7 +2218,6 @@ $('btnJoin').addEventListener('click',async()=>{
   const pass  = $('joinPass').value;
   const code  = $('joinCode').value.trim().toUpperCase();
 
-  // ── バリデーション ──
   if(!code)  { showAuthErr('joinErr','招待コードを入力してください'); return; }
   if(!email) { showAuthErr('joinErr','メールアドレスを入力してください'); return; }
   if(pass.length < 6) { showAuthErr('joinErr','パスワードは6文字以上にしてください'); return; }
@@ -2229,8 +2227,7 @@ $('btnJoin').addEventListener('click',async()=>{
   btn.disabled = true;
   btn.textContent = 'コード確認中...';
 
-  // ── Step 1: 招待コード確認（認証前に必ず先に確認）──
-  // ※ companiesテーブルのinvite_codeはanonキーで参照できるようRLSを設定する必要あり
+  // ── Step 1: 招待コードを最初に確認（アカウント操作の前）──
   const company = await dbGet('companies', { invite_code: code });
   if(!company) {
     btn.disabled = false; btn.textContent = '参加する';
@@ -2245,16 +2242,13 @@ $('btnJoin').addEventListener('click',async()=>{
   let isExistingUser = false;
 
   const { data: signUpData, error: signUpErr } = await sb.auth.signUp({
-    email, password: pass,
-    options: { data: { name: uName } }
+    email, password: pass, options: { data: { name: uName } }
   });
 
   if(signUpErr) {
-    // 422 または already registered → 既存アカウント → ログインを試みる
     const isExisting =
       signUpErr.status === 422 ||
       signUpErr.status === 400 ||
-      authErrMsg(signUpErr).includes('既に登録') ||
       (signUpErr.message||'').toLowerCase().includes('already') ||
       (signUpErr.message||'').toLowerCase().includes('registered');
 
@@ -2273,50 +2267,43 @@ $('btnJoin').addEventListener('click',async()=>{
       return;
     }
   } else {
-    // 新規登録成功
-    // ⚠ メール確認が必要な設定の場合、user.idは返るがセッションはnullになる
     uid = signUpData.user?.id;
+    // メール確認が必要な設定でuidが返らない場合はログインを試みる
     if(!uid) {
-      // メール確認が必要なケース → uidなしでは参加処理できないため
-      // 一時的にサインインを試みる（パスワードが合っていれば通ることがある）
-      const { data: loginData } = await sb.auth.signInWithPassword({ email, password: pass }).catch(() => ({}));
-      uid = loginData?.user?.id;
+      const { data: ld } = await sb.auth.signInWithPassword({ email, password: pass }).catch(()=>({}));
+      uid = ld?.user?.id;
     }
   }
 
   if(!uid) {
     btn.disabled = false; btn.textContent = '参加する';
-    showAuthErr('joinErr', 'アカウントの処理に失敗しました。メール確認が必要な場合は確認後にログインしてください');
+    showAuthErr('joinErr', 'アカウントの処理に失敗しました。再度お試しください');
     return;
   }
 
   btn.textContent = '参加中...';
 
-  // ── Step 3: company_usersに追加（重複チェック付き）──
+  // ── Step 3: company_usersに追加 ──
   const existing = await dbGet('company_users', { company_id: company.id, user_id: uid });
   if(existing) {
-    // 既に参加済み → そのままログイン状態にして会社リストへ
     btn.disabled = false; btn.textContent = '参加する';
     showToast(`「${esc(company.name)}」には既に参加しています`, 'success');
     if(isExistingUser) {
+      _justJoined = false;
       await loadCompanyList(uid);
     } else {
-      showToast('ログインしてください', '');
       await sb.auth.signOut();
     }
     return;
   }
 
   const { error: insertErr } = await sb.from('company_users').insert({
-    company_id: company.id,
-    user_id:    uid,
-    name:       uName,
-    role:       'editor',
-    joined_at:  new Date().toISOString(),
+    company_id: company.id, user_id: uid,
+    name: uName, role: 'editor',
+    joined_at: new Date().toISOString(),
   });
 
   if(insertErr) {
-    console.error('[PA] company_users insert:', insertErr);
     btn.disabled = false; btn.textContent = '参加する';
     showAuthErr('joinErr', '会社への参加処理に失敗しました: ' + (insertErr.message || ''));
     if(!isExistingUser) await sb.auth.signOut();
@@ -2326,11 +2313,10 @@ $('btnJoin').addEventListener('click',async()=>{
   btn.disabled = false; btn.textContent = '参加する';
 
   if(isExistingUser) {
-    // 既存ユーザーはログイン済みなのでそのまま会社リストへ
     showToast(`「${esc(company.name)}」に参加しました！`, 'success');
+    _justJoined = true;  // RLS反映待ちリトライを有効化
     await loadCompanyList(uid);
   } else {
-    // 新規ユーザー → メール確認が必要な場合があるのでサインアウト
     await sb.auth.signOut();
     showToast(`「${esc(company.name)}」に参加しました！ログインしてください。`, 'success');
   }
@@ -2369,14 +2355,22 @@ function showScreen(id){
   $(id).classList.add('active');
 }
 
-async function loadCompanyList(uid, retryCount=0){
-  const members=await dbGetAll('company_users',{user_id:uid});
-  if(!members.length){
-    // ── RLS遅延リトライ（招待参加直後にRLSがまだ反映されていないケース）──
-    if(retryCount < 3){
-      await new Promise(r=>setTimeout(r, 800 * (retryCount + 1)));
-      return loadCompanyList(uid, retryCount + 1);
+// 招待参加直後フラグ（RLS反映待ちリトライが必要なケースのみtrue）
+let _justJoined = false;
+
+async function loadCompanyList(uid){
+  let members = await dbGetAll('company_users',{user_id:uid});
+
+  // 招待参加直後のみ最大3回リトライ（RLS反映遅延対策・通常ログインには影響しない）
+  if(!members.length && _justJoined){
+    for(let i = 0; i < 3 && !members.length; i++){
+      await new Promise(r => setTimeout(r, 600));
+      members = await dbGetAll('company_users',{user_id:uid});
     }
+    _justJoined = false;
+  }
+
+  if(!members.length){
     // pending_company があれば自動で会社作成を試みる
     const pendingCo=currentUser&&(await sb.auth.getUser())?.data?.user?.user_metadata?.pending_company;
     if(pendingCo){
@@ -2387,7 +2381,6 @@ async function loadCompanyList(uid, retryCount=0){
         if(retry.length){ members.push(...retry); }
       }
     }
-    // それでも0件ならsetupScreenへ
     if(!members.length){showScreen('setupScreen');return;}
   }
   // 一括で会社情報を取得（N+1回避）
