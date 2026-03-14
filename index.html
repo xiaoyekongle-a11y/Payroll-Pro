@@ -1631,7 +1631,29 @@ body.dark .hoshu-tbl tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
           <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.85rem">
             「税率管理」ページの最新値を自動適用しています。変更する場合は税率管理ページで行ってください。
           </div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0.65rem;margin-bottom:1rem" id="acRateDisplay"></div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0.65rem;margin-bottom:1.25rem" id="acRateDisplay"></div>
+
+          <!-- Gemini APIキー設定 -->
+          <div style="background:linear-gradient(135deg,#e8f4ff,#f0f7ff);border:1.5px solid rgba(30,95,168,0.2);border-radius:6px;padding:0.9rem 1rem;margin-bottom:1rem">
+            <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.45rem">
+              <span style="font-size:1rem">✨</span>
+              <span style="font-size:0.78rem;font-weight:700;color:#1a3a5c">Gemini API キー（AI指示機能に使用）</span>
+              <span style="font-size:0.65rem;background:#e0e8f0;padding:0.1em 0.5em;border-radius:3px;color:#556;font-family:var(--font-mono)">任意</span>
+            </div>
+            <div style="display:flex;gap:0.5rem;align-items:center">
+              <input type="password" id="acGeminiKey" placeholder="AIzaSy..." autocomplete="off"
+                style="flex:1;padding:0.45rem 0.7rem;border:1.5px solid var(--border);border-radius:4px;font-family:var(--font-mono);font-size:0.8rem;background:#fff;color:var(--ink)">
+              <button class="btn btn-sm btn-secondary" id="acBtnSaveKey" type="button">保存</button>
+              <button class="btn btn-sm btn-secondary" id="acBtnClearKey" type="button" style="color:#c0392b;border-color:#c0392b">削除</button>
+            </div>
+            <div style="font-size:0.68rem;color:var(--muted);margin-top:0.4rem">
+              🔑 キーは <b>このブラウザのみ</b> に保存されます（サーバーには送信されません）。
+              未設定でもパターンマッチで動作します。
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" style="color:#1a3a5c;font-weight:700">Google AI Studioで取得 →</a>
+            </div>
+            <div id="acKeyStatus" style="font-size:0.7rem;margin-top:0.35rem;display:none"></div>
+          </div>
+
           <div style="text-align:right">
             <button class="btn btn-primary" id="acBtnGoStep2">次へ：配分設定 →</button>
           </div>
@@ -4764,28 +4786,26 @@ async function exportDashboardReport(){
 }
 
 window.showPage          = showPage;
-window.acInitStep1       = acInitStep1;
-window.acGoStep          = acGoStep;
 window.calcYearend       = calcYearend;
 window.saveYearend       = saveYearend;
 window.genWithholdingPDF = genWithholdingPDF;
 window.toggleAcc         = toggleAcc;
 window.renderDrilldownChart = renderDrilldownChart;
 window.checkShahouChanges   = checkShahouChanges;
+// acInitStep1/acGoStep はAutoCalcスクリプトで定義後にwindow登録
 
 })();
 </script>
 <script>
 
 /* ═══════════════════════════════════════════════════════════
-   AutoCalc — 給与自動計算エンジン
-   Salario index.html 統合版
+   AutoCalc — 給与自動計算エンジン (Salario 統合版)
    ・taxRates / calc() / fmtY は本体から流用
    ・SheetJS（xlsx）でExcel入出力
    ・Claude APIで自然言語指示を解析
 ═══════════════════════════════════════════════════════════ */
 
-// ── AutoCalc 専用State ──
+// ── State ──
 let acStep         = 1;
 let acExcelHeaders = [];
 let acExcelRows    = [];
@@ -4797,572 +4817,588 @@ const acSleep = ms => new Promise(r => setTimeout(r, ms));
 // ── ステップ切替 ──
 function acGoStep(n){
   [1,2,3,4,5].forEach(i=>{
-    const panel = document.getElementById(`acPanelStep${i}`);
+    const panel = document.getElementById('acPanelStep'+i);
     if(panel) panel.style.display = i===n ? 'block' : 'none';
-    const stepEl = document.getElementById(`acStep${i}`);
+    const stepEl = document.getElementById('acStep'+i);
     if(stepEl) stepEl.className = 'ac-step' + (i<n?' done':i===n?' active':'');
   });
   acStep = n;
   window.scrollTo({top:0, behavior:'instant'});
 }
 
-// STEP1初期化（taxRatesを表示）
+// STEP1初期化
 function acInitStep1(){
   const items = [
-    {label:'健康保険料率', val:`${taxRates.hRate}%`, sub:'被保険者負担'},
-    {label:'厚生年金保険料率', val:`${taxRates.pRate}%`, sub:'被保険者負担'},
-    {label:'雇用保険料率', val:`${taxRates.eRate}%`, sub:'一般事業'},
-    {label:'住民税率', val:`${taxRates.mRate}%`, sub:'標準税率'},
+    {label:'健康保険料率',    val:(typeof taxRates!=='undefined'?taxRates.hRate:'—')+'%', sub:'被保険者負担'},
+    {label:'厚生年金保険料率',val:(typeof taxRates!=='undefined'?taxRates.pRate:'—')+'%', sub:'被保険者負担'},
+    {label:'雇用保険料率',    val:(typeof taxRates!=='undefined'?taxRates.eRate:'—')+'%', sub:'一般事業'},
+    {label:'住民税率',        val:(typeof taxRates!=='undefined'?taxRates.mRate:'—')+'%', sub:'標準税率'},
   ];
-  const el = document.getElementById('acRateDisplay');
+  const el = document.getElementById('acTaxRatesSummary');
   if(!el) return;
   el.innerHTML = items.map(it=>`
-    <div class="stat-card">
-      <div class="stat-label">${it.label}</div>
-      <div class="stat-value blue" style="font-size:1rem">${it.val}</div>
-      <div class="stat-sub">${it.sub}</div>
+    <div style="background:#fff;border:1.5px solid var(--border);border-radius:4px;padding:0.75rem 1rem;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">${it.label}</div>
+        <div style="font-size:0.68rem;color:var(--muted)">${it.sub}</div>
+      </div>
+      <div style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700">${it.val}</div>
     </div>`).join('');
-  acGoStep(1);
-
-  // 対象月デフォルト（今月）
-  const now = new Date();
-  const monthEl = document.getElementById('acTargetMonth');
-  if(monthEl && !monthEl.value){
-    monthEl.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  }
 }
 
-// ── ボタンイベント ──
-document.getElementById('acBtnGoStep2')?.addEventListener('click', ()=>acGoStep(2));
-document.getElementById('acBtnBackStep1')?.addEventListener('click', ()=>acGoStep(1));
-document.getElementById('acBtnGoStep3')?.addEventListener('click', ()=>acGoStep(3));
-document.getElementById('acBtnBackStep2')?.addEventListener('click', ()=>acGoStep(2));
-document.getElementById('acBtnBackStep3')?.addEventListener('click', ()=>acGoStep(3));
-document.getElementById('acBtnBackStep4')?.addEventListener('click', ()=>acGoStep(3));
-
-// ボーナス方法切替
-document.getElementById('acBonusMethod')?.addEventListener('change', e=>{
-  const label = document.getElementById('acBonusParamLabel');
-  const input = document.getElementById('acBonusParam');
-  if(e.target.value === 'fixed_pool'){
-    if(label) label.textContent = 'ボーナス総額プール（円）';
-    if(input) input.value = '10000000';
-  } else {
-    if(label) label.textContent = 'ボーナス倍率（月）';
-    if(input) input.value = '2.0';
-  }
-});
-
-// ── テンプレDL ──
-document.getElementById('acBtnTemplate')?.addEventListener('click', ()=>{
-  if(typeof XLSX === 'undefined'){ showToast('XLSXライブラリが読み込まれていません','error'); return; }
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet([
-    ['氏名','部署','役職','基本給','業績スコア','年齢','扶養家族数','配偶者控除','障害者控除','口座銀行名','口座支店名','口座番号','備考'],
-    ['山田太郎','営業部','課長',350000,85,42,2,380000,0,'三菱UFJ銀行','渋谷支店','1234567',''],
-    ['鈴木花子','開発部','主任',280000,92,35,0,0,0,'みずほ銀行','新宿支店','7654321',''],
-    ['田中次郎','管理部','一般',220000,75,28,1,380000,0,'三井住友銀行','池袋支店','9876543',''],
-  ]);
-  ws['!cols'] = [12,10,8,12,12,6,10,12,10,16,12,12,20].map(w=>({wch:w}));
-  XLSX.utils.book_append_sheet(wb, ws, '業績名簿');
-  XLSX.writeFile(wb, 'salario_名簿テンプレート.xlsx');
-  showToast('テンプレートをダウンロードしました','success');
-});
-
-// ── ドロップゾーン ──
-const acDropzone  = document.getElementById('acDropzone');
-const acFileInput = document.getElementById('acFileInput');
-
-if(acDropzone){
-  acDropzone.addEventListener('dragover', e=>{e.preventDefault();acDropzone.classList.add('ac-dropzone-hover');});
-  acDropzone.addEventListener('dragleave', ()=>acDropzone.classList.remove('ac-dropzone-hover'));
-  acDropzone.addEventListener('drop', e=>{
-    e.preventDefault();
-    acDropzone.classList.remove('ac-dropzone-hover');
-    const f = e.dataTransfer.files[0];
-    if(f) acHandleFile(f);
-  });
-}
-acFileInput?.addEventListener('change', e=>{ if(e.target.files[0]) acHandleFile(e.target.files[0]); });
-
+// ── ファイル読み込み ──
 function acHandleFile(file){
-  if(typeof XLSX === 'undefined'){ showToast('XLSXライブラリが読み込まれていません','error'); return; }
+  if(!file) return;
   const ext = file.name.split('.').pop().toLowerCase();
-  if(!['xlsx','xls','csv'].includes(ext)){ showToast('対応形式は .xlsx .xls .csv です','error'); return; }
-
-  const reader = new FileReader();
-  reader.onload = e=>{
-    try{
-      const wb   = XLSX.read(e.target.result, {type:'binary'});
+  if(!['xlsx','xls','csv'].includes(ext)){
+    showToast('Excel（.xlsx/.xls）またはCSVファイルを選択してください','error');
+    return;
+  }
+  if(ext==='csv'){
+    const reader = new FileReader();
+    reader.onload = e => {
+      const text = e.target.result.replace(/^\uFEFF/,'');
+      const rows = text.split(/\r?\n/).map(r=>r.split(',').map(v=>v.replace(/^"|"$/g,'').trim()));
+      if(rows.length < 2){ showToast('データが空です','error'); return; }
+      acExcelHeaders = rows[0];
+      acExcelRows    = rows.slice(1).filter(r=>r.some(v=>v!==''));
+      acOnFileLoaded(file.name);
+    };
+    reader.readAsText(file,'UTF-8');
+  } else {
+    if(typeof XLSX==='undefined'){ showToast('ライブラリ読み込み中です','error'); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      const wb   = XLSX.read(new Uint8Array(e.target.result),{type:'array'});
       const ws   = wb.Sheets[wb.SheetNames[0]];
-      const data = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+      const data = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
       if(data.length < 2){ showToast('データが空です','error'); return; }
-
       acExcelHeaders = data[0].map(String);
-      acExcelRows    = data.slice(1).filter(r=>r.some(c=>c!==''));
-
-      // ドロップゾーンUI更新
-      acDropzone.classList.add('ac-dropzone-done');
-      document.getElementById('acDropzoneIcon').textContent = '✅';
-      document.getElementById('acDropzoneTitle').textContent = file.name;
-      document.getElementById('acDropzoneSub').textContent = `${acExcelRows.length}名のデータを読み込みました`;
-
-      acBuildMapping();
-      acBuildPreview();
-      document.getElementById('acMappingPanel').style.display = 'block';
-      document.getElementById('acBtnGoStep4').disabled = false;
-      showToast(`${acExcelRows.length}名のデータを読み込みました ✅`,'success');
-    }catch(err){
-      showToast('ファイル読み込みエラー: '+err.message,'error');
-    }
-  };
-  reader.readAsBinaryString(file);
+      acExcelRows    = data.slice(1).filter(r=>r.some(v=>v!==''&&v!==null));
+      acOnFileLoaded(file.name);
+    };
+    reader.readAsArrayBuffer(file);
+  }
 }
 
-// マッピング定義
-const AC_FIELDS = [
-  {key:'name',   label:'氏名',       req:true,  match:['氏名','名前','name','姓名','従業員名']},
-  {key:'dept',   label:'部署',       req:false, match:['部署','department','部門','所属']},
-  {key:'pos',    label:'役職',       req:false, match:['役職','position','肩書']},
-  {key:'base',   label:'基本給（円）',req:true,  match:['基本給','base','月給','base_salary','baseSalary']},
-  {key:'perf',   label:'業績スコア', req:false, match:['業績スコア','業績','score','perf','評価']},
-  {key:'age',    label:'年齢',       req:false, match:['年齢','age','歳']},
-  {key:'dep',    label:'扶養家族数', req:false, match:['扶養家族数','扶養','dependents']},
-  {key:'bank',   label:'口座銀行名', req:false, match:['口座銀行名','銀行名','bank']},
-  {key:'branch', label:'口座支店名', req:false, match:['口座支店名','支店名','branch']},
-  {key:'account',label:'口座番号',   req:false, match:['口座番号','account']},
+function acOnFileLoaded(fname){
+  const nameEl = document.getElementById('acFileName');
+  const nextBtn = document.getElementById('acBtnToStep2');
+  if(nameEl) nameEl.textContent = fname;
+  if(nextBtn) nextBtn.disabled = false;
+  // プレビュー表示
+  const preview = acExcelRows.slice(0,5);
+  const previewEl = document.getElementById('acPreviewTable');
+  if(previewEl){
+    previewEl.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:0.75rem">
+        <thead><tr>${acExcelHeaders.map(h=>`<th style="padding:4px 8px;background:var(--ink);color:var(--paper);white-space:nowrap">${esc(String(h))}</th>`).join('')}</tr></thead>
+        <tbody>${preview.map(row=>`<tr>${acExcelHeaders.map((_,i)=>`<td style="padding:4px 8px;border-bottom:1px solid var(--border)">${esc(String(row[i]??''))}</td>`).join('')}</tr>`).join('')}</tbody>
+      </table>`;
+  }
+  showToast(acExcelRows.length+'名のデータを読み込みました ✅','success');
+}
+
+// ── STEP2: 列マッピング ──
+const AC_COL_KEYS = [
+  {key:'name',   label:'氏名',       required:true},
+  {key:'dept',   label:'部署',       required:false},
+  {key:'pos',    label:'役職',       required:false},
+  {key:'base',   label:'基本給',     required:true},
+  {key:'perf',   label:'業績係数',   required:false},
+  {key:'age',    label:'年齢',       required:false},
+  {key:'dep',    label:'扶養家族数', required:false},
+  {key:'spDed',  label:'特別控除',   required:false},
+  {key:'disDed', label:'障害者控除', required:false},
+  {key:'bank',   label:'銀行名',     required:false},
 ];
 
-function acBuildMapping(){
-  // 自動マッチング
-  AC_FIELDS.forEach(f=>{
-    const idx = acExcelHeaders.findIndex(h=>
-      f.match.some(m=>h.toLowerCase().includes(m.toLowerCase()))
-    );
-    acColMapping[f.key] = idx >= 0 ? idx : -1;
-  });
-
-  const wrap = document.getElementById('acMappingFields');
-  if(!wrap) return;
-  wrap.innerHTML = AC_FIELDS.map(f=>`
-    <div style="display:flex;align-items:center;gap:0.4rem">
-      <div style="font-size:0.72rem;font-weight:600;color:var(--ink-sub);min-width:100px">
-        ${f.label}${f.req?'<span style="color:var(--danger);margin-left:2px">*</span>':''}
-      </div>
-      <select data-key="${f.key}" class="ac-map-sel"
-        style="flex:1;padding:0.32rem 0.5rem;border:1px solid var(--border);border-radius:var(--radius);font-size:0.78rem;background:var(--surface);color:var(--ink)">
-        <option value="-1">— なし —</option>
-        ${acExcelHeaders.map((h,i)=>`<option value="${i}" ${acColMapping[f.key]===i?'selected':''}>${h||'列'+(i+1)}</option>`).join('')}
-      </select>
-    </div>`).join('');
-
-  wrap.querySelectorAll('.ac-map-sel').forEach(sel=>{
-    sel.addEventListener('change', e=>{
-      acColMapping[e.target.dataset.key] = Number(e.target.value);
-    });
-  });
+function acInitStep2(){
+  const container = document.getElementById('acColMappingContainer');
+  if(!container) return;
+  // 自動マッピング候補
+  const autoMap = {
+    name:   ['氏名','名前','従業員名','名称','name'],
+    dept:   ['部署','部門','所属','department','dept'],
+    pos:    ['役職','職位','position','pos','grade'],
+    base:   ['基本給','基本','base','基本賃金','月給','給与'],
+    perf:   ['業績','係数','perf','performance','倍率'],
+    age:    ['年齢','age'],
+    dep:    ['扶養','扶養家族','依存','dependents'],
+    spDed:  ['特別控除','特控'],
+    disDed: ['障害','障害者控除'],
+    bank:   ['銀行','bank','口座銀行'],
+  };
+  const guessCol = key => {
+    const candidates = autoMap[key] || [];
+    for(const c of candidates){
+      const i = acExcelHeaders.findIndex(h=>String(h).includes(c)||c.includes(String(h)));
+      if(i>=0) return i;
+    }
+    return -1;
+  };
+  container.innerHTML = AC_COL_KEYS.map(({key,label,required})=>{
+    const guessed = guessCol(key);
+    return `
+      <div style="display:grid;grid-template-columns:140px 1fr;gap:0.5rem;align-items:center;margin-bottom:0.5rem">
+        <label style="font-size:0.75rem;font-weight:700;color:var(--muted)">${label}${required?' <span style="color:var(--accent)">*</span>':''}</label>
+        <select id="acMap_${key}" style="padding:0.35rem 0.5rem;border:1.5px solid var(--border);border-radius:4px;font-size:0.8rem;width:100%">
+          <option value="-1">— 未設定 —</option>
+          ${acExcelHeaders.map((h,i)=>`<option value="${i}" ${i===guessed?'selected':''}>${esc(String(h))}</option>`).join('')}
+        </select>
+      </div>`;
+  }).join('');
 }
 
-function acBuildPreview(){
-  const wrap = document.getElementById('acPreviewTable');
-  if(!wrap) return;
-  const preview = acExcelRows.slice(0,5);
-  wrap.innerHTML = `
-    <table class="data-tbl" style="font-size:0.76rem">
-      <thead><tr>${acExcelHeaders.map(h=>`<th>${esc(String(h))}</th>`).join('')}</tr></thead>
-      <tbody>${preview.map(row=>`<tr>${acExcelHeaders.map((_,i)=>`<td>${esc(String(row[i]??''))}</td>`).join('')}</tr>`).join('')}
-      </tbody>
-    </table>`;
+function acSaveMapping(){
+  AC_COL_KEYS.forEach(({key})=>{
+    const sel = document.getElementById('acMap_'+key);
+    acColMapping[key] = sel ? Number(sel.value) : -1;
+  });
+  if(acColMapping.name<0||acColMapping.base<0){
+    showToast('「氏名」と「基本給」は必須です','error');
+    return false;
+  }
+  return true;
 }
 
-// ── AI指示サンプル ──
-document.querySelectorAll('.ac-ai-ex').forEach(el=>{
-  el.addEventListener('click', ()=>{
-    const ta = document.getElementById('acAiInstruction');
-    if(!ta) return;
-    const curr = ta.value.trim();
-    ta.value = curr ? curr + '
-' + el.dataset.text : el.dataset.text;
-  });
-});
+// ── STEP3: AI指示 ──
+function acInitStep3(){
+  // サンプルボタンは HTML 側でdata-text設定済み
+}
 
-// ── 計算実行 ──
-document.getElementById('acBtnCalc')?.addEventListener('click', acRunCalc);
-
+// ── STEP4: 計算実行 ──
 async function acRunCalc(){
   const btn = document.getElementById('acBtnCalc');
-  btn.disabled = true;
-  btn.textContent = '計算中...';
-  document.getElementById('acProgressWrap').style.display = 'block';
-  document.getElementById('acResultPanel').style.display  = 'none';
-  document.getElementById('acStep4Btns').style.display    = 'none';
+  if(btn){ btn.disabled=true; btn.textContent='計算中...'; }
 
-  try{
-    const employees = acParseEmployees();
-    if(!employees.length){ showToast('名簿データが空です','error'); return; }
+  const instruction = (document.getElementById('acAiInstruction')?.value||'').trim();
+  const perfMethod  = document.getElementById('acPerfMethod')?.value  || 'fixed';
+  const perfMin     = Number(document.getElementById('acPerfMin')?.value)  || 0.8;
+  const perfMax     = Number(document.getElementById('acPerfMax')?.value)  || 1.3;
+  const bonusMethod = document.getElementById('acBonusMethod')?.value || 'mag';
+  const bonusParam  = Number(document.getElementById('acBonusParam')?.value) || 2.0;
+  const bonusTarget = document.getElementById('acBonusTarget')?.value || 'all';
+  const commute     = Number(document.getElementById('acCommute')?.value) || 0;
+  const housing     = Number(document.getElementById('acHousing')?.value) || 0;
 
-    acSetProgress(20, `${employees.length}名を解析中...`);
-    await acSleep(150);
+  // AI指示を解析
+  let aiRules = [];
+  let aiLogs  = [];
 
-    // AI指示解析
-    const instruction = (document.getElementById('acAiInstruction')?.value||'').trim();
-    let aiRules = [], aiLogs = [];
-    if(instruction){
-      acSetProgress(40, 'AI指示を解析中...');
-      const parsed = await acParseAI(instruction, employees);
-      aiRules = parsed.rules;
-      aiLogs  = parsed.logs;
-      await acSleep(200);
+  if(instruction){
+    try {
+      aiRules = await acCallAI(instruction);
+      aiLogs  = aiRules.map(r=>`[AI] ${r.label}`);
+    } catch(e) {
+      console.warn('[AC] AI解析失敗、パターンマッチにフォールバック:', e.message);
+      const fallback = acParseManual(instruction);
+      aiRules = fallback.rules;
+      aiLogs  = fallback.logs;
+    }
+  }
+
+  // 進捗バー初期化
+  const bar = document.getElementById('acProgressBar');
+  const barWrap = document.getElementById('acProgressWrap');
+  if(barWrap) barWrap.style.display='block';
+
+  const get = (row,key) => {
+    const idx = acColMapping[key];
+    return (idx>=0 && idx<row.length) ? row[idx] : '';
+  };
+
+  acResults = [];
+  let aiAffected = 0;
+
+  for(let i=0; i<acExcelRows.length; i++){
+    const row  = acExcelRows[i];
+    const name = String(get(row,'name')||'従業員'+(i+1)).trim();
+    const base = Number(String(get(row,'base')||'').replace(/[¥,]/g,'')) || 0;
+    if(!name||base<=0){ continue; }
+
+    const dept   = String(get(row,'dept')  || '').trim();
+    const pos    = String(get(row,'pos')   || '').trim();
+    const age    = Number(get(row,'age'))  || 35;
+    const dep    = Number(get(row,'dep'))  || 0;
+    const spDed  = Number(get(row,'spDed'))|| 0;
+    const disDed = Number(get(row,'disDed'))|| 0;
+    const bank   = String(get(row,'bank') || '').trim();
+
+    // デフォルト係数（列に値があれば使用）
+    let perf = Number(get(row,'perf')) || 1.0;
+    let extra = commute + housing;
+    let empLogs = [];
+    let applied = false;
+
+    // AI指示を適用
+    for(const rule of aiRules){
+      if(!acMatchTarget(rule.target,{name,dept,pos})) continue;
+      applied = true;
+      if(rule.type==='perf_multiply'){ perf *= rule.value; empLogs.push(name+'→係数×'+rule.value+'（'+rule.label+'）'); }
+      if(rule.type==='perf_set'     ){ perf  = rule.value; empLogs.push(name+'→係数='+rule.value+'固定（'+rule.label+'）'); }
+      if(rule.type==='allowance_add'){ extra+=rule.value;  empLogs.push(name+'→手当+¥'+rule.value.toLocaleString()+'（'+rule.label+'）'); }
+    }
+    if(applied) aiAffected++;
+
+    // 業績係数クランプ
+    if(perfMethod==='clamp') perf = Math.min(perfMax, Math.max(perfMin, perf));
+
+    // ボーナス倍率
+    let mag = 0;
+    if(bonusTarget==='all' || (bonusTarget==='calc' && applied)){
+      if(bonusMethod==='mag') mag = bonusParam;
+      else if(bonusMethod==='perf') mag = perf * bonusParam;
     }
 
-    acSetProgress(65, '給与計算を実行中...');
-    await acSleep(100);
-
-    // 設定値取得
-    const rm          = 'round';
-    const perfMethod  = document.getElementById('acPerfMethod')?.value  || 'direct';
-    const perfMin     = Number(document.getElementById('acPerfMin')?.value)  || 0.8;
-    const perfMax     = Number(document.getElementById('acPerfMax')?.value)  || 1.3;
-    const bonusMethod = document.getElementById('acBonusMethod')?.value || 'multiplier';
-    const bonusParam  = Number(document.getElementById('acBonusParam')?.value)  || 2.0;
-    const bonusTarget = document.getElementById('acBonusTarget')?.value || 'both';
-    const commute     = Number(document.getElementById('acAllowCommute')?.value) || 0;
-    const housing     = Number(document.getElementById('acAllowHousing')?.value) || 0;
-
-    // 全員スコアを取得（正規化用）
-    const allScores = employees.map(e=>Number(e.perf)||0).filter(s=>s>0);
-    const minScore  = allScores.length ? Math.min(...allScores) : 0;
-    const maxScore  = allScores.length ? Math.max(...allScores) : 100;
-
-    acResults = employees.map(emp=>{
-      // 業績係数を計算
-      let perf = Number(emp.perf) || 1.0;
-      if(perfMethod==='score' && maxScore > minScore){
-        perf = perfMin + (perf - minScore)/(maxScore - minScore) * (perfMax - perfMin);
-      } else if(perfMethod==='rank'){
-        const sorted = [...employees].sort((a,b)=>(Number(b.perf)||0)-(Number(a.perf)||0));
-        const rank = sorted.findIndex(e=>e===emp) + 1;
-        const pct  = rank / employees.length;
-        perf = pct<=0.25 ? 1.2 : pct<=0.75 ? 1.0 : 0.85;
-      }
-      perf = Math.max(0.01, perf);
-
-      // AI指示を適用
-      let extra = commute + housing;
-      const empLogs = [];
-      aiRules.forEach(rule=>{
-        if(!acMatchRule(emp, rule)) return;
-        if(rule.type==='perf_multiply'){ perf*=rule.value; empLogs.push(`${emp.name}→係数×${rule.value}（${rule.label}）`); }
-        if(rule.type==='perf_set'){ perf=rule.value; empLogs.push(`${emp.name}→係数=${rule.value}固定（${rule.label}）`); }
-        if(rule.type==='allowance_add'){ extra+=rule.value; empLogs.push(`${emp.name}→手当+¥${rule.value.toLocaleString()}（${rule.label}）`); }
-        if(rule.type==='perf_min' && perf<rule.value){ perf=rule.value; empLogs.push(`${emp.name}→最低係数${rule.value}適用（${rule.label}）`); }
-      });
-
-      // ボーナス倍率
-      let mag = 0;
-      if(bonusTarget!=='monthly'){
-        if(bonusMethod==='multiplier') mag = bonusParam;
-        else if(bonusMethod==='fixed_pool'){
-          const totBase = employees.reduce((s,e)=>s+(Number(e.base)||0),0);
-          mag = totBase>0 ? bonusParam/totBase : 0;
-        }
-      }
-
-      // 計算実行（本体のcalc()を使用）
-      const r = calc(
-        Number(emp.base)||0, perf, mag,
-        taxRates.hRate, taxRates.pRate, taxRates.eRate, taxRates.mRate, rm,
-        Number(emp.age)||35, Number(emp.dep)||0,
-        Number(emp.spDed)||0, Number(emp.disDed)||0,
-        extra
-      );
-
-      if(bonusTarget==='monthly'){ r.bonusGross=0;r.bonusIns=0;r.bonusTax=0;r.bonusMun=0;r.bonusNet=0; }
-      if(bonusTarget==='bonus'){   r.gross=0;r.insurance=0;r.tax=0;r.municipal=0;r.monthlyNet=0; }
-
-      if(empLogs.length) aiLogs.push(...empLogs);
-
-      return { ...emp, perf, extra, commute, housing, ...r, aiApplied: empLogs.length>0 };
+    const tr = typeof taxRates!=='undefined' ? taxRates : {hRate:5,pRate:9,eRate:0.6,mRate:10};
+    const r = calc(base,perf,mag,tr.hRate,tr.pRate,tr.eRate,tr.mRate,'round',age,dep,spDed,disDed,extra);
+    acResults.push({
+      ...r, name, dept, pos, age, dep, base, perf, mag,
+      bank, spDed, disDed, allowanceTotal:extra,
+      aiApplied:applied, aiLogs:empLogs,
     });
+    aiLogs.push(...empLogs);
 
-    acSetProgress(90, '結果を集計中...');
-    await acSleep(100);
-
-    acRenderResults(acResults, aiLogs);
-    acSetProgress(100, '計算完了！');
-    await acSleep(250);
-
-    document.getElementById('acProgressWrap').style.display = 'none';
-    document.getElementById('acResultPanel').style.display  = 'block';
-    document.getElementById('acStep4Btns').style.display    = 'flex';
-    showToast(`${acResults.length}名の計算が完了しました ✅`,'success');
-
-  }catch(err){
-    console.error(err);
-    showToast('計算エラー: '+err.message,'error');
-    document.getElementById('acProgressWrap').style.display = 'none';
-  } finally{
-    btn.disabled = false;
-    btn.textContent = '⚡ 給与計算を実行する';
+    if(bar) bar.style.width = Math.round((i+1)/acExcelRows.length*100)+'%';
+    if(i%10===0) await acSleep(0);
   }
+
+  if(barWrap) barWrap.style.display='none';
+
+  // 結果表示
+  acShowResults(aiAffected, aiLogs);
+  if(btn){ btn.disabled=false; btn.textContent='🚀 計算実行'; }
+  showToast(acResults.length+'名の計算が完了しました ✅','success');
+  acGoStep(4);
 }
 
-function acSetProgress(pct, text){
-  const bar = document.getElementById('acProgressBar');
-  const txt = document.getElementById('acProgressText');
-  if(bar) bar.style.width = pct+'%';
-  if(txt) txt.textContent = text;
+function acMatchTarget(target, emp){
+  if(!target||target==='all') return true;
+  const t = String(target);
+  if(t.startsWith('dept:'))  return emp.dept && emp.dept.includes(t.slice(5));
+  if(t.startsWith('name:'))  return emp.name === t.slice(5);
+  if(t.startsWith('pos:'))   return emp.pos  && emp.pos.includes(t.slice(4));
+  return true;
 }
 
-// Excel行→従業員オブジェクト変換
-function acParseEmployees(){
-  const get = (row, key)=>{
-    const idx = acColMapping[key];
-    return (idx>=0 && idx<row.length) ? row[idx] : undefined;
-  };
-  return acExcelRows.map((row,i)=>({
-    _row: i+2,
-    name:   String(get(row,'name')||`従業員${i+1}`).trim(),
-    dept:   String(get(row,'dept')||'').trim(),
-    pos:    String(get(row,'pos') ||'').trim(),
-    base:   Number(get(row,'base'))||0,
-    perf:   Number(get(row,'perf'))||1.0,
-    age:    Number(get(row,'age') )||35,
-    dep:    Number(get(row,'dep') )||0,
-    spDed:  Number(get(row,'spDed'))||0,
-    disDed: Number(get(row,'disDed'))||0,
-    bank:   String(get(row,'bank')   ||'').trim(),
-    branch: String(get(row,'branch') ||'').trim(),
-    account:String(get(row,'account')||'').trim(),
-  })).filter(e=>e.base>0);
-}
-
-// Claude APIで指示を解析
-async function acParseAI(instruction, employees){
-  const depts = [...new Set(employees.map(e=>e.dept).filter(Boolean))];
-  try{
-    const res = await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:600,
-        messages:[{role:'user',content:`日本の給与計算ルールパーサーです。以下の指示をJSON配列のみで出力してください。説明・コードブロック不要。
-
-部署一覧: ${depts.join(',')||'不明'}
-従業員数: ${employees.length}名
-
-指示文:
-${instruction}
-
-出力形式:
-[{"type":"perf_multiply"|"perf_set"|"allowance_add"|"perf_min","target":"all"|"dept:部署名"|"name:氏名"|"pos:役職名","value":数値,"label":"説明20文字以内"}]
-
-解析できない場合は[]を返す。`}]
-      })
-    });
-    if(!res.ok) throw new Error('API '+res.status);
-    const data = await res.json();
-    const text = (data.content||[]).map(c=>c.text||'').join('').replace(/```[^`]*```/g,'').trim();
-    const rules = JSON.parse(text);
-    return {rules, logs:[`AI解析：${rules.length}件のルールを検出`]};
-  }catch(e){
-    console.warn('AI fallback:', e.message);
-    return acParseManual(instruction);
-  }
-}
-
-// フォールバック：パターンマッチング
-function acParseManual(instruction){
-  const rules=[], logs=['（パターンマッチで解析）'];
-  instruction.split('
-').forEach(line=>{
-    const m1=line.match(/([^\s]+[部課室]).*?(\d+\.?\d*)倍/);
-    if(m1) rules.push({type:'perf_multiply',target:`dept:${m1[1]}`,value:Number(m1[2]),label:`${m1[1]}×${m1[2]}倍`});
-    const m2=line.match(/(全員|全社員).+?(\d{3,7})円/);
-    if(m2) rules.push({type:'allowance_add',target:'all',value:Number(m2[2]),label:`全員手当+${m2[2]}円`});
-    const m3=line.match(/(\d+\.?\d*)固定/);
-    if(m3) rules.push({type:'perf_set',target:'condition:特定条件',value:Number(m3[1]),label:`係数${m3[1]}固定`});
-    const m4=line.match(/最低.{0,8}(\d+\.?\d*)/);
-    if(m4) rules.push({type:'perf_min',target:'all',value:Number(m4[1]),label:`最低係数${m4[1]}`});
-  });
-  logs.push(`${rules.length}件のルールを検出`);
-  return {rules,logs};
-}
-
-// ルールマッチ
-function acMatchRule(emp, rule){
-  const t=rule.target;
-  if(t==='all') return true;
-  if(t.startsWith('dept:')) return emp.dept&&emp.dept.includes(t.slice(5));
-  if(t.startsWith('name:')) return emp.name===t.slice(5);
-  if(t.startsWith('pos:'))  return emp.pos&&emp.pos.includes(t.slice(4));
-  if(t.startsWith('condition:')) return false;
-  return false;
-}
-
-// 結果レンダリング
-function acRenderResults(results, aiLogs){
-  const tG=results.reduce((s,e)=>s+(e.gross||0),0);
-  const tN=results.reduce((s,e)=>s+(e.monthlyNet||0),0);
-  const tI=results.reduce((s,e)=>s+(e.insurance||0),0);
-  const tT=results.reduce((s,e)=>s+(e.tax||0)+(e.municipal||0),0);
-  const tB=results.reduce((s,e)=>s+(e.bonusNet||0),0);
-  const aiN=results.filter(e=>e.aiApplied).length;
-
-  const wrap = document.getElementById('acResultSummary');
-  if(wrap) wrap.innerHTML = `
-    <div class="stat-card variant-blue"><div class="stat-label">支給総額</div><div class="stat-value blue">${fmtY(tG)}</div><div class="stat-sub">${results.length}名合計</div></div>
-    <div class="stat-card variant-green"><div class="stat-label">手取り総額</div><div class="stat-value green">${fmtY(tN)}</div><div class="stat-sub">振込合計</div></div>
-    <div class="stat-card"><div class="stat-label">社保合計</div><div class="stat-value">${fmtY(tI)}</div></div>
-    <div class="stat-card"><div class="stat-label">税金合計</div><div class="stat-value">${fmtY(tT)}</div></div>
-    ${tB>0?`<div class="stat-card"><div class="stat-label">ボーナス手取計</div><div class="stat-value blue">${fmtY(tB)}</div></div>`:''}
-    ${aiN>0?`<div class="stat-card" style="border-left:3px solid var(--gold)"><div class="stat-label">AI調整</div><div class="stat-value" style="color:var(--gold)">${aiN}名</div><div class="stat-sub">指示で調整済</div></div>`:''}`;
-
-  const hasBonus = results.some(e=>e.bonusNet>0);
-  const tblWrap = document.getElementById('acResultTable');
-  if(tblWrap) tblWrap.innerHTML = `
-    <table class="data-tbl">
-      <thead><tr>
-        <th>氏名</th><th>部署</th>
-        <th class="num">基本給</th><th class="num">係数</th>
-        <th class="num">支給額</th><th class="num">社保</th>
-        <th class="num">所得税</th><th class="num">住民税</th>
-        <th class="num" style="color:var(--green)">手取り</th>
-        ${hasBonus?'<th class="num">ボーナス</th>':''}
-        <th>状態</th>
-      </tr></thead>
-      <tbody>${results.map(e=>`
-        <tr>
-          <td style="font-weight:600">${esc(e.name)}</td>
-          <td style="font-size:0.75rem">${esc(e.dept||'—')}</td>
-          <td class="num">${fmtY(e.base)}</td>
-          <td class="num"><span style="font-family:var(--font-mono)">${e.perf.toFixed(2)}</span></td>
-          <td class="num" style="font-weight:600">${fmtY(e.gross)}</td>
-          <td class="num" style="color:var(--danger)">${fmtY(e.insurance)}</td>
-          <td class="num" style="color:var(--danger)">${fmtY(e.tax)}</td>
-          <td class="num" style="color:var(--danger)">${fmtY(e.municipal)}</td>
-          <td class="num" style="font-weight:700;color:var(--green)">${fmtY(e.monthlyNet)}</td>
-          ${hasBonus?`<td class="num" style="color:var(--blue)">${fmtY(e.bonusNet)}</td>`:''}
-          <td>${e.aiApplied?'<span class="badge badge-pending">AI調整</span>':'<span class="badge badge-calc">通常</span>'}</td>
-        </tr>`).join('')}
-      </tbody>
-    </table>`;
+function acShowResults(aiN, aiLogs){
+  const container = document.getElementById('acResultSummary');
+  if(!container) return;
+  const tG = acResults.reduce((a,e)=>a+e.gross,0);
+  const tN = acResults.reduce((a,e)=>a+e.monthlyNet,0);
+  const tI = acResults.reduce((a,e)=>a+e.insurance,0);
+  container.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.75rem;margin-bottom:1rem">
+      <div class="stat-card"><div class="stat-label">計算人数</div><div class="stat-value blue">${acResults.length}名</div></div>
+      <div class="stat-card"><div class="stat-label">支給額合計</div><div class="stat-value">${fmtY(tG)}</div></div>
+      <div class="stat-card"><div class="stat-label">手取り合計</div><div class="stat-value green">${fmtY(tN)}</div></div>
+      <div class="stat-card"><div class="stat-label">社保合計</div><div class="stat-value accent">${fmtY(tI)}</div></div>
+      ${aiN>0?`<div class="stat-card" style="border-left:3px solid var(--gold)"><div class="stat-label">AI調整</div><div class="stat-value" style="color:var(--gold)">${aiN}名</div><div class="stat-sub">指示で調整済</div></div>`:''}
+    </div>
+    <div class="tbl-wrap">
+      <table class="data-tbl">
+        <thead><tr><th>氏名</th><th>部署</th><th>基本給</th><th>係数</th><th>支給額</th><th>手取り</th><th>AI調整</th></tr></thead>
+        <tbody>${acResults.map(e=>`
+          <tr>
+            <td>${esc(e.name)}</td><td>${esc(e.dept||'—')}</td>
+            <td style="font-family:var(--font-mono);text-align:right">${fmtY(e.base)}</td>
+            <td style="font-family:var(--font-mono);text-align:right">${e.perf.toFixed(2)}</td>
+            <td style="font-family:var(--font-mono);text-align:right">${fmtY(e.gross)}</td>
+            <td style="font-family:var(--font-mono);text-align:right;color:var(--green)">${fmtY(e.monthlyNet)}</td>
+            <td style="text-align:center">${e.aiApplied?'<span class="badge badge-calc">適用</span>':''}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
 
   // AIログ
   const logEl = document.getElementById('acAiLog');
-  if(logEl && aiLogs.length){
+  if(logEl && aiLogs.length>0){
     logEl.style.display='block';
-    logEl.innerHTML = aiLogs.map(l=>`<div>• ${esc(l)}</div>`).join('');
+    logEl.innerHTML = '<div style="font-size:0.72rem;font-weight:700;margin-bottom:0.4rem;color:var(--muted)">AI適用ログ</div>'+
+      aiLogs.map(l=>`<div style="font-size:0.75rem;padding:2px 0">• ${esc(l)}</div>`).join('');
   }
 }
 
-// ── STEP5ボタン ──
-document.getElementById('acBtnGoStep5')?.addEventListener('click',()=>{
-  const month = document.getElementById('acTargetMonth')?.value||'';
-  const el = document.getElementById('acOutputSummary');
-  if(el) el.textContent = `${month} / ${acResults.length}名の計算が完了しました`;
-  acGoStep(5);
-});
+// ── Gemini APIキー管理 ──
+const AC_KEY_STORAGE = 'salario_gemini_key';
 
-// 給与明細Excel
-document.getElementById('acBtnDlSlip')?.addEventListener('click',()=>{
-  if(!acResults.length){ showToast('先に計算を実行してください','error'); return; }
-  if(typeof XLSX==='undefined'){ showToast('XLSXライブラリが読み込まれていません','error'); return; }
-  const month = document.getElementById('acTargetMonth')?.value||'';
-  const wb = XLSX.utils.book_new();
-  const hasBonus = acResults.some(e=>e.bonusNet>0);
-  const header = ['氏名','部署','役職','基本給','業績係数','手当合計','支給額','社保','所得税','住民税','手取り',
-    ...(hasBonus?['ボーナス支給','ボーナス手取']:[]),'口座銀行','口座支店','口座番号'];
-  const rows = acResults.map(e=>[
-    e.name, e.dept||'', e.pos||'', e.base, +e.perf.toFixed(2), e.extra||0, e.gross,
-    e.insurance, e.tax, e.municipal, e.monthlyNet,
-    ...(hasBonus?[e.bonusGross, e.bonusNet]:[]),
-    e.bank||'', e.branch||'', e.account||''
-  ]);
-  const totRow = ['合計','','','','','',
-    acResults.reduce((s,e)=>s+e.gross,0),
-    acResults.reduce((s,e)=>s+e.insurance,0),
-    acResults.reduce((s,e)=>s+e.tax,0),
-    acResults.reduce((s,e)=>s+e.municipal,0),
-    acResults.reduce((s,e)=>s+e.monthlyNet,0),
-    ...(hasBonus?[acResults.reduce((s,e)=>s+e.bonusGross,0),acResults.reduce((s,e)=>s+e.bonusNet,0)]:[]),
-    '','',''
-  ];
-  const ws = XLSX.utils.aoa_to_sheet([header, ...rows, totRow]);
-  ws['!cols'] = header.map((_,i)=>({wch: i<2?14:i<4?10:12}));
-  // 数値フォーマット
-  for(let r=1;r<rows.length+2;r++) for(let c=3;c<header.length;c++){
-    const cell=XLSX.utils.encode_cell({r,c});
-    if(ws[cell]&&typeof ws[cell].v==='number') ws[cell].z='#,##0';
+function acLoadKey(){
+  try { return localStorage.getItem(AC_KEY_STORAGE) || ''; } catch(e){ return ''; }
+}
+function acSaveKey(key){
+  try { localStorage.setItem(AC_KEY_STORAGE, key); } catch(e){}
+}
+function acClearKey(){
+  try { localStorage.removeItem(AC_KEY_STORAGE); } catch(e){}
+}
+function acShowKeyStatus(msg, ok){
+  const el = document.getElementById('acKeyStatus');
+  if(!el) return;
+  el.style.display = 'block';
+  el.style.color = ok ? '#2a7a50' : '#c0392b';
+  el.textContent = msg;
+}
+
+// ── Claude APIからGemini APIに切り替え ──
+async function acCallAI(instruction){
+  const key = acLoadKey() || document.getElementById('acGeminiKey')?.value?.trim();
+  if(!key) throw new Error('APIキー未設定');
+
+  const prompt = `あなたは給与計算ルール解析AIです。
+以下の自然言語の指示を解析し、給与計算ルールのJSON配列として返してください。
+
+指示: ${instruction}
+
+利用可能なルールタイプ:
+- perf_multiply: 業績係数を倍率で掛け算 (value: 倍率数値)
+- perf_set: 業績係数を固定値に設定 (value: 固定値)
+- allowance_add: 手当を加算 (value: 金額数値)
+
+targetフィールド:
+- "all": 全員
+- "dept:部署名": 特定部署
+- "name:氏名": 特定従業員
+- "pos:役職名": 特定役職
+
+必ずJSON配列のみ返してください（説明文・コードブロック不要）:
+[{"type":"perf_multiply","target":"dept:営業部","value":1.2,"label":"営業部×1.2倍"}]`;
+
+  const resp = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+    {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        contents: [{parts: [{text: prompt}]}],
+        generationConfig: {temperature: 0.1, maxOutputTokens: 1024}
+      })
+    }
+  );
+  if(!resp.ok){
+    const err = await resp.json().catch(()=>({}));
+    throw new Error(err?.error?.message || 'Gemini API エラー: '+resp.status);
   }
-  XLSX.utils.book_append_sheet(wb, ws, '給与明細');
-  // 条件シート
-  const cws = XLSX.utils.aoa_to_sheet([
-    ['項目','値'],['対象月',month],
-    ['健康保険料率',taxRates.hRate/100],['厚生年金料率',taxRates.pRate/100],
-    ['雇用保険料率',taxRates.eRate/100],['住民税率',taxRates.mRate/100],
-    ['出力日時',new Date().toLocaleString('ja-JP')]
-  ]);
-  XLSX.utils.book_append_sheet(wb, cws, '計算条件');
-  XLSX.writeFile(wb, `Salario_給与明細_${month||'未設定'}.xlsx`);
-  showToast('給与明細Excelをダウンロードしました','success');
-});
+  const data = await resp.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  const jsonStr = text.replace(/```json?|```/g,'').trim();
+  return JSON.parse(jsonStr);
+}
 
-// 給与台帳Excel
-document.getElementById('acBtnDlLedger')?.addEventListener('click',()=>{
-  if(!acResults.length){ showToast('先に計算を実行してください','error'); return; }
-  if(typeof XLSX==='undefined') return;
-  const month = document.getElementById('acTargetMonth')?.value||'';
+// ── フォールバックパーサー ──
+function acParseManual(instruction){
+  const rules=[], logs=['（パターンマッチで解析）'];
+  instruction.split('\n').forEach(line=>{
+    const m1=line.match(/([^\s]+[部課室]).*?(\d+\.?\d*)倍/);
+    if(m1) rules.push({type:'perf_multiply',target:'dept:'+m1[1],value:Number(m1[2]),label:m1[1]+'×'+m1[2]+'倍'});
+    const m2=line.match(/(全員|全社員).+?(\d{3,7})円/);
+    if(m2) rules.push({type:'allowance_add',target:'all',value:Number(m2[2]),label:'全員手当+'+m2[2]+'円'});
+    const m3=line.match(/(\d+\.?\d*)固定/);
+    if(m3) rules.push({type:'perf_set',target:'condition:特定条件',value:Number(m3[1]),label:'係数'+m3[1]+'固定'});
+    const m4=line.match(/最低.{0,8}(\d+\.?\d*)/);
+    if(m4) rules.push({type:'perf_set',target:'all',value:Number(m4[1]),label:'最低係数'+m4[1]});
+  });
+  return {rules, logs};
+}
+
+// ── STEP4: 出力 ──
+function acExportExcel(){
+  if(!acResults.length){ showToast('計算結果がありません','error'); return; }
+  if(typeof XLSX==='undefined'){ showToast('ライブラリ読み込み中','error'); return; }
+  const month = document.getElementById('acOutputMonth')?.value || '';
+  const hasBonus = acResults.some(e=>e.bonusGross>0);
+
+  const headers = ['氏名','部署','役職','基本給','業績係数','支給額','社会保険','所得税','住民税','手取り',...(hasBonus?['ボーナス支給','ボーナス手取り']:[])];
+  const rows = acResults.map(e=>[
+    e.name, e.dept||'', e.pos||'',
+    e.base, e.perf, e.gross,
+    e.insurance, e.tax, e.municipal||0, e.monthlyNet,
+    ...(hasBonus?[e.bonusGross||0, e.bonusNet||0]:[])
+  ]);
+
   const ws = XLSX.utils.aoa_to_sheet([
-    ['給与台帳', month],[''],
-    ['氏名','部署','支給額','社会保険料','所得税','住民税','手取り'],
-    ...acResults.map(e=>[e.name,e.dept||'',e.gross,e.insurance,e.tax,e.municipal,e.monthlyNet]),
-    [''],['合計','',
-      acResults.reduce((s,e)=>s+e.gross,0),acResults.reduce((s,e)=>s+e.insurance,0),
-      acResults.reduce((s,e)=>s+e.tax,0),acResults.reduce((s,e)=>s+e.municipal,0),
-      acResults.reduce((s,e)=>s+e.monthlyNet,0)
+    ['Salario 給与明細', month, ''],
+    ['健康保険率', taxRates.hRate/100, '厚生年金率', taxRates.pRate/100, '住民税率', taxRates.mRate/100],
+    [],
+    headers,
+    ...rows,
+    [],
+    ['合計','','',
+      acResults.reduce((a,e)=>a+e.base,0),'',
+      acResults.reduce((a,e)=>a+e.gross,0),
+      acResults.reduce((a,e)=>a+e.insurance,0),
+      acResults.reduce((a,e)=>a+e.tax,0),
+      acResults.reduce((a,e)=>a+(e.municipal||0),0),
+      acResults.reduce((a,e)=>a+e.monthlyNet,0),
     ]
   ]);
-  ws['!cols']=[{wch:14},{wch:10},{wch:12},{wch:12},{wch:10},{wch:10},{wch:14}];
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'給与台帳');
-  XLSX.writeFile(wb,`Salario_給与台帳_${month||'未設定'}.xlsx`);
-  showToast('給与台帳をダウンロードしました','success');
-});
+  ws['!cols'] = [12,10,8,12,8,12,10,10,10,12,12,12].map(w=>({wch:w}));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '給与明細');
+  XLSX.writeFile(wb, 'Salario_給与明細_'+(month||'output')+'.xlsx');
+  showToast('給与明細Excelを出力しました','success');
+}
 
-// 振込データCSV
-document.getElementById('acBtnDlTransfer')?.addEventListener('click',()=>{
-  if(!acResults.length){ showToast('先に計算を実行してください','error'); return; }
-  const month = document.getElementById('acTargetMonth')?.value||'';
-  const bom='﻿';
-  const rows=[['氏名','口座銀行名','口座支店名','口座番号','振込金額'],
-    ...acResults.map(e=>[e.name,e.bank||'',e.branch||'',e.account||'',e.monthlyNet])];
-  const blob=new Blob([bom+rows.map(r=>r.join(',')).join('
-')],{type:'text/csv;charset=utf-8'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=`Salario_振込データ_${month||'未設定'}.csv`;
-  a.click();
-  showToast('振込データCSVをダウンロードしました','success');
-});
+function acExportLedger(){
+  if(!acResults.length){ showToast('計算結果がありません','error'); return; }
+  if(typeof XLSX==='undefined'){ showToast('ライブラリ読み込み中','error'); return; }
+  const month = document.getElementById('acOutputMonth')?.value || '';
+  const ws = XLSX.utils.aoa_to_sheet([
+    ['氏名','部署','支給額','社会保険','所得税','住民税','手取り'],
+    ...acResults.map(e=>[e.name,e.dept||'',e.gross,e.insurance,e.tax,e.municipal,e.monthlyNet]),
+    ['合計','',
+      acResults.reduce((a,e)=>a+e.gross,0),
+      acResults.reduce((a,e)=>a+e.insurance,0),
+      acResults.reduce((a,e)=>a+e.tax,0),
+      acResults.reduce((a,e)=>a+(e.municipal||0),0),
+      acResults.reduce((a,e)=>a+e.monthlyNet,0)
+    ]
+  ]);
+  ws['!cols'] = [14,10,12,12,10,10,12].map(w=>({wch:w}));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '給与台帳');
+  XLSX.writeFile(wb, 'Salario_給与台帳_'+(month||'output')+'.xlsx');
+  showToast('給与台帳を出力しました','success');
+}
 
-// リスタート
-document.getElementById('acBtnRestart')?.addEventListener('click',()=>{
-  acExcelHeaders=[]; acExcelRows=[]; acColMapping={}; acResults=[];
+function acExportCSV(){
+  if(!acResults.length){ showToast('計算結果がありません','error'); return; }
+  const month = document.getElementById('acOutputMonth')?.value || '';
+  const headers = ['氏名','部署','基本給','支給額','社会保険','所得税','住民税','手取り'];
+  const rows = acResults.map(e=>[e.name,e.dept||'',e.base,e.gross,e.insurance,e.tax,e.municipal||0,e.monthlyNet]);
+  const bom = '\uFEFF';
+  const csv = bom + [headers,...rows].map(r=>r.join(',')).join('\r\n');
+  const blob = new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download='Salario_給与_'+(month||'output')+'.csv';
+  a.click(); URL.revokeObjectURL(url);
+  showToast('CSVを出力しました','success');
+}
+
+function acExportTransfer(){
+  if(!acResults.length){ showToast('計算結果がありません','error'); return; }
+  const month = document.getElementById('acOutputMonth')?.value || '';
+  const headers = ['氏名','銀行名','振込金額'];
+  const rows = acResults.map(e=>[e.name,e.bank||'',e.monthlyNet]);
+  const bom = '\uFEFF';
+  const csv = bom + [headers,...rows].map(r=>r.join(',')).join('\r\n');
+  const blob = new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download='Salario_振込_'+(month||'output')+'.csv';
+  a.click(); URL.revokeObjectURL(url);
+  showToast('振込リストを出力しました','success');
+}
+
+// ── リセット ──
+function acReset(){
+  acStep=1; acExcelHeaders=[]; acExcelRows=[]; acColMapping={}; acResults=[];
+  const nameEl=document.getElementById('acFileName');
+  const nextBtn=document.getElementById('acBtnToStep2');
+  const previewEl=document.getElementById('acPreviewTable');
+  const aiInst=document.getElementById('acAiInstruction');
+  const logEl=document.getElementById('acAiLog');
   const dz=document.getElementById('acDropzone');
-  if(dz){ dz.className=''; dz.style.cssText='border:2px dashed var(--border);border-radius:var(--radius-lg);padding:2rem 1.5rem;text-align:center;cursor:pointer;transition:all var(--t);background:var(--surface-sub);position:relative'; }
-  document.getElementById('acDropzoneIcon').textContent='📊';
-  document.getElementById('acDropzoneTitle').textContent='Excelファイルをドロップ、またはクリックして選択';
-  document.getElementById('acDropzoneSub').textContent='.xlsx / .xls / .csv 対応';
-  document.getElementById('acMappingPanel').style.display='none';
-  document.getElementById('acBtnGoStep4').disabled=true;
-  const ta=document.getElementById('acAiInstruction'); if(ta) ta.value='';
-  document.getElementById('acResultPanel').style.display='none';
-  document.getElementById('acStep4Btns').style.display='none';
-  const fi=document.getElementById('acFileInput'); if(fi) fi.value='';
+  if(nameEl) nameEl.textContent='';
+  if(nextBtn) nextBtn.disabled=true;
+  if(previewEl) previewEl.innerHTML='';
+  if(aiInst) aiInst.value='';
+  if(logEl){ logEl.style.display='none'; logEl.innerHTML=''; }
+  if(dz) dz.className='ac-dropzone';
   acGoStep(1);
+}
+
+// ── イベントバインド（DOM準備後）──
+document.addEventListener('DOMContentLoaded',()=>{
+
+  // ── Gemini APIキーUI ──
+  const keyInput = document.getElementById('acGeminiKey');
+  const savedKey = acLoadKey();
+  if(keyInput && savedKey){
+    keyInput.value = savedKey;
+    acShowKeyStatus('✅ APIキーが保存されています', true);
+  }
+  document.getElementById('acBtnSaveKey')?.addEventListener('click',()=>{
+    const key = document.getElementById('acGeminiKey')?.value?.trim();
+    if(!key){ acShowKeyStatus('❌ キーを入力してください', false); return; }
+    if(!key.startsWith('AIza')){ acShowKeyStatus('⚠ Google AI StudioのAPIキーは "AIza" で始まります', false); return; }
+    acSaveKey(key);
+    acShowKeyStatus('✅ 保存しました', true);
+  });
+  document.getElementById('acBtnClearKey')?.addEventListener('click',()=>{
+    acClearKey();
+    if(document.getElementById('acGeminiKey')) document.getElementById('acGeminiKey').value='';
+    acShowKeyStatus('🗑 削除しました', false);
+  });
+
+  // ドロップゾーン
+  const dz = document.getElementById('acDropzone');
+  const fi = document.getElementById('acFileInput');
+  if(dz && fi){
+    dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag');});
+    dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+    dz.addEventListener('drop',e=>{
+      e.preventDefault(); dz.classList.remove('drag');
+      const file=e.dataTransfer.files[0]; if(file) acHandleFile(file);
+    });
+    dz.addEventListener('click',()=>fi.click());
+    fi.addEventListener('change',e=>{const f=e.target.files[0];if(f)acHandleFile(f);e.target.value='';});
+  }
+
+  // ステップナビ
+  document.getElementById('acBtnToStep2')?.addEventListener('click',()=>{
+    acInitStep2(); acGoStep(2);
+  });
+  document.getElementById('acBtnBackStep1')?.addEventListener('click',()=>acGoStep(1));
+  document.getElementById('acBtnToStep3')?.addEventListener('click',()=>{
+    if(acSaveMapping()){ acInitStep3(); acGoStep(3); }
+  });
+  document.getElementById('acBtnBackStep2')?.addEventListener('click',()=>acGoStep(2));
+  document.getElementById('acBtnToCalc')?.addEventListener('click',()=>acGoStep(3));
+  document.getElementById('acBtnCalc')?.addEventListener('click',acRunCalc);
+  document.getElementById('acBtnBackStep3')?.addEventListener('click',()=>acGoStep(3));
+  document.getElementById('acBtnReset')?.addEventListener('click',acReset);
+
+  // 出力ボタン
+  document.getElementById('acBtnExportExcel')?.addEventListener('click',acExportExcel);
+  document.getElementById('acBtnExportLedger')?.addEventListener('click',acExportLedger);
+  document.getElementById('acBtnExportCSV')?.addEventListener('click',acExportCSV);
+  document.getElementById('acBtnExportTransfer')?.addEventListener('click',acExportTransfer);
+
+  // AI指示サンプル
+  document.querySelectorAll('.ac-ai-ex').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const ta=document.getElementById('acAiInstruction');
+      if(!ta) return;
+      const curr=ta.value.trim();
+      ta.value = curr ? curr+'\n'+el.dataset.text : el.dataset.text;
+    });
+  });
+
+  // ボーナス方法切替
+  document.querySelectorAll('[name="acBonusMethodRadio"]').forEach(sel=>{
+    sel.addEventListener('change',e=>{
+      const label=document.getElementById('acBonusParamLabel');
+      const input=document.getElementById('acBonusParam');
+      if(e.target.value==='mag'){
+        if(label) label.textContent='ボーナス倍率（月数）';
+        if(input) input.value='2.0';
+      } else if(e.target.value==='perf'){
+        if(label) label.textContent='基準月数（係数連動）';
+        if(input) input.value='2.0';
+      } else {
+        if(label) label.textContent='（ボーナスなし）';
+        if(input) input.value='0';
+      }
+    });
+  });
 });
+
+// グローバル登録
+window.acInitStep1 = acInitStep1;
+window.acGoStep    = acGoStep;
 
 </script>
 </body>
