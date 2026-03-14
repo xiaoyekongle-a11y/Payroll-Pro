@@ -1598,18 +1598,6 @@ body.dark .hoshu-tbl tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
         </div>
       </div>
     </div>
-  </div>
-</div>
-<div class="modal-overlay" id="modalOverlay">
-  <div class="modal">
-    <div class="modal-title" id="modalTitle"></div>
-    <div class="modal-body" id="modalBody"></div>
-    <div class="modal-actions">
-      <button class="btn btn-secondary" id="modalCancel">キャンセル</button>
-      <button class="btn btn-danger" id="modalConfirm">実行</button>
-    </div>
-  </div>
-</div>
 
   <!-- ══════════════════════════════════════════════════════
        AutoCalc — Excel→AI→Excel 給与自動計算
@@ -1829,6 +1817,18 @@ body.dark .hoshu-tbl tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
     </div>
 
   </div><!-- /pageAutocalc -->
+  </div>
+</div>
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle"></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="modalCancel">キャンセル</button>
+      <button class="btn btn-danger" id="modalConfirm">実行</button>
+    </div>
+  </div>
+</div>
 
 <div id="printArea"></div>
 
@@ -5220,18 +5220,28 @@ function acShowResults(aiN, aiLogs){
 
 // ── Gemini APIプロキシ経由呼び出し（APIキーはサーバー管理）──
 async function acCallAI(instruction){
-  const resp = await fetch('/api/ai', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ instruction }),
-  });
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    throw new Error(err?.error || 'サーバーエラー: ' + resp.status);
+  const controller = new AbortController();
+  const tid = setTimeout(() => controller.abort(), 20000); // 20秒タイムアウト
+  try {
+    const resp = await fetch('/api/ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ instruction }),
+      signal: controller.signal,
+    });
+    clearTimeout(tid);
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err?.error || `APIエラー (${resp.status})`);
+    }
+    const data = await resp.json();
+    if (!Array.isArray(data.rules)) throw new Error('レスポンス形式エラー');
+    return data.rules;
+  } catch(e) {
+    clearTimeout(tid);
+    if (e.name === 'AbortError') throw new Error('AIリクエストがタイムアウトしました。再度お試しください。');
+    throw e;
   }
-  const data = await resp.json();
-  if (!data.rules) throw new Error('レスポンス形式エラー');
-  return data.rules;
 }
 
 // ── フォールバックパーサー ──
