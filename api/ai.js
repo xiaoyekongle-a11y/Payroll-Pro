@@ -1,56 +1,41 @@
-export const config = { runtime: 'edge' };
+module.exports = async function handler(req, res) {
+  res.setHeader('Content-Type', 'application/json');
 
-export default async function handler(req) {
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'API key not configured' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return res.status(500).json({ error: 'API key not configured' });
   }
 
-  let body;
-  try {
-    body = await req.json();
-  } catch {
-    return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
+  let body = req.body;
+  // body-parserが効いていない場合は手動でパース
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch { return res.status(400).json({ error: 'Invalid JSON' }); }
+  }
+  if (!body) {
+    return res.status(400).json({ error: 'Empty body' });
   }
 
   const { instruction } = body;
   if (!instruction || typeof instruction !== 'string') {
-    return new Response(JSON.stringify({ error: 'instruction is required' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return res.status(400).json({ error: 'instruction is required' });
   }
 
-  const prompt = `あなたは給与計算ルール解析AIです。
-以下の自然言語の指示を解析し、給与計算ルールのJSON配列として返してください。
+  const prompt = `給与計算ルールをJSON配列で返してください。
 
 指示: ${instruction}
 
-利用可能なルールタイプ:
-- perf_multiply: 業績係数を倍率で掛け算 (value: 倍率数値)
-- perf_set: 業績係数を固定値に設定 (value: 固定値)
-- allowance_add: 手当を加算 (value: 金額数値)
+ルールタイプ:
+- perf_multiply: 業績係数を倍率で掛け算 (value: 数値)
+- perf_set: 業績係数を固定値に設定 (value: 数値)
+- allowance_add: 手当を加算 (value: 金額)
 
-targetフィールド:
-- "all": 全員
-- "dept:部署名": 特定部署
-- "name:氏名": 特定従業員
-- "pos:役職名": 特定役職
+target: "all"=全員, "dept:部署名", "name:氏名", "pos:役職名"
 
-必ずJSON配列のみ返してください（説明文・コードブロック不要）:
+JSON配列のみ返すこと（説明文不要）:
 [{"type":"perf_multiply","target":"dept:営業部","value":1.2,"label":"営業部×1.2倍"}]`;
 
   try {
@@ -65,39 +50,38 @@ targetフィールド:
         messages: [
           {
             role: 'system',
-            content: '給与計算ルール解析AIです。指示をJSON配列のみで返します。説明文やコードブロックは不要です。',
+            content: 'You are a payroll rule parser. Return ONLY a valid JSON array. No explanation, no markdown, no code blocks. Just the raw JSON array.',
           },
           { role: 'user', content: prompt },
         ],
-        temperature: 0.1,
-        max_tokens: 1024,
+        temperature: 0.0,
+        max_tokens: 512,
       }),
     });
 
     if (!groqRes.ok) {
       const err = await groqRes.json().catch(() => ({}));
-      return new Response(
-        JSON.stringify({ error: err?.error?.message || 'Groq API error: ' + groqRes.status }),
-        { status: groqRes.status, headers: { 'Content-Type': 'application/json' } }
-      );
+      return res.status(groqRes.status).json({
+        error: err?.error?.message || 'Groq API error: ' + groqRes.status
+      });
     }
 
     const data = await groqRes.json();
-    const text = data?.choices?.[0]?.message?.content || '';
-    // JSON配列部分だけ抽出（前後の説明文・コードブロックを除去）
-    const jsonStr = text.replace(/```json?|```/g, '').trim();
-    const match = jsonStr.match(/\[[\s\S]*\]/);
-    if (!match) throw new Error('AI response did not contain a JSON array');
-    const rules = JSON.parse(match[0]);
+    const text = (data?.choices?.[0]?.message?.content || '').trim();
 
-    return new Response(JSON.stringify({ rules }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    // JSON配列部分のみ抽出
+    const cleaned = text.replace(/```json?|```/g, '').trim();
+    const match = cleaned.match(/\[[\s\S]*?\]/);
+    if (!match) {
+      console.error('[AI] No JSON array in response:', text);
+      return res.status(500).json({ error: 'AI did not return a valid JSON array' });
+    }
+
+    const rules = JSON.parse(match[0]);
+    return res.status(200).json({ rules });
+
   } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    console.error('[AI] error:', e.message);
+    return res.status(500).json({ error: e.message });
   }
-}
+};
