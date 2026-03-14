@@ -2548,7 +2548,7 @@ function startEdit(id){
   $('roundMode').value=emp.rm;$('empStatus').value=emp.status||'calc';
   allowances=JSON.parse(JSON.stringify(emp.allowances||[]));
   renderAllowanceList();showEditMode(true);showPage('payroll');
-  window.scrollTo({top:0,behavior:'smooth'});triggerAutoCalc();
+  const _pe=document.getElementById('pages');if(_pe)_pe.scrollTop=0;triggerAutoCalc();
 }
 function getAllowanceTotal(){return allowances.reduce((s,a)=>s+(Number(a.amount)||0),0);}
 function handleAdd(){
@@ -3212,7 +3212,9 @@ function showPage(id){
   if(pageEl) pageEl.classList.add('active');
   document.querySelector(`[data-page="${id}"]`)?.classList.add('active');
   // ページ切替時にトップへ
-  window.scrollTo({top:0,behavior:'instant'});
+  const pagesEl = document.getElementById('pages');
+  if(pagesEl) pagesEl.scrollTop = 0;
+  else window.scrollTo({top:0,behavior:'instant'});
   if(id==='attendance')renderAttCalendar();
   if(id==='yearend')renderYearendList();
   if(id==='transfer')renderTransferList();
@@ -4797,7 +4799,9 @@ function acGoStep(n){
     if(stepEl) stepEl.className = 'ac-step' + (i<n?' done':i===n?' active':'');
   });
   acStep = n;
-  window.scrollTo({top:0, behavior:'instant'});
+  const pagesEl = document.getElementById('pages');
+  if(pagesEl) pagesEl.scrollTop = 0;
+  else window.scrollTo({top:0, behavior:'instant'});
 }
 
 // ── 設定の保存・復元 ──
