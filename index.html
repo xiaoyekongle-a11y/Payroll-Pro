@@ -2122,17 +2122,26 @@ function showAuthErr(id,msg){
 }
 
 // Supabase認証エラーを日本語化するヘルパー
-function authErrMsg(msg) {
+function authErrMsg(err) {
+  // errはstringまたはErrorオブジェクト、またはSupabaseのerrorオブジェクトの可能性がある
+  const msg = (typeof err === 'string' ? err : err?.message || err?.error_description || '') || '';
   if(!msg) return '不明なエラーが発生しました';
-  if(msg.includes('Invalid login credentials'))     return 'メールアドレスまたはパスワードが正しくありません';
-  if(msg.includes('Email not confirmed'))           return 'メールアドレスの確認が完了していません。受信トレイをご確認ください';
-  if(msg.includes('User already registered'))       return 'このメールアドレスは既に登録されています。ログインをお試しください';
-  if(msg.includes('Password should be at least'))  return 'パスワードは6文字以上にしてください';
-  if(msg.includes('Unable to validate email'))      return 'メールアドレスの形式が正しくありません';
-  if(msg.includes('signup_disabled'))               return '現在新規登録は無効です。管理者にお問い合わせください';
-  if(msg.includes('over_email_send_rate_limit'))    return 'メール送信の上限に達しました。しばらく待ってから再試行してください';
-  if(msg.includes('Network'))                       return 'ネットワークエラーが発生しました。接続を確認してください';
-  return msg;
+  const m = msg.toLowerCase();
+  if(m.includes('invalid login credentials'))      return 'メールアドレスまたはパスワードが正しくありません';
+  if(m.includes('email not confirmed'))            return 'メールアドレスの確認が完了していません。受信トレイをご確認ください';
+  if(m.includes('user already registered') ||
+     m.includes('already been registered') ||
+     m.includes('email already') ||
+     m.includes('already registered'))             return 'このメールアドレスは既に登録されています。ログインをお試しください';
+  if(m.includes('password should be at least') ||
+     m.includes('password is too short'))          return 'パスワードは6文字以上にしてください';
+  if(m.includes('unable to validate email') ||
+     m.includes('invalid email'))                  return 'メールアドレスの形式が正しくありません';
+  if(m.includes('signup_disabled'))                return '現在新規登録は無効です。管理者にお問い合わせください';
+  if(m.includes('over_email_send_rate_limit') ||
+     m.includes('rate limit'))                     return 'メール送信の上限に達しました。しばらく待ってから再試行してください';
+  if(m.includes('network') || m.includes('fetch')) return 'ネットワークエラーが発生しました。接続を確認してください';
+  return msg || '不明なエラーが発生しました';
 }
 
 $('btnLogin').addEventListener('click',async()=>{
@@ -2205,94 +2214,125 @@ $('btnRegister').addEventListener('click',async()=>{
 });
 
 $('btnJoin').addEventListener('click',async()=>{
-  const uName=$('joinUserName').value.trim()||'User';
-  const email=$('joinEmail').value.trim(),pass=$('joinPass').value;
-  const code=$('joinCode').value.trim().toUpperCase();
-  if(!code){showAuthErr('joinErr','招待コードを入力してください');return;}
-  if(!email){showAuthErr('joinErr','メールアドレスを入力してください');return;}
-  if(pass.length<6){showAuthErr('joinErr','パスワードは6文字以上にしてください');return;}
-  const btn=$('btnJoin');
-  if(btn.disabled)return;
-  btn.disabled=true;btn.textContent='コード確認中...';
+  const uName = $('joinUserName').value.trim() || 'User';
+  const email = $('joinEmail').value.trim();
+  const pass  = $('joinPass').value;
+  const code  = $('joinCode').value.trim().toUpperCase();
 
-  // ── 手順1: まず新規登録 or ログインを試みる ──
-  let uid=null;
-  let isExistingUser=false;
+  // ── バリデーション ──
+  if(!code)  { showAuthErr('joinErr','招待コードを入力してください'); return; }
+  if(!email) { showAuthErr('joinErr','メールアドレスを入力してください'); return; }
+  if(pass.length < 6) { showAuthErr('joinErr','パスワードは6文字以上にしてください'); return; }
 
-  // 新規登録を試みる
-  const{data:signUpData,error:signUpErr}=await sb.auth.signUp({email,password:pass,options:{data:{name:uName}}});
-  if(signUpErr){
-    // 既にアカウントがある場合（422またはalready registeredメッセージ）はログインを試みる
+  const btn = $('btnJoin');
+  if(btn.disabled) return;
+  btn.disabled = true;
+  btn.textContent = 'コード確認中...';
+
+  // ── Step 1: 招待コード確認（認証前に必ず先に確認）──
+  // ※ companiesテーブルのinvite_codeはanonキーで参照できるようRLSを設定する必要あり
+  const company = await dbGet('companies', { invite_code: code });
+  if(!company) {
+    btn.disabled = false; btn.textContent = '参加する';
+    showAuthErr('joinErr', '招待コードが無効です。オーナーに確認してください');
+    return;
+  }
+
+  btn.textContent = 'アカウント処理中...';
+
+  // ── Step 2: アカウント作成 or ログイン ──
+  let uid = null;
+  let isExistingUser = false;
+
+  const { data: signUpData, error: signUpErr } = await sb.auth.signUp({
+    email, password: pass,
+    options: { data: { name: uName } }
+  });
+
+  if(signUpErr) {
+    // 422 または already registered → 既存アカウント → ログインを試みる
     const isExisting =
-      signUpErr.status===422 ||
-      signUpErr.message?.toLowerCase().includes('already registered') ||
-      signUpErr.message?.toLowerCase().includes('already been registered') ||
-      signUpErr.message?.toLowerCase().includes('email already') ||
-      signUpErr.message?.toLowerCase().includes('user already');
-    if(isExisting){
-      const{data:loginData,error:loginErr}=await sb.auth.signInWithPassword({email,password:pass});
-      if(loginErr){
-        btn.disabled=false;btn.textContent='参加する';
-        showAuthErr('joinErr','このメールアドレスは既に登録されています。パスワードを確認してください');
+      signUpErr.status === 422 ||
+      signUpErr.status === 400 ||
+      authErrMsg(signUpErr).includes('既に登録') ||
+      (signUpErr.message||'').toLowerCase().includes('already') ||
+      (signUpErr.message||'').toLowerCase().includes('registered');
+
+    if(isExisting) {
+      const { data: loginData, error: loginErr } = await sb.auth.signInWithPassword({ email, password: pass });
+      if(loginErr) {
+        btn.disabled = false; btn.textContent = '参加する';
+        showAuthErr('joinErr', 'このメールアドレスは既に登録されています。正しいパスワードを入力してください');
         return;
       }
-      uid=loginData.user?.id;
-      isExistingUser=true;
+      uid = loginData.user?.id;
+      isExistingUser = true;
     } else {
-      btn.disabled=false;btn.textContent='参加する';
-      showAuthErr('joinErr',authErrMsg(signUpErr.message));
+      btn.disabled = false; btn.textContent = '参加する';
+      showAuthErr('joinErr', authErrMsg(signUpErr));
       return;
     }
   } else {
-    uid=signUpData.user?.id;
+    // 新規登録成功
+    // ⚠ メール確認が必要な設定の場合、user.idは返るがセッションはnullになる
+    uid = signUpData.user?.id;
+    if(!uid) {
+      // メール確認が必要なケース → uidなしでは参加処理できないため
+      // 一時的にサインインを試みる（パスワードが合っていれば通ることがある）
+      const { data: loginData } = await sb.auth.signInWithPassword({ email, password: pass }).catch(() => ({}));
+      uid = loginData?.user?.id;
+    }
   }
 
-  if(!uid){btn.disabled=false;btn.textContent='参加する';showAuthErr('joinErr','ユーザー登録に失敗しました');return;}
-
-  btn.textContent='会社を検索中...';
-
-  // ── 手順2: ログイン後に招待コードで会社を検索（RLS通過）──
-  const company=await dbGet('companies',{invite_code:code});
-  if(!company){
-    // ログイン済みの場合はサインアウトしない（既存ユーザーのまま）
-    if(!isExistingUser) await sb.auth.signOut();
-    btn.disabled=false;btn.textContent='参加する';
-    showAuthErr('joinErr','招待コードが無効です。再確認してください');
+  if(!uid) {
+    btn.disabled = false; btn.textContent = '参加する';
+    showAuthErr('joinErr', 'アカウントの処理に失敗しました。メール確認が必要な場合は確認後にログインしてください');
     return;
   }
 
-  // ── 手順3: company_usersに追加 ──
-  btn.textContent='参加中...';
-  const ex=await dbGet('company_users',{company_id:company.id,user_id:uid});
-  if(ex){
-    // 既に参加済み
-    btn.disabled=false;btn.textContent='参加する';
-    showToast(`「${esc(company.name)}」には既に参加しています。ログインしてください。`,'success');
-    if(!isExistingUser) await sb.auth.signOut();
+  btn.textContent = '参加中...';
+
+  // ── Step 3: company_usersに追加（重複チェック付き）──
+  const existing = await dbGet('company_users', { company_id: company.id, user_id: uid });
+  if(existing) {
+    // 既に参加済み → そのままログイン状態にして会社リストへ
+    btn.disabled = false; btn.textContent = '参加する';
+    showToast(`「${esc(company.name)}」には既に参加しています`, 'success');
+    if(isExistingUser) {
+      await loadCompanyList(uid);
+    } else {
+      showToast('ログインしてください', '');
+      await sb.auth.signOut();
+    }
     return;
   }
-  const{error:insertErr}=await sb.from('company_users').insert({
-    company_id:company.id,user_id:uid,name:uName,role:'editor',
-    joined_at:new Date().toISOString()
+
+  const { error: insertErr } = await sb.from('company_users').insert({
+    company_id: company.id,
+    user_id:    uid,
+    name:       uName,
+    role:       'editor',
+    joined_at:  new Date().toISOString(),
   });
-  if(insertErr){
-    console.warn('[PA] company_users insert error:', insertErr.message);
-    btn.disabled=false;btn.textContent='参加する';
-    showAuthErr('joinErr','会社への参加処理に失敗しました: '+insertErr.message);
+
+  if(insertErr) {
+    console.error('[PA] company_users insert:', insertErr);
+    btn.disabled = false; btn.textContent = '参加する';
+    showAuthErr('joinErr', '会社への参加処理に失敗しました: ' + (insertErr.message || ''));
     if(!isExistingUser) await sb.auth.signOut();
     return;
   }
 
-  btn.disabled=false;btn.textContent='参加する';
+  btn.disabled = false; btn.textContent = '参加する';
 
-  if(isExistingUser){
-    // 既存ユーザーはログイン済みなのでそのまま会社リストを再読み込み
-    showToast(`「${esc(company.name)}」に参加しました！`,'success');
+  if(isExistingUser) {
+    // 既存ユーザーはログイン済みなのでそのまま会社リストへ
+    showToast(`「${esc(company.name)}」に参加しました！`, 'success');
     await loadCompanyList(uid);
   } else {
-    // 新規ユーザーはメール確認が必要な場合があるためサインアウト
-    showToast(`「${esc(company.name)}」に参加しました！ログインしてください。`,'success');
+    // 新規ユーザー → メール確認が必要な場合があるのでサインアウト
     await sb.auth.signOut();
+    showToast(`「${esc(company.name)}」に参加しました！ログインしてください。`, 'success');
   }
 });
 
@@ -2329,22 +2369,22 @@ function showScreen(id){
   $(id).classList.add('active');
 }
 
-async function loadCompanyList(uid){
+async function loadCompanyList(uid, retryCount=0){
   const members=await dbGetAll('company_users',{user_id:uid});
   if(!members.length){
+    // ── RLS遅延リトライ（招待参加直後にRLSがまだ反映されていないケース）──
+    if(retryCount < 3){
+      await new Promise(r=>setTimeout(r, 800 * (retryCount + 1)));
+      return loadCompanyList(uid, retryCount + 1);
+    }
     // pending_company があれば自動で会社作成を試みる
-    // （signUpしたがcreateCompanyが失敗していた場合のリカバリ）
     const pendingCo=currentUser&&(await sb.auth.getUser())?.data?.user?.user_metadata?.pending_company;
     if(pendingCo){
       showToast('会社を自動作成しています...','');
       const ok=await createCompany(uid,pendingCo,currentUser.name||'Owner');
       if(ok!==false){
-        // 作成成功→再度リストを取得
         const retry=await dbGetAll('company_users',{user_id:uid});
-        if(retry.length){
-          // 再帰せず直接続きを実行するため再代入
-          members.push(...retry);
-        }
+        if(retry.length){ members.push(...retry); }
       }
     }
     // それでも0件ならsetupScreenへ
