@@ -72,6 +72,7 @@
   /* アニメーション */
   --transition:0.14s ease;
   --transition-slow:0.24s ease;
+  --t:0.14s ease;
 
   /* レイアウト */
   --header-h:48px;
@@ -322,6 +323,7 @@ body.dark .nav-tabs{background:var(--surface)}
 /* ===== PAGE CONTENT ===== */
 .page{
   display:none;padding:1.5rem;max-width:1240px;margin:0 auto;width:100%;
+  min-height:calc(100vh - var(--header-h) - var(--nav-h));
 }
 .page.active{
   display:block;
@@ -1168,9 +1170,15 @@ body.dark .hoshu-tbl tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
     <div class="nav-tab owner-only" data-page="users">ユーザー管理</div>
     <div class="nav-tab owner-only" data-page="settings">会社設定</div>
   </nav>
-  <div id="pages" style="flex:1">
+  <div id="pages" style="flex:1;overflow-y:auto;">
     <div class="page active" id="pageDashboard">
-      <div class="stat-grid" id="dashStats"></div>
+      <div class="stat-grid" id="dashStats">
+        <!-- ローディングスケルトン -->
+        <div class="stat-card" style="opacity:0.4"><div class="stat-label">読み込み中...</div><div class="stat-value">—</div></div>
+        <div class="stat-card" style="opacity:0.4"><div class="stat-label">読み込み中...</div><div class="stat-value">—</div></div>
+        <div class="stat-card" style="opacity:0.4"><div class="stat-label">読み込み中...</div><div class="stat-value">—</div></div>
+        <div class="stat-card" style="opacity:0.4"><div class="stat-label">読み込み中...</div><div class="stat-value">—</div></div>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
         <div class="panel"><div class="panel-header">📊 今月の予実管理</div><div class="panel-body" id="dashBudget"></div></div>
         <div class="panel"><div class="panel-header">⚠️ 扶養の壁アラート</div><div class="panel-body" id="dashWall"></div></div>
@@ -5083,14 +5091,20 @@ async function acRunCalc(){
     }
     if(applied) aiAffected++;
 
-    // 業績係数クランプ
-    if(perfMethod==='clamp') perf = Math.min(perfMax, Math.max(perfMin, perf));
+    // 業績係数の処理（perfMethod: 'direct'=そのまま, 'score'=正規化, 'rank'=順位変換）
+    // direct: 名簿の値をそのまま使用（クランプのみ）
+    // score/rank: 全員分揃わないと正規化できないので後処理。ここでは範囲クランプのみ
+    perf = Math.min(perfMax, Math.max(perfMin, perf));
 
-    // ボーナス倍率
+    // ボーナス倍率（HTMLのselectのvalueと一致させる）
     let mag = 0;
-    if(bonusTarget==='all' || (bonusTarget==='calc' && applied)){
-      if(bonusMethod==='mag') mag = bonusParam;
-      else if(bonusMethod==='perf') mag = perf * bonusParam;
+    // bonusTarget: 'both'=月給+ボーナス全員, 'monthly'=月給のみ, 'bonus'=ボーナスのみ
+    const calcBonus = bonusTarget === 'both' || bonusTarget === 'bonus';
+    if(calcBonus){
+      // bonusMethod: 'multiplier'=基本給×倍率, 'fixed_pool'=プール分配, 'none'=なし
+      if(bonusMethod === 'multiplier') mag = bonusParam;
+      else if(bonusMethod === 'fixed_pool') mag = perf * bonusParam;
+      else mag = 0; // 'none'
     }
 
     const tr = typeof taxRates!=='undefined' ? taxRates : {hRate:5,pRate:9,eRate:0.6,mRate:10};
@@ -5150,10 +5164,13 @@ function acMatchTarget(target, emp){
 
 function acShowResults(aiN, aiLogs){
   const container = document.getElementById('acResultSummary');
+  const tableWrap  = document.getElementById('acResultTable');
   if(!container) return;
   const tG = acResults.reduce((a,e)=>a+e.gross,0);
   const tN = acResults.reduce((a,e)=>a+e.monthlyNet,0);
   const tI = acResults.reduce((a,e)=>a+e.insurance,0);
+
+  // サマリーカード
   container.innerHTML = `
     <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));margin-bottom:0.75rem">
       <div class="stat-card"><div class="stat-label">計算人数</div><div class="stat-value blue">${acResults.length}名</div></div>
@@ -5161,8 +5178,11 @@ function acShowResults(aiN, aiLogs){
       <div class="stat-card"><div class="stat-label">手取り合計</div><div class="stat-value green">${fmtY(tN)}</div></div>
       <div class="stat-card"><div class="stat-label">社保合計</div><div class="stat-value accent">${fmtY(tI)}</div></div>
       ${aiN>0?`<div class="stat-card" style="border-left:3px solid var(--gold)"><div class="stat-label">AI調整</div><div class="stat-value" style="color:var(--gold)">${aiN}名</div><div class="stat-sub">指示で調整済</div></div>`:''}
-    </div>
-    <div class="tbl-wrap">
+    </div>`;
+
+  // 結果テーブル（acResultTableに分離）
+  if(tableWrap){
+    tableWrap.innerHTML = `
       <table class="data-tbl">
         <thead><tr><th>氏名</th><th>部署</th><th>基本給</th><th>係数</th><th>支給額</th><th>手取り</th><th>AI調整</th></tr></thead>
         <tbody>${acResults.map(e=>`
@@ -5175,8 +5195,8 @@ function acShowResults(aiN, aiLogs){
             <td style="text-align:center">${e.aiApplied?'<span class="badge badge-calc">適用</span>':''}</td>
           </tr>`).join('')}
         </tbody>
-      </table>
-    </div>`;
+      </table>`;
+  }
 
   // パネルと「出力へ」ボタンを表示
   const resultPanel = document.getElementById('acResultPanel');
