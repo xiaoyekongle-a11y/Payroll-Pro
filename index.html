@@ -2161,13 +2161,13 @@ $('btnLogin').addEventListener('click',async()=>{
     showAuthErr('loginErr', authErrMsg(error.message));
   } else {
     btn.textContent='接続中...';
-    // 5秒以内に画面遷移しなければボタンを復元（固まり防止）
+    // 10秒以内に画面遷移しなければボタンを復元（固まり防止）
     setTimeout(()=>{
       if(btn.disabled){
         btn.disabled=false;btn.textContent='ログイン';
         showAuthErr('loginErr','接続がタイムアウトしました。再度お試しください。');
       }
-    },5000);
+    },10000);
   }
 });
 
@@ -4104,12 +4104,16 @@ const { data: { subscription } } = sb.auth.onAuthStateChange(async (event, sessi
     return;
   }
 
-  // TOKEN_REFRESHED は画面遷移済みなら無視してOK
+  // TOKEN_REFRESHED は画面遷移済みなら無視
   if (event === 'TOKEN_REFRESHED') return;
 
-  // 同じユーザーで処理中 or 処理済みならスキップ（二重処理防止）
+  // 処理中のみスキップ（同じユーザーの再ログインは通す）
+  if (_isHandlingAuth) return;
+
+  // appScreenが既に表示されていて同じユーザーならスキップ
   const uid = session.user.id;
-  if (_isHandlingAuth || _lastHandledUserId === uid) return;
+  const appVisible = document.getElementById('appScreen')?.classList.contains('active');
+  if (appVisible && _lastHandledUserId === uid) return;
 
   _isHandlingAuth = true;
   _lastHandledUserId = uid;
@@ -4120,7 +4124,6 @@ const { data: { subscription } } = sb.auth.onAuthStateChange(async (event, sessi
     await loadCompanyList(user.id);
   } catch(e) {
     console.error('[PA] auth handler error:', e);
-    // 失敗時はリセットしてリトライ可能に
     _lastHandledUserId = null;
     const btn = $('btnLogin');
     if(btn){ btn.disabled = false; btn.textContent = 'ログイン'; }
