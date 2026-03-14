@@ -1062,6 +1062,7 @@ body.dark .hoshu-tbl tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
 .ac-step-label{font-size:0.68rem;font-weight:600;color:var(--muted);transition:color var(--t);white-space:nowrap}
 .ac-step.active .ac-step-label{color:var(--blue)}
 .ac-step.done   .ac-step-label{color:var(--green)}
+.ac-step-connector{flex:1;height:1px;background:var(--border);margin:0 0.25rem;flex-shrink:1;min-width:12px}
 
 .ac-dropzone-hover{border-color:var(--blue) !important;background:var(--blue-light) !important}
 .ac-dropzone-done{border-color:var(--green) !important;background:var(--green-light) !important}
@@ -1607,7 +1608,7 @@ body.dark .hoshu-tbl tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
   <div class="page" id="pageAutocalc">
 
     <!-- ページヘッダー -->
-    <div style="margin-bottom:1.1rem">
+    <div style="margin-bottom:0.75rem">
       <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:var(--blue)">⚡ AutoCalc — 給与自動計算</div>
       <div style="font-size:0.75rem;color:var(--muted);margin-top:0.2rem">
         業績名簿（Excel）を投げて、追加指示を書くだけで給与明細Excelが出てきます
@@ -1615,7 +1616,7 @@ body.dark .hoshu-tbl tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
     </div>
 
     <!-- ステップインジケーター（3ステップ） -->
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:0.85rem 1.25rem;margin-bottom:1.1rem;box-shadow:var(--shadow);display:flex;align-items:center;gap:0;overflow-x:auto" id="acStepBar">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:0.65rem 1rem;margin-bottom:0.85rem;display:flex;align-items:center;overflow-x:auto" id="acStepBar">
       <div class="ac-step active" id="acStep1"><div class="ac-step-num">1</div><div class="ac-step-label">設定</div></div>
       <div class="ac-step-connector"></div>
       <div class="ac-step" id="acStep2"><div class="ac-step-num">2</div><div class="ac-step-label">名簿 → 計算</div></div>
@@ -4751,8 +4752,12 @@ window.esc                  = esc;
 window.showToast            = showToast;
 window.fmtY                 = fmtY;
 window.calc                 = calc;
-window.taxRates             = taxRates;
 window.downloadImportTemplate = downloadImportTemplate;
+// taxRatesはgetterで公開（taxRatesが後で更新されても常に最新値を返す）
+Object.defineProperty(window, 'taxRates', {
+  get: () => taxRates,
+  configurable: true,
+});
 
 })();
 </script>
@@ -5150,7 +5155,7 @@ function acShowResults(aiN, aiLogs){
   const tN = acResults.reduce((a,e)=>a+e.monthlyNet,0);
   const tI = acResults.reduce((a,e)=>a+e.insurance,0);
   container.innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.75rem;margin-bottom:1rem">
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));margin-bottom:0.75rem">
       <div class="stat-card"><div class="stat-label">計算人数</div><div class="stat-value blue">${acResults.length}名</div></div>
       <div class="stat-card"><div class="stat-label">支給額合計</div><div class="stat-value">${fmtY(tG)}</div></div>
       <div class="stat-card"><div class="stat-label">手取り合計</div><div class="stat-value green">${fmtY(tN)}</div></div>
@@ -5224,7 +5229,7 @@ function acParseManual(instruction){
 function acExportExcel(){
   if(!acResults.length){ showToast('計算結果がありません','error'); return; }
   if(typeof XLSX==='undefined'){ showToast('ライブラリ読み込み中','error'); return; }
-  const month = document.getElementById('acOutputMonth')?.value || '';
+  const month = document.getElementById('acTargetMonth')?.value || '';
   const hasBonus = acResults.some(e=>e.bonusGross>0);
 
   const headers = ['氏名','部署','役職','基本給','業績係数','支給額','社会保険','所得税','住民税','手取り',...(hasBonus?['ボーナス支給','ボーナス手取り']:[])];
@@ -5261,7 +5266,7 @@ function acExportExcel(){
 function acExportLedger(){
   if(!acResults.length){ showToast('計算結果がありません','error'); return; }
   if(typeof XLSX==='undefined'){ showToast('ライブラリ読み込み中','error'); return; }
-  const month = document.getElementById('acOutputMonth')?.value || '';
+  const month = document.getElementById('acTargetMonth')?.value || '';
   const ws = XLSX.utils.aoa_to_sheet([
     ['氏名','部署','支給額','社会保険','所得税','住民税','手取り'],
     ...acResults.map(e=>[e.name,e.dept||'',e.gross,e.insurance,e.tax,e.municipal,e.monthlyNet]),
@@ -5282,7 +5287,7 @@ function acExportLedger(){
 
 function acExportCSV(){
   if(!acResults.length){ showToast('計算結果がありません','error'); return; }
-  const month = document.getElementById('acOutputMonth')?.value || '';
+  const month = document.getElementById('acTargetMonth')?.value || '';
   const headers = ['氏名','部署','基本給','支給額','社会保険','所得税','住民税','手取り'];
   const rows = acResults.map(e=>[e.name,e.dept||'',e.base,e.gross,e.insurance,e.tax,e.municipal||0,e.monthlyNet]);
   const bom = '\uFEFF';
@@ -5297,7 +5302,7 @@ function acExportCSV(){
 
 function acExportTransfer(){
   if(!acResults.length){ showToast('計算結果がありません','error'); return; }
-  const month = document.getElementById('acOutputMonth')?.value || '';
+  const month = document.getElementById('acTargetMonth')?.value || '';
   const headers = ['氏名','銀行名','振込金額'];
   const rows = acResults.map(e=>[e.name,e.bank||'',e.monthlyNet]);
   const bom = '\uFEFF';
