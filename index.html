@@ -4780,7 +4780,13 @@ window.genWithholdingPDF = genWithholdingPDF;
 window.toggleAcc         = toggleAcc;
 window.renderDrilldownChart = renderDrilldownChart;
 window.checkShahouChanges   = checkShahouChanges;
-// acInitStep1/acGoStep はAutoCalcスクリプトで定義後にwindow登録
+// AutoCalcスクリプト（Script9）から使う関数を公開
+window.esc                  = esc;
+window.showToast            = showToast;
+window.fmtY                 = fmtY;
+window.calc                 = calc;
+window.taxRates             = taxRates;
+window.downloadImportTemplate = downloadImportTemplate;
 
 })();
 </script>
