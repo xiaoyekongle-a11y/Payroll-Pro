@@ -1637,7 +1637,7 @@ body.dark .hoshu-tbl tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
           <div style="background:linear-gradient(135deg,#e8f4ff,#f0f7ff);border:1.5px solid rgba(30,95,168,0.2);border-radius:6px;padding:0.9rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.75rem">
             <span style="font-size:1.1rem">✅</span>
             <div>
-              <div style="font-size:0.78rem;font-weight:700;color:#1a3a5c">AI指示機能（Gemini）は有効です</div>
+              <div style="font-size:0.78rem;font-weight:700;color:#1a3a5c">AI指示機能（Groq / Llama）は有効です</div>
               <div style="font-size:0.68rem;color:var(--muted);margin-top:0.2rem">APIキーはサーバー側で管理されています。ブラウザに保存する必要はありません。</div>
             </div>
           </div>
@@ -5126,7 +5126,7 @@ function acShowResults(aiN, aiLogs){
 
 // ── Gemini APIプロキシ経由呼び出し（APIキーはサーバー管理）──
 async function acCallAI(instruction){
-  const resp = await fetch('/api/gemini', {
+  const resp = await fetch('/api/ai', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ instruction }),
