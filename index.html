@@ -1633,25 +1633,13 @@ body.dark .hoshu-tbl tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
           </div>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0.65rem;margin-bottom:1.25rem" id="acRateDisplay"></div>
 
-          <!-- Gemini APIキー設定 -->
-          <div style="background:linear-gradient(135deg,#e8f4ff,#f0f7ff);border:1.5px solid rgba(30,95,168,0.2);border-radius:6px;padding:0.9rem 1rem;margin-bottom:1rem">
-            <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.45rem">
-              <span style="font-size:1rem">✨</span>
-              <span style="font-size:0.78rem;font-weight:700;color:#1a3a5c">Gemini API キー（AI指示機能に使用）</span>
-              <span style="font-size:0.65rem;background:#e0e8f0;padding:0.1em 0.5em;border-radius:3px;color:#556;font-family:var(--font-mono)">任意</span>
+          <!-- AI機能ステータス -->
+          <div style="background:linear-gradient(135deg,#e8f4ff,#f0f7ff);border:1.5px solid rgba(30,95,168,0.2);border-radius:6px;padding:0.9rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.75rem">
+            <span style="font-size:1.1rem">✅</span>
+            <div>
+              <div style="font-size:0.78rem;font-weight:700;color:#1a3a5c">AI指示機能（Gemini）は有効です</div>
+              <div style="font-size:0.68rem;color:var(--muted);margin-top:0.2rem">APIキーはサーバー側で管理されています。ブラウザに保存する必要はありません。</div>
             </div>
-            <div style="display:flex;gap:0.5rem;align-items:center">
-              <input type="password" id="acGeminiKey" placeholder="AIzaSy..." autocomplete="off"
-                style="flex:1;padding:0.45rem 0.7rem;border:1.5px solid var(--border);border-radius:4px;font-family:var(--font-mono);font-size:0.8rem;background:#fff;color:var(--ink)">
-              <button class="btn btn-sm btn-secondary" id="acBtnSaveKey" type="button">保存</button>
-              <button class="btn btn-sm btn-secondary" id="acBtnClearKey" type="button" style="color:#c0392b;border-color:#c0392b">削除</button>
-            </div>
-            <div style="font-size:0.68rem;color:var(--muted);margin-top:0.4rem">
-              🔑 キーは <b>このブラウザのみ</b> に保存されます（サーバーには送信されません）。
-              未設定でもパターンマッチで動作します。
-              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" style="color:#1a3a5c;font-weight:700">Google AI Studioで取得 →</a>
-            </div>
-            <div id="acKeyStatus" style="font-size:0.7rem;margin-top:0.35rem;display:none"></div>
           </div>
 
           <div style="text-align:right">
@@ -5121,69 +5109,20 @@ function acShowResults(aiN, aiLogs){
   }
 }
 
-// ── Gemini APIキー管理 ──
-const AC_KEY_STORAGE = 'salario_gemini_key';
-
-function acLoadKey(){
-  try { return localStorage.getItem(AC_KEY_STORAGE) || ''; } catch(e){ return ''; }
-}
-function acSaveKey(key){
-  try { localStorage.setItem(AC_KEY_STORAGE, key); } catch(e){}
-}
-function acClearKey(){
-  try { localStorage.removeItem(AC_KEY_STORAGE); } catch(e){}
-}
-function acShowKeyStatus(msg, ok){
-  const el = document.getElementById('acKeyStatus');
-  if(!el) return;
-  el.style.display = 'block';
-  el.style.color = ok ? '#2a7a50' : '#c0392b';
-  el.textContent = msg;
-}
-
-// ── Claude APIからGemini APIに切り替え ──
+// ── Gemini APIプロキシ経由呼び出し（APIキーはサーバー管理）──
 async function acCallAI(instruction){
-  const key = acLoadKey() || document.getElementById('acGeminiKey')?.value?.trim();
-  if(!key) throw new Error('APIキー未設定');
-
-  const prompt = `あなたは給与計算ルール解析AIです。
-以下の自然言語の指示を解析し、給与計算ルールのJSON配列として返してください。
-
-指示: ${instruction}
-
-利用可能なルールタイプ:
-- perf_multiply: 業績係数を倍率で掛け算 (value: 倍率数値)
-- perf_set: 業績係数を固定値に設定 (value: 固定値)
-- allowance_add: 手当を加算 (value: 金額数値)
-
-targetフィールド:
-- "all": 全員
-- "dept:部署名": 特定部署
-- "name:氏名": 特定従業員
-- "pos:役職名": 特定役職
-
-必ずJSON配列のみ返してください（説明文・コードブロック不要）:
-[{"type":"perf_multiply","target":"dept:営業部","value":1.2,"label":"営業部×1.2倍"}]`;
-
-  const resp = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
-    {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({
-        contents: [{parts: [{text: prompt}]}],
-        generationConfig: {temperature: 0.1, maxOutputTokens: 1024}
-      })
-    }
-  );
-  if(!resp.ok){
-    const err = await resp.json().catch(()=>({}));
-    throw new Error(err?.error?.message || 'Gemini API エラー: '+resp.status);
+  const resp = await fetch('/api/gemini', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ instruction }),
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err?.error || 'サーバーエラー: ' + resp.status);
   }
   const data = await resp.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  const jsonStr = text.replace(/```json?|```/g,'').trim();
-  return JSON.parse(jsonStr);
+  if (!data.rules) throw new Error('レスポンス形式エラー');
+  return data.rules;
 }
 
 // ── フォールバックパーサー ──
@@ -5312,26 +5251,6 @@ function acReset(){
 
 // ── イベントバインド（DOM準備後）──
 document.addEventListener('DOMContentLoaded',()=>{
-
-  // ── Gemini APIキーUI ──
-  const keyInput = document.getElementById('acGeminiKey');
-  const savedKey = acLoadKey();
-  if(keyInput && savedKey){
-    keyInput.value = savedKey;
-    acShowKeyStatus('✅ APIキーが保存されています', true);
-  }
-  document.getElementById('acBtnSaveKey')?.addEventListener('click',()=>{
-    const key = document.getElementById('acGeminiKey')?.value?.trim();
-    if(!key){ acShowKeyStatus('❌ キーを入力してください', false); return; }
-    if(!key.startsWith('AIza')){ acShowKeyStatus('⚠ Google AI StudioのAPIキーは "AIza" で始まります', false); return; }
-    acSaveKey(key);
-    acShowKeyStatus('✅ 保存しました', true);
-  });
-  document.getElementById('acBtnClearKey')?.addEventListener('click',()=>{
-    acClearKey();
-    if(document.getElementById('acGeminiKey')) document.getElementById('acGeminiKey').value='';
-    acShowKeyStatus('🗑 削除しました', false);
-  });
 
   // ドロップゾーン
   const dz = document.getElementById('acDropzone');
