@@ -29,7 +29,7 @@ ${JSON.stringify(body.summary)}
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
       signal: controller.signal,
       body: JSON.stringify({
-        model: 'llama-3.1-8b-instant',  // 軽量・高速モデル
+        model: 'llama-3.1-8b-instant',
         messages: [
           { role: 'system', content: 'あなたは日本語の給与サマリーライターです。簡潔・正確に記述してください。' },
           { role: 'user', content: prompt },
