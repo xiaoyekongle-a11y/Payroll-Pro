@@ -3384,7 +3384,7 @@ function showPage(id){
     if(drilldownChartObj){drilldownChartObj.destroy();drilldownChartObj=null;}
     renderDashboard();
   }
-  if(id==='autocalc') acInitStep1();
+  if(id==='autocalc') window.acInitStep1?.();
 }
 
 /* ══════════════════════════════════════
@@ -5671,8 +5671,6 @@ function acUpdateSummaryCards(){
         <div class="stat-value green">${fmtY(tBN)}</div>
       </div>` : ''}
     </div>`;
-}
-
 }
 
 // ── Gemini APIプロキシ経由呼び出し（APIキーはサーバー管理）──
