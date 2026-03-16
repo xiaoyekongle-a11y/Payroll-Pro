@@ -5029,7 +5029,7 @@
               btn.disabled = false; btn.textContent = 'ログイン';
               showAuthErr('loginErr', '接続がタイムアウトしました。再度お試しください。');
             }
-          }, 10000);
+          }, 5000);
         }
       });
 
@@ -5282,7 +5282,7 @@
         document.querySelectorAll('.owner-only').forEach(el => el.style.display = isOwner ? '' : 'none');
         document.querySelectorAll('.editor-only').forEach(el => el.style.display = isEditor ? '' : 'none');
 
-        // ── まずアプリ画面を表示（ログイン・リロード共にここで即表示）──
+        // ── まずアプリ画面を即表示（DB通信完了を待たない）──
         initDarkMode();
         showScreen('appScreen');
         showPage('autocalc');
@@ -5294,7 +5294,7 @@
           setTimeout(() => location.reload(), 2000);
         }
 
-        // ── 残りの初期化（画面表示後にバックグラウンドで実行）──
+        // ── バックグラウンドで残りを初期化 ──
         await loadTaxRates();
         buildPeriodSelector();
         await loadLocks();
@@ -7125,10 +7125,9 @@
       let _lastHandledUserId = null;
       let _isHandlingAuth = false;
 
-      // 既存の購読があれば解除してから再登録（Hot Reload対策）
       if (window.__PA_AUTH_UNSUB) { try { window.__PA_AUTH_UNSUB(); } catch (_) { } }
 
-      // ── 認証処理の本体（ログイン時・リロード時共通）──
+      // ── 認証処理の本体（ログイン・リロード共通）──
       async function handleSession(user) {
         if (_isHandlingAuth) return;
         const uid = user.id;
@@ -7151,20 +7150,14 @@
         }
       }
 
-      // ── ページロード時：まず既存セッションを確認 ──
-      // リロード時に onAuthStateChange の null → session の順で発火する問題を回避
-      (async () => {
-        const { data: { session } } = await sb.auth.getSession();
-        if (session?.user) {
-          await handleSession(session.user);
-        } else {
-          showScreen('authScreen');
-        }
-      })();
-
-      // ── 以降の変化（ログイン・ログアウト）を監視 ──
+      // ── onAuthStateChange だけで全て管理（シンプル版）──
+      // INITIAL_SESSION: リロード時（セッションあり→そのまま、なし→authScreen）
+      // SIGNED_IN:       ログインボタン押下後
+      // SIGNED_OUT:      ログアウト後
+      // TOKEN_REFRESHED: 無視
       const { data: { subscription } } = sb.auth.onAuthStateChange(async (event, session) => {
-        // ログアウト・セッション切れ
+        if (event === 'TOKEN_REFRESHED') return;
+
         if (!session) {
           _lastHandledUserId = null;
           _isHandlingAuth = false;
@@ -7175,12 +7168,7 @@
           return;
         }
 
-        // INITIAL_SESSION はページロード時の getSession() で処理済みなのでスキップ
-        if (event === 'INITIAL_SESSION') return;
-        // TOKEN_REFRESHED は画面遷移済みなら無視
-        if (event === 'TOKEN_REFRESHED') return;
-
-        // SIGNED_IN（ログインボタン押下後）のみ処理
+        // セッションあり（INITIAL_SESSION=リロード / SIGNED_IN=ログイン）
         await handleSession(session.user);
       });
 
