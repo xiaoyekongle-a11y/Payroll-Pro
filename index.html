@@ -1793,14 +1793,18 @@ async function dbGet(table, match) {
     return data;
   } catch(e) { console.warn('[PA]',table,e.message); return null; }
 }
-async function dbGetAll(table, match) {
+async function dbGetAll(table, match, critical=false) {
   try {
     let q = sb.from(table).select('*');
     for (const [k,v] of Object.entries(match)) q = q.eq(k,v);
     const { data, error } = await q;
     if (error) throw error;
     return data||[];
-  } catch(e) { console.warn('[PA]',table,e.message); return []; }
+  } catch(e) {
+    console.warn('[PA]',table,e.message);
+    if(critical) throw e;  // 呼び出し元にエラーを伝える
+    return [];
+  }
 }
 async function dbDelete(table, match) {
   try {
@@ -2169,7 +2173,21 @@ function showScreen(id){
 let _justJoined = false;
 
 async function loadCompanyList(uid){
-  let members = await dbGetAll('company_users',{user_id:uid});
+  let members;
+  try {
+    members = await dbGetAll('company_users',{user_id:uid}, true);
+  } catch(e) {
+    // RLS無限再帰など致命的エラー
+    console.error('[PA] loadCompanyList error:', e.message);
+    const btn = $('btnLogin');
+    if(btn){ btn.disabled=false; btn.textContent='ログイン'; }
+    const msg = e.message?.includes('infinite recursion')
+      ? 'データベースのポリシー設定にエラーがあります。管理者にSupabase RLSポリシーの修正を依頼してください。'
+      : 'データベースエラーが発生しました。（'+e.message+')';
+    showAuthErr('loginErr', msg);
+    showScreen('authScreen');
+    return;
+  }
 
   // 招待参加直後のみ最大3回リトライ（RLS反映遅延対策・通常ログインには影響しない）
   if(!members.length && _justJoined){
