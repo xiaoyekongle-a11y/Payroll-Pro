@@ -7,47 +7,50 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: 'GROQ_API_KEY が設定されていません' });
+  if (!apiKey) return res.status(500).json({ error: 'GROQ_API_KEY が未設定です' });
 
   let body = req.body;
-  if (typeof body === 'string') { try { body = JSON.parse(body); } catch { return res.status(400).json({ error: 'Invalid JSON' }); } }
-  if (!body) return res.status(400).json({ error: 'Empty body' });
+  if (typeof body === 'string') { try { body = JSON.parse(body); } catch { return res.status(400).json({ error: 'JSON不正' }); } }
+  if (!body?.instruction) return res.status(400).json({ error: 'instruction が必要です' });
+  if (body.instruction.length > 3000) return res.status(400).json({ error: '指示文が長すぎます（3000文字以内）' });
 
-  const { instruction } = body;
-  if (!instruction || typeof instruction !== 'string') return res.status(400).json({ error: 'instruction is required' });
-  if (instruction.length > 2000) return res.status(400).json({ error: '指示文が長すぎます（2000文字以内）' });
+  const prompt = `あなたは日本の給与計算ルールパーサーです。
+以下の指示をJSON配列に変換してください。
 
-  const prompt = `あなたは給与計算ルールのパーサーです。指示文を解析してJSON配列のみを返してください。説明文・マークダウン・コードブロック不要。
+指示: ${body.instruction}
 
-指示: ${instruction}
+## ルールタイプ（type）
+- perf_multiply   : 業績係数を掛け算   value=倍率（例: 1.2）
+- perf_set        : 業績係数を固定値   value=係数値（例: 1.0）
+- perf_min        : 業績係数の最低保証 value=最低係数（例: 1.0）※係数がvalue未満の人だけ引き上げ
+- allowance_add   : 手当を加算         value=金額・円（例: 5000）
+- allowance_set   : 手当を固定額に設定 value=金額・円（例: 30000）
+- base_multiply   : 基本給を倍率変更   value=倍率（例: 1.05）
 
-【ルールタイプ】
-- perf_multiply : 業績係数を掛け算。「N倍」「N割増」はこれ。value=倍率（例: 2倍→2.0）
-- perf_set      : 業績係数を固定値に。value=係数値（例: 係数1.5→1.5）
-- allowance_add : 手当金額を加算。value=円（例: 5000円→5000）
+## target（対象）
+- "all"             : 全従業員
+- "dept:部署名"     : 特定部署（例: "dept:営業部"）
+- "pos:役職名"      : 特定役職（例: "pos:部長"）
+- "name:氏名"       : 特定個人（例: "name:田中太郎"）
+- "dept:X|pos:Y"    : 複合条件・部署かつ役職（例: "dept:営業部|pos:マネージャー"）
 
-【targetフィールド】
-- "all" : 全従業員
-- "dept:部署名" : 特定部署（例: "dept:営業部"）
-- "name:氏名" : 特定個人
-- "pos:役職名" : 特定役職
+## label: ルールの日本語説明（必須）
 
-【解釈ルール】
-- 「給与をN倍」「全員N倍」→ perf_multiply, target:"all", value:N
-- 「N割増」→ perf_multiply, value:1+N/10
-- 「N%アップ」→ perf_multiply, value:1+N/100
-- 「N円の手当」→ allowance_add, value:N
-- 「係数をNにする」→ perf_set, value:N
-- 解釈できない場合は []
+## 出力ルール
+- JSON配列のみ。説明文・マークダウン・コードブロック禁止
+- 複数ルールは配列に並べる
+- 読み取れない場合は []
 
-【例】
-「給与全員2倍」→ [{"type":"perf_multiply","target":"all","value":2.0,"label":"全員×2倍"}]
-「営業部1.2倍、全員5000円手当」→ [{"type":"perf_multiply","target":"dept:営業部","value":1.2,"label":"営業部×1.2倍"},{"type":"allowance_add","target":"all","value":5000,"label":"全員手当+5000円"}]
-
-JSON配列のみ返す:`;
+例:
+[
+  {"type":"perf_multiply","target":"dept:営業部","value":1.2,"label":"営業部×1.2倍"},
+  {"type":"perf_min","target":"pos:部長","value":1.0,"label":"部長以上は係数1.0以上を保証"},
+  {"type":"allowance_add","target":"all","value":5000,"label":"全員に交通費5000円追加"}
+]`;
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const timeout = setTimeout(() => controller.abort(), 20000);
+
   try {
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -56,38 +59,48 @@ JSON配列のみ返す:`;
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
         messages: [
-          { role: 'system', content: 'You are a Japanese payroll rule parser. Return ONLY a valid JSON array. No explanation, no markdown.' },
+          { role: 'system', content: 'You are a Japanese payroll rule parser. Output ONLY a valid JSON array. No explanation, no markdown, no code blocks.' },
           { role: 'user', content: prompt },
         ],
-        temperature: 0.0, max_tokens: 512,
+        temperature: 0.0,
+        max_tokens: 1024,
+        response_format: { type: 'json_object' },
       }),
     });
     clearTimeout(timeout);
+
     if (!groqRes.ok) {
       const err = await groqRes.json().catch(() => ({}));
-      return res.status(502).json({ error: err?.error?.message || 'Groq APIエラー: ' + groqRes.status });
+      return res.status(502).json({ error: err?.error?.message || `Groq APIエラー: ${groqRes.status}` });
     }
+
     const data = await groqRes.json();
-    const raw = (data?.choices?.[0]?.message?.content || '').trim();
+    const raw  = (data?.choices?.[0]?.message?.content || '').trim();
+    if (!raw) return res.status(500).json({ error: 'AIが空のレスポンスを返しました' });
+
     const cleaned = raw.replace(/```json?|```/g, '').trim();
     let rules;
     try {
       const parsed = JSON.parse(cleaned);
-      rules = Array.isArray(parsed) ? parsed : Array.isArray(parsed.rules) ? parsed.rules : Object.values(parsed).find(v => Array.isArray(v)) || [];
+      if (Array.isArray(parsed)) rules = parsed;
+      else rules = Object.values(parsed).find(v => Array.isArray(v)) || [];
     } catch {
-      const match = cleaned.match(/\[[\s\S]*\]/);
-      if (!match) return res.status(500).json({ error: 'AIが有効なJSON配列を返しませんでした' });
-      try { rules = JSON.parse(match[0]); } catch { return res.status(500).json({ error: 'JSONパースエラー' }); }
+      const m = cleaned.match(/\[[\s\S]*\]/);
+      if (!m) return res.status(500).json({ error: 'JSONパース失敗', raw: raw.slice(0, 300) });
+      try { rules = JSON.parse(m[0]); } catch { return res.status(500).json({ error: 'JSONパースエラー' }); }
     }
-    const VALID_TYPES = ['perf_multiply', 'perf_set', 'allowance_add'];
-    const validated = rules.filter(r =>
-      r && typeof r === 'object' && VALID_TYPES.includes(r.type) &&
-      typeof r.target === 'string' && typeof r.value === 'number' && Number.isFinite(r.value)
-    ).map(r => ({ type: r.type, target: r.target, value: r.value, label: typeof r.label === 'string' ? r.label : `${r.type}(${r.target})` }));
+
+    const VALID_TYPES = ['perf_multiply', 'perf_set', 'perf_min', 'allowance_add', 'allowance_set', 'base_multiply'];
+    const validated = rules
+      .filter(r => r && typeof r === 'object' && VALID_TYPES.includes(r.type) && typeof r.target === 'string' && typeof r.value === 'number' && Number.isFinite(r.value))
+      .map(r => ({ type: r.type, target: r.target, value: r.value, label: typeof r.label === 'string' ? r.label : `${r.type}(${r.target})` }));
+
+    console.log(`[AI] "${body.instruction.slice(0,50)}" → ${validated.length}ルール`);
     return res.status(200).json({ rules: validated });
+
   } catch (e) {
     clearTimeout(timeout);
-    if (e.name === 'AbortError') return res.status(504).json({ error: 'AIリクエストがタイムアウトしました' });
+    if (e.name === 'AbortError') return res.status(504).json({ error: 'タイムアウト（20秒）' });
     return res.status(500).json({ error: e.message });
   }
 };
