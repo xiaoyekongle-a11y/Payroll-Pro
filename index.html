@@ -797,6 +797,255 @@ body.dark .accordion-header{ background:var(--surface-2) }
 .progress-bar.over{ background:linear-gradient(90deg,var(--red),#dc2626) }
 .progress-bar.blue{ background:linear-gradient(90deg,var(--accent),#2563eb) }
 
+/* ═══════════ AUTOCALC STEP BAR ═══════════ */
+.ac-step{
+  display:flex;align-items:center;gap:0.45rem;
+  padding:0.3rem 0.65rem;border-radius:var(--r-full);
+  transition:all 0.25s ease;cursor:default;flex-shrink:0;
+}
+.ac-step-num{
+  width:26px;height:26px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.72rem;font-weight:800;font-family:var(--font-mono);
+  border:2px solid var(--border);color:var(--muted);
+  background:var(--surface);transition:all 0.25s ease;
+}
+.ac-step-label{
+  font-size:0.7rem;font-weight:600;color:var(--muted);
+  white-space:nowrap;transition:color 0.25s ease;
+}
+.ac-step.active .ac-step-num{
+  background:var(--accent);border-color:var(--accent);color:#fff;
+  box-shadow:0 2px 8px rgba(26,86,219,0.35);
+  animation:acPulse 2s ease-in-out infinite;
+}
+.ac-step.active .ac-step-label{ color:var(--accent);font-weight:700 }
+.ac-step.done .ac-step-num{
+  background:var(--green);border-color:var(--green);color:#fff;
+}
+.ac-step.done .ac-step-label{ color:var(--green) }
+.ac-step-connector{
+  flex:1;min-width:20px;height:2px;
+  background:var(--border);border-radius:99px;
+  transition:background 0.3s ease;
+}
+.ac-step.done + .ac-step-connector,
+.ac-step-connector:has(+ .ac-step.done){ background:var(--green) }
+@keyframes acPulse{
+  0%,100%{ box-shadow:0 2px 8px rgba(26,86,219,0.35) }
+  50%{ box-shadow:0 2px 16px rgba(26,86,219,0.55) }
+}
+
+/* ドロップゾーン hover/drag */
+#acDropzone:hover{ border-color:var(--accent);background:var(--accent-bg) }
+#acDropzone.drag{
+  border-color:var(--accent);background:var(--accent-bg);
+  box-shadow:0 0 0 4px var(--accent-ring);
+  transform:scale(1.01);
+}
+#acDropzone.drag #acDropIcon{ animation:acBounce 0.6s ease infinite }
+@keyframes acBounce{
+  0%,100%{ transform:translateY(0) }
+  50%{ transform:translateY(-8px) }
+}
+
+/* AIチャット回答フェードイン */
+#acChatAnswer,#acExplainWrap{
+  animation:acFadeSlide 0.3s ease;
+}
+@keyframes acFadeSlide{
+  from{ opacity:0;transform:translateY(8px) }
+  to{ opacity:1;transform:translateY(0) }
+}
+
+/* AutoCalc パネル切替アニメーション */
+#acPanel1,#acPanel2,#acPanel3,#acPanel4{
+  animation:acPanelIn 0.25s ease;
+}
+@keyframes acPanelIn{
+  from{ opacity:0;transform:translateX(12px) }
+  to{ opacity:1;transform:translateX(0) }
+}
+
+/* サンプルボタン hover */
+.ac-sample{
+  transition:all 0.15s ease !important;
+}
+.ac-sample:hover{
+  background:var(--accent-bg) !important;
+  border-color:var(--accent) !important;
+  color:var(--accent) !important;
+  transform:translateY(-1px) !important;
+}
+
+/* レスポンシブ: STEP2の2カラム→1カラム */
+@media(max-width:768px){
+  #acPanel2 > div{ grid-template-columns:1fr !important; }
+  #acPanel4 > div{ grid-template-columns:1fr !important; }
+}
+
+/* ═══════════ AI CHAT BUBBLE UI ═══════════ */
+.ac-chat-bubble{
+  padding:0.6rem 0.85rem;border-radius:12px;margin-bottom:0.55rem;
+  font-size:0.78rem;line-height:1.65;animation:acBubbleIn 0.3s cubic-bezier(0.34,1.4,0.64,1);
+  max-width:92%;word-wrap:break-word;
+}
+.ac-chat-bubble.user{
+  background:var(--accent);color:#fff;margin-left:auto;
+  border-bottom-right-radius:4px;
+  box-shadow:0 2px 8px rgba(26,86,219,0.25);
+}
+.ac-chat-bubble.ai{
+  background:var(--surface-2);color:var(--ink);
+  border:1px solid var(--border);border-bottom-left-radius:4px;
+  box-shadow:var(--sh-xs);
+}
+.ac-chat-bubble.ai b{ color:var(--accent) }
+@keyframes acBubbleIn{
+  from{opacity:0;transform:translateY(8px) scale(0.95)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+
+/* タイピングインジケーター */
+.ac-typing{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:0.5rem 0.85rem;background:var(--surface-2);
+  border:1px solid var(--border);border-radius:12px;
+  border-bottom-left-radius:4px;margin-bottom:0.55rem;
+}
+.ac-typing-dot{
+  width:6px;height:6px;border-radius:50%;background:var(--muted);
+  animation:acTypingBounce 1.4s infinite ease-in-out both;
+}
+.ac-typing-dot:nth-child(1){animation-delay:0s}
+.ac-typing-dot:nth-child(2){animation-delay:0.16s}
+.ac-typing-dot:nth-child(3){animation-delay:0.32s}
+@keyframes acTypingBounce{
+  0%,80%,100%{transform:scale(0.6);opacity:0.4}
+  40%{transform:scale(1);opacity:1}
+}
+
+/* ═══════════ AI調整行ハイライト ═══════════ */
+tr.ac-ai-row td{ background:rgba(26,86,219,0.04) !important }
+tr.ac-ai-row:hover td{ background:rgba(26,86,219,0.09) !important }
+tr.ac-ai-row td:first-child{
+  border-left:3px solid var(--accent);
+}
+body.dark tr.ac-ai-row td{ background:rgba(74,143,212,0.06) !important }
+body.dark tr.ac-ai-row:hover td{ background:rgba(74,143,212,0.12) !important }
+
+/* ═══════════ 異常値警告 ═══════════ */
+tr.ac-warn-row td{ background:rgba(245,158,11,0.06) !important }
+tr.ac-warn-row td:first-child{
+  border-left:3px solid var(--amber);
+}
+.ac-warn-badge{
+  display:inline-flex;align-items:center;gap:0.2rem;
+  font-size:0.62rem;font-weight:700;padding:0.15rem 0.4rem;
+  border-radius:var(--r-full);background:var(--amber-bg);
+  color:var(--amber);white-space:nowrap;
+}
+
+/* ═══════════ ステップバー グラデーション ═══════════ */
+.ac-step.done .ac-step-num{
+  background:linear-gradient(135deg,var(--green),#16a34a) !important;
+  border-color:var(--green) !important;color:#fff;
+  box-shadow:0 2px 8px rgba(13,122,62,0.3);
+}
+.ac-step.done .ac-step-num::after{
+  content:'✓';position:absolute;font-size:0.55rem;
+}
+.ac-step.active .ac-step-num{
+  background:linear-gradient(135deg,var(--accent),#2563eb) !important;
+  box-shadow:0 2px 12px rgba(26,86,219,0.4);
+}
+.ac-step-connector.done{
+  background:linear-gradient(90deg,var(--green),var(--green)) !important;
+  height:3px !important;
+}
+
+/* ═══════════ ドロップゾーン成功パルス ═══════════ */
+#acDropzone.success{
+  border-color:var(--green) !important;
+  background:var(--green-bg) !important;
+  animation:acDropSuccess 0.5s ease;
+}
+@keyframes acDropSuccess{
+  0%{transform:scale(1)}
+  50%{transform:scale(1.02)}
+  100%{transform:scale(1)}
+}
+
+/* ═══════════ ステップ4 出力カードグロー ═══════════ */
+.ac-output-card{
+  border:1.5px solid var(--border);border-radius:var(--r-lg);
+  padding:1.15rem;text-align:center;
+  transition:all 0.25s cubic-bezier(0.4,0,0.2,1);
+  position:relative;overflow:hidden;
+  background:var(--surface);
+}
+.ac-output-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--accent),#6366f1);
+  opacity:0;transition:opacity 0.25s;
+}
+.ac-output-card:hover{
+  border-color:var(--accent);transform:translateY(-3px);
+  box-shadow:0 8px 24px rgba(26,86,219,0.15);
+}
+.ac-output-card:hover::before{opacity:1}
+.ac-output-card.primary{ border-color:var(--accent);border-width:2px }
+.ac-output-card.primary::before{opacity:1}
+.ac-output-icon{
+  font-size:2rem;margin-bottom:0.5rem;
+  display:inline-block;transition:transform 0.3s ease;
+}
+.ac-output-card:hover .ac-output-icon{transform:scale(1.15) rotate(-5deg)}
+
+/* ═══════════ AI指示プリセット カテゴリ ═══════════ */
+.ac-preset-group{
+  margin-bottom:0.65rem;
+}
+.ac-preset-label{
+  font-size:0.6rem;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:0.08em;
+  margin-bottom:0.35rem;display:flex;align-items:center;gap:0.3rem;
+}
+.ac-preset-pills{
+  display:flex;flex-wrap:wrap;gap:0.35rem;
+}
+.ac-sample{
+  position:relative;
+}
+.ac-sample[data-tip]:hover::after{
+  content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);
+  left:50%;transform:translateX(-50%);
+  background:var(--ink);color:#fff;
+  font-size:0.62rem;padding:0.3rem 0.55rem;
+  border-radius:var(--r);white-space:nowrap;
+  box-shadow:0 4px 12px rgba(0,0,0,0.2);
+  z-index:10;animation:acTipIn 0.15s ease;
+  pointer-events:none;
+}
+@keyframes acTipIn{from{opacity:0;transform:translateX(-50%) translateY(4px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* ═══════════ AI解説パネル 強化 ═══════════ */
+#acExplainWrap{
+  background:linear-gradient(135deg,
+    rgba(26,86,219,0.04),
+    rgba(99,102,241,0.04),
+    rgba(13,122,62,0.03)) !important;
+  border-bottom:2px solid transparent;
+  border-image:linear-gradient(90deg,var(--accent),#6366f1,var(--green)) 1;
+}
+.ac-insight{
+  margin-top:0.5rem;padding:0.5rem 0.65rem;
+  background:var(--amber-bg);border:1px solid rgba(180,83,9,0.15);
+  border-radius:var(--r);font-size:0.72rem;color:var(--amber);
+  display:flex;align-items:flex-start;gap:0.35rem;
+}
+body.dark .ac-insight{ background:rgba(245,158,11,0.08) }
+
 /* ═══════════ INVITE CODE ═══════════ */
 .invite-code-box{
   font-family:var(--font-mono);font-size:1.3rem;font-weight:500;
@@ -1169,7 +1418,7 @@ body.dark .att-absence-sel{ background:var(--surface-2) }
     <button class="header-btn" id="btnSignOut">ログアウト</button>
   </header>
   <nav class="nav-tabs">
-    <a class="nav-tab" href="/autocalc.html" target="_blank" style="font-weight:800;color:var(--accent);text-decoration:none">⚡ AutoCalc ↗</a>
+    <div class="nav-tab" data-page="autocalc">⚡ AutoCalc</div>
     <div class="nav-tab active" data-page="dashboard">📊 ダッシュボード</div>
     <div class="nav-tab" data-page="history">📂 履歴</div>
     <div class="nav-tab" data-page="payroll">📝 給与計算</div>
@@ -1619,54 +1868,244 @@ body.dark .att-absence-sel{ background:var(--surface-2) }
        AutoCalc — Excel→AI→Excel 給与自動計算
   ══════════════════════════════════════════════════════ -->
   <div class="page" id="pageAutocalc">
-    <div style="max-width:600px;margin:3rem auto;text-align:center;padding:0 1rem">
-      <div style="font-size:3.5rem;margin-bottom:1rem">⚡</div>
-      <h1 style="font-family:var(--font-display);font-size:1.6rem;font-weight:900;color:var(--ink);margin-bottom:0.5rem">
-        AutoCalc
-      </h1>
-      <p style="font-size:0.88rem;color:var(--muted);line-height:1.75;margin-bottom:2rem">
-        AutoCalcは独立したアプリとして生まれ変わりました。<br>
-        Excelをアップロードして、AIに指示を出すだけで<br>
-        給与計算→Excel出力まで完結します。
-      </p>
 
-      <a href="/autocalc.html" target="_blank"
-        style="display:inline-flex;align-items:center;gap:0.5rem;
-        background:var(--accent);color:#fff;text-decoration:none;
-        font-weight:800;font-size:1rem;padding:0.85rem 2rem;
-        border-radius:var(--r-lg);box-shadow:0 4px 12px rgba(26,86,219,.3);
-        transition:all 0.2s"
-        onmouseover="this.style.filter='brightness(1.1)'"
-        onmouseout="this.style.filter=''">
-        ⚡ AutoCalcを開く
-        <span style="font-size:0.75rem;opacity:0.8">↗ 新しいタブ</span>
-      </a>
-
-      <div style="margin-top:2.5rem;display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;text-align:left">
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:1rem">
-          <div style="font-size:1.3rem;margin-bottom:0.4rem">📊</div>
-          <div style="font-weight:700;font-size:0.8rem;margin-bottom:0.2rem">Excelそのまま</div>
-          <div style="font-size:0.72rem;color:var(--muted)">名簿をドロップするだけで自動読込</div>
-        </div>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:1rem">
-          <div style="font-size:1.3rem;margin-bottom:0.4rem">🤖</div>
-          <div style="font-weight:700;font-size:0.8rem;margin-bottom:0.2rem">AI自然言語指示</div>
-          <div style="font-size:0.72rem;color:var(--muted)">「営業部1.2倍」などで即反映</div>
-        </div>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:1rem">
-          <div style="font-size:1.3rem;margin-bottom:0.4rem">📥</div>
-          <div style="font-weight:700;font-size:0.8rem;margin-bottom:0.2rem">PDF・Excel出力</div>
-          <div style="font-size:0.72rem;color:var(--muted)">個人別PDF明細＋給与台帳</div>
-        </div>
+    <!-- ヘッダー -->
+    <div style="margin-bottom:0.85rem">
+      <div style="font-family:var(--font-display);font-size:1.05rem;font-weight:900;color:var(--accent)">
+        ⚡ AutoCalc — AI給与自動計算
       </div>
-
-      <div style="margin-top:2rem;padding:1rem;background:var(--surface-2);border-radius:var(--r-lg);
-        border:1px solid var(--border);font-size:0.75rem;color:var(--muted);text-align:left">
-        💡 <b>Salarioアカウントでそのまま利用できます。</b>
-        AutoCalcで計算した結果は履歴として保存され、
-        Salarioのダッシュボードからも確認できます。
+      <div style="font-size:0.75rem;color:var(--muted);margin-top:0.15rem">
+        名簿Excelをアップロードして自然言語で指示するだけで給与計算→Excel出力まで完結
       </div>
     </div>
+
+    <!-- ステップバー -->
+    <div style="display:flex;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:0.75rem 1.25rem;margin-bottom:1rem;overflow-x:auto">
+      <div class="ac-step active" id="acStepDot1"><div class="ac-step-num">1</div><div class="ac-step-label">名簿アップロード</div></div>
+      <div class="ac-step-connector"></div>
+      <div class="ac-step" id="acStepDot2"><div class="ac-step-num">2</div><div class="ac-step-label">AI指示・計算</div></div>
+      <div class="ac-step-connector"></div>
+      <div class="ac-step" id="acStepDot3"><div class="ac-step-num">3</div><div class="ac-step-label">結果確認・編集</div></div>
+      <div class="ac-step-connector"></div>
+      <div class="ac-step" id="acStepDot4"><div class="ac-step-num">4</div><div class="ac-step-label">出力</div></div>
+    </div>
+
+    <!-- STEP 1: 名簿アップロード -->
+    <div id="acPanel1">
+      <div class="panel">
+        <div class="panel-header">📂 STEP 1 — 従業員名簿をアップロード</div>
+        <div class="panel-body">
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.75rem;padding:0.5rem 0.75rem;background:var(--surface-2);border-radius:var(--r);border:1px solid var(--border)">
+            ⚙ 適用税率：<span id="acRateInfo">読み込み中...</span>
+            <span style="margin-left:0.5rem;font-size:0.65rem">（税率管理ページで変更可）</span>
+          </div>
+          <div id="acDropzone" style="border:2px dashed var(--border);border-radius:var(--r-lg);padding:2.5rem 1.5rem;text-align:center;cursor:pointer;transition:border-color var(--t),background var(--t);background:var(--surface-2);position:relative;margin-bottom:0.75rem">
+            <input type="file" id="acFileInput" accept=".xlsx,.xls,.csv" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%">
+            <div id="acDropIcon" style="font-size:2.5rem;margin-bottom:0.5rem">📊</div>
+            <div style="font-weight:700;font-size:0.9rem;margin-bottom:0.2rem">Excelをドロップ、またはクリックして選択</div>
+            <div id="acDropSub" style="font-size:0.72rem;color:var(--muted)">.xlsx / .xls / .csv 対応 — 1行目がヘッダー行</div>
+          </div>
+          <div id="acInputTable"></div>
+          <div style="margin-top:0.85rem;padding:0.85rem;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r)">
+            <div style="font-size:0.7rem;font-weight:700;color:var(--muted);margin-bottom:0.6rem;text-transform:uppercase;letter-spacing:0.06em">💴 ボーナス設定（任意）</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>計算方法</label>
+                <select id="acBonusMethod">
+                  <option value="none">なし（月給のみ）</option>
+                  <option value="multiplier">基本給 × 倍率</option>
+                  <option value="pool">総額プールを業績比で分配</option>
+                </select>
+              </div>
+              <div id="acBonusParamWrap" class="form-group" style="display:none">
+                <label id="acBonusParamLabel">ボーナス倍率（月）</label>
+                <input type="number" id="acBonusParam" value="2.0" step="0.1" min="0">
+              </div>
+              <div class="form-group">
+                <label>給与年月</label>
+                <input type="month" id="acMonth">
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.85rem">
+            <button class="btn btn-sm btn-secondary" id="acBtnTemplate">📋 テンプレDL</button>
+            <button class="btn btn-primary" id="acBtnToStep2" disabled>次へ：AI指示・計算 →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: AI指示 + 計算実行 -->
+    <div id="acPanel2" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 300px;gap:1rem;align-items:start">
+
+        <!-- 左: 指示入力 + 計算 -->
+        <div class="panel">
+          <div class="panel-header">🤖 STEP 2 — AIへの指示と計算実行</div>
+          <div class="panel-body">
+            <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.75rem">
+              自然言語で給与ルールを指示してください。何も書かなければ名簿の値をそのまま計算します。
+            </p>
+            <textarea id="acAiInstruction" rows="5"
+              style="width:100%;padding:0.55rem 0.75rem;border:1px solid var(--border);border-radius:var(--r);font-family:var(--font-body);font-size:0.85rem;background:var(--surface);color:var(--ink);resize:vertical;margin-bottom:0.65rem;line-height:1.6"
+              placeholder="例：&#10;営業部の係数を1.2倍にする&#10;全員に5000円の手当を追加&#10;田中さんの係数を1.5に固定する&#10;管理職の最低係数を1.0に保証する"></textarea>
+
+            <!-- AI指示プリセット（カテゴリ分け） -->
+            <div style="margin-bottom:0.85rem">
+              <div class="ac-preset-group">
+                <div class="ac-preset-label">🎯 係数系</div>
+                <div class="ac-preset-pills">
+                  <button class="btn btn-sm btn-secondary ac-sample" data-text="給与を全員2倍にする" data-tip="全員の業績係数を2倍">全員2倍</button>
+                  <button class="btn btn-sm btn-secondary ac-sample" data-text="営業部の係数を1.2倍にする" data-tip="営業部のみ係数+20%">営業部+20%</button>
+                  <button class="btn btn-sm btn-secondary ac-sample" data-text="部長以上は係数1.3、それ以外は1.0にする" data-tip="役職別に係数を分ける">役職別係数</button>
+                  <button class="btn btn-sm btn-secondary ac-sample" data-text="係数が1.0以下の人を全員1.0に引き上げる" data-tip="最低係数を保証">最低係数保証</button>
+                  <button class="btn btn-sm btn-secondary ac-sample" data-text="開発部は一律係数1.15、営業部は1.2にする" data-tip="複数部署それぞれ指定">部署別係数</button>
+                </div>
+              </div>
+              <div class="ac-preset-group">
+                <div class="ac-preset-label">💰 手当系</div>
+                <div class="ac-preset-pills">
+                  <button class="btn btn-sm btn-secondary ac-sample" data-text="全員に5000円の交通費を追加" data-tip="全店员に手当加算">手当+5000円</button>
+                  <button class="btn btn-sm btn-secondary ac-sample" data-text="開発部に残業手当10000円を追加" data-tip="特定部署のみ">開発部手当</button>
+                  <button class="btn btn-sm btn-secondary ac-sample" data-text="管理職の手当を30000円に設定" data-tip="手当を固定額に上書き">管理職手当固定</button>
+                </div>
+              </div>
+              <div class="ac-preset-group">
+                <div class="ac-preset-label">💴 基本給系</div>
+                <div class="ac-preset-pills">
+                  <button class="btn btn-sm btn-secondary ac-sample" data-text="全員の基本給を1.05倍にする" data-tip="ベースアップ5%">基本給+5%</button>
+                  <button class="btn btn-sm btn-secondary ac-sample" data-text="田中さんの係数を1.5に固定する" data-tip="個人指定も可能">個人係数固定</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- AIチャット（強化機能） -->
+            <div id="acChatWrap" style="display:none;margin-bottom:0.85rem;border:1px solid var(--border);border-radius:var(--r);overflow:hidden">
+              <div style="background:var(--surface-2);padding:0.4rem 0.75rem;font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;display:flex;justify-content:space-between;align-items:center">
+                <span>🤖 AI会話ログ</span>
+                <button onclick="document.getElementById('acChatWrap').style.display='none'" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.8rem">✕</button>
+              </div>
+              <div id="acChatLog" style="max-height:200px;overflow-y:auto;padding:0.65rem 0.75rem;font-size:0.78rem;line-height:1.7"></div>
+            </div>
+
+            <!-- 進捗バー -->
+            <div id="acProgressWrap" style="display:none;margin-bottom:0.75rem">
+              <div style="height:5px;background:var(--border);border-radius:99px;overflow:hidden">
+                <div id="acProgressBar" style="height:100%;background:var(--accent);border-radius:99px;transition:width 0.3s ease;width:0%"></div>
+              </div>
+            </div>
+
+            <!-- AI ログ -->
+            <div id="acAiLog" style="display:none;font-size:0.75rem;color:var(--muted);padding:0.5rem 0.75rem;background:var(--surface-2);border-radius:var(--r);border:1px solid var(--border);margin-bottom:0.75rem;line-height:1.8"></div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <button class="btn btn-sm btn-secondary" id="acBtnBackTo1">← 戻る</button>
+              <button class="btn btn-primary btn-lg" id="acBtnCalc">⚡ 給与計算を実行する</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右: AIチャット入力（強化機能） -->
+        <div>
+          <div class="panel">
+            <div class="panel-header">💬 AIに質問する</div>
+            <div class="panel-body" style="padding:0.75rem">
+              <p style="font-size:0.72rem;color:var(--muted);margin-bottom:0.65rem">
+                給与ルールについて AIに自由に質問できます。
+              </p>
+              <textarea id="acChatInput" rows="3"
+                style="width:100%;padding:0.45rem 0.65rem;border:1px solid var(--border);border-radius:var(--r);font-family:var(--font-body);font-size:0.8rem;background:var(--surface);color:var(--ink);resize:vertical;margin-bottom:0.5rem"
+                placeholder="例：&#10;どんな指示が使えますか？&#10;部署と個人を同時に指定できますか？"></textarea>
+              <button class="btn btn-secondary btn-sm" style="width:100%" id="acBtnChat">
+                💬 AIに質問する
+              </button>
+              <div id="acChatAnswer" style="display:none;margin-top:0.65rem;font-size:0.78rem;line-height:1.7;padding:0.5rem 0.65rem;background:var(--surface-2);border-radius:var(--r);border:1px solid var(--border)"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- STEP 3: 結果確認・編集 -->
+    <div id="acPanel3" style="display:none">
+      <div class="panel">
+        <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center">
+          <span>✅ STEP 3 — 計算結果の確認・編集</span>
+          <button class="btn btn-sm btn-secondary" id="acBtnBackTo2">← AI指示を修正</button>
+        </div>
+        <div class="panel-body" style="padding:0">
+          <!-- AI説明サマリー（強化機能） -->
+          <div id="acExplainWrap" style="display:none;padding:0.75rem 1rem;background:linear-gradient(135deg,var(--surface-2),var(--surface));border-bottom:1px solid var(--border)">
+            <div style="font-size:0.68rem;font-weight:700;color:var(--accent);margin-bottom:0.3rem;text-transform:uppercase;letter-spacing:0.06em">🤖 AI解説</div>
+            <div id="acExplainText" style="font-size:0.8rem;line-height:1.7;color:var(--ink)"></div>
+          </div>
+          <div id="acResultSummary" style="padding:0.75rem 1rem;border-bottom:1px solid var(--border)"></div>
+          <div id="acResultTable" class="tbl-wrap"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 1rem;border-top:1px solid var(--border)">
+            <span style="font-size:0.7rem;color:var(--muted)">✏️ 係数・手当追加列は直接入力できます</span>
+            <button class="btn btn-green" id="acBtnToStep4">📥 出力へ →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4: 出力 -->
+    <div id="acPanel4" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 280px;gap:1rem">
+        <div>
+          <div class="panel" style="margin-bottom:0.85rem">
+            <div class="panel-header">📥 STEP 4 — 出力形式を選択</div>
+            <div class="panel-body">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
+                <div class="ac-output-card primary">
+                  <div class="ac-output-icon">📋</div>
+                  <div style="font-weight:700;font-size:0.82rem;margin-bottom:0.15rem">給与明細一覧</div>
+                  <div style="font-size:0.7rem;color:var(--muted);margin-bottom:0.65rem">全員分・ボーナス含む</div>
+                  <button class="btn btn-primary btn-sm" style="width:100%" id="acBtnDlSlip">⬇ Excel DL</button>
+                </div>
+                <div class="ac-output-card">
+                  <div class="ac-output-icon">📒</div>
+                  <div style="font-weight:700;font-size:0.82rem;margin-bottom:0.15rem">給与台帳</div>
+                  <div style="font-size:0.7rem;color:var(--muted);margin-bottom:0.65rem">会計・経理用集計表</div>
+                  <button class="btn btn-secondary btn-sm" style="width:100%" id="acBtnDlLedger">⬇ Excel DL</button>
+                </div>
+              </div>
+              <div class="ac-output-card" style="grid-column:span 2">
+                <div style="display:flex;align-items:center;justify-content:space-between">
+                <div style="text-align:left">
+                  <div style="font-size:0.82rem;font-weight:700;margin-bottom:0.1rem">💳 振込データ</div>
+                  <div style="font-size:0.7rem;color:var(--muted)">銀行振込用CSV</div>
+                </div>
+                <button class="btn btn-secondary btn-sm" id="acBtnDlTransfer">⬇ CSV DL</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header">🔗 Salario 給与計算へ反映</div>
+            <div class="panel-body">
+              <p style="font-size:0.78rem;color:var(--muted);margin-bottom:0.65rem">
+                計算結果を給与計算ページに取り込んで、PDF明細出力・月次確定が行えます。
+              </p>
+              <button class="btn btn-secondary" style="width:100%" id="acBtnSendToSalario">
+                📤 給与計算ページへ反映する
+              </button>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="panel">
+            <div class="panel-header">📊 計算サマリー</div>
+            <div class="panel-body" id="acOutputSummary" style="font-size:0.8rem;line-height:2;color:var(--muted)">—</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="acBtnRestart" style="width:100%;margin-top:0.65rem">
+            🔄 新しく計算する
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /pageAutocalc -->
   </div>
 </div>
@@ -1793,18 +2232,14 @@ async function dbGet(table, match) {
     return data;
   } catch(e) { console.warn('[PA]',table,e.message); return null; }
 }
-async function dbGetAll(table, match, critical=false) {
+async function dbGetAll(table, match) {
   try {
     let q = sb.from(table).select('*');
     for (const [k,v] of Object.entries(match)) q = q.eq(k,v);
     const { data, error } = await q;
     if (error) throw error;
     return data||[];
-  } catch(e) {
-    console.warn('[PA]',table,e.message);
-    if(critical) throw e;  // 呼び出し元にエラーを伝える
-    return [];
-  }
+  } catch(e) { console.warn('[PA]',table,e.message); return []; }
 }
 async function dbDelete(table, match) {
   try {
@@ -2173,21 +2608,7 @@ function showScreen(id){
 let _justJoined = false;
 
 async function loadCompanyList(uid){
-  let members;
-  try {
-    members = await dbGetAll('company_users',{user_id:uid}, true);
-  } catch(e) {
-    // RLS無限再帰など致命的エラー
-    console.error('[PA] loadCompanyList error:', e.message);
-    const btn = $('btnLogin');
-    if(btn){ btn.disabled=false; btn.textContent='ログイン'; }
-    const msg = e.message?.includes('infinite recursion')
-      ? 'データベースのポリシー設定にエラーがあります。管理者にSupabase RLSポリシーの修正を依頼してください。'
-      : 'データベースエラーが発生しました。（'+e.message+')';
-    showAuthErr('loginErr', msg);
-    showScreen('authScreen');
-    return;
-  }
+  let members = await dbGetAll('company_users',{user_id:uid});
 
   // 招待参加直後のみ最大3回リトライ（RLS反映遅延対策・通常ログインには影響しない）
   if(!members.length && _justJoined){
@@ -2761,6 +3182,15 @@ async function generatePDF(empList, period, filename) {
   const BATCH = 3;
   const _pages = new Array(empList.length);
   await document.fonts.ready;
+  // Task 4: フォントプリロード（PDF文字化け対策）
+  try {
+    await Promise.all([
+      document.fonts.load('400 14px "Noto Sans JP"'),
+      document.fonts.load('700 14px "Noto Sans JP"'),
+      document.fonts.load('900 14px "Noto Sans JP"'),
+    ]);
+  } catch(e) { console.warn('[PDF] font preload:', e.message); }
+
   for (let b = 0; b < empList.length; b += BATCH) {
     const batch = empList.slice(b, b + BATCH);
     showPdfProgress(b + 1, empList.length, batch[0].name);
@@ -2771,12 +3201,13 @@ async function generatePDF(empList, period, filename) {
         const canvas = await html2canvas(el, {
           scale: 2, useCORS: false, allowTaint: false,
           backgroundColor: '#ffffff', width: 794, windowWidth: 794, logging: false,
-          onclone: () => {
-            const orig = HTMLCanvasElement.prototype.getContext;
-            HTMLCanvasElement.prototype.getContext = function(type, opts) {
-              if (type === '2d') opts = { ...opts, willReadFrequently: true };
-              return orig.call(this, type, opts);
-            };
+          onclone: (clonedDoc) => {
+            const style = clonedDoc.createElement('style');
+            style.textContent = `
+              @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap');
+              * { font-family: "Noto Sans JP", sans-serif !important; }
+            `;
+            clonedDoc.head.appendChild(style);
           }
         });
         _pages[b + bi] = canvas.toDataURL('image/jpeg', 0.93);
@@ -4763,6 +5194,7 @@ async function exportDashboardReport(){
   ws2['!cols']=[{wch:14},{wch:10},{wch:8},{wch:12},{wch:12},{wch:12},{wch:10},{wch:10},{wch:12}];
   XLSX.utils.book_append_sheet(wb,ws2,`${currentPeriod}従業員明細`);
 
+
   // Sheet3: 部署別集計
   const deptMap={};
   employees.forEach(e=>{
@@ -4797,6 +5229,8 @@ window.showToast            = showToast;
 window.fmtY                 = fmtY;
 window.calc                 = calc;
 window.downloadImportTemplate = downloadImportTemplate;
+window.checkAutocalcImport = checkAutocalcImport;
+Object.defineProperty(window, 'currentCompany', { get: () => currentCompany, configurable: true });
 // taxRatesはgetterで公開（taxRatesが後で更新されても常に最新値を返す）
 Object.defineProperty(window, 'taxRates', {
   get: () => taxRates,
@@ -4928,8 +5362,20 @@ let acRows         = [];   // [{name, dept, pos, base, perf, age, dep, bank, ...
 let acResults      = [];   // 計算結果
 let acLastAiLogs   = [];
 let acLastAiN      = 0;
+let acChatHistory  = [];   // AIチャット会話履歴 [{role, content}]
 
 const acSleep = ms => new Promise(r => setTimeout(r, ms));
+
+// 簡易マークダウンレンダリング
+function acRenderMd(text){
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`(.+?)`/g, '<code style="background:var(--surface-3);padding:0.1rem 0.3rem;border-radius:3px;font-size:0.75rem">$1</code>')
+    .replace(/^- (.+)$/gm, '<span style="display:block;padding-left:0.75rem">• $1</span>')
+    .replace(/^(\d+)\. (.+)$/gm, '<span style="display:block;padding-left:0.75rem">$1. $2</span>')
+    .replace(/\n/g, '<br>');
+}
 
 // 自動マッピング候補
 const AC_AUTO_MAP = {
@@ -4952,6 +5398,10 @@ function acGoStep(n){
     if(p) p.style.display = (i===n) ? 'block' : 'none';
     const s = document.getElementById('acStepDot'+i);
     if(s) s.className = 'ac-step' + (i<n?' done' : i===n?' active' : '');
+  });
+  // コネクターのdoneクラス付与
+  document.querySelectorAll('.ac-step-connector').forEach((c,ci) => {
+    c.className = 'ac-step-connector' + (ci < n-1 ? ' done' : '');
   });
   acStep = n;
   const page = document.getElementById('pageAutocalc');
@@ -5030,6 +5480,9 @@ function acHandleFile(file){
     if(subEl) subEl.textContent = file.name + ' (' + acRows.length + '名)';
     const iconEl = document.getElementById('acDropIcon');
     if(iconEl) iconEl.textContent = '✅';
+    // ドロップゾーン成功パルス
+    const dz = document.getElementById('acDropzone');
+    if(dz){ dz.classList.add('success'); setTimeout(()=>dz.classList.remove('success'), 1500); }
   };
 
   if(ext === 'csv'){
@@ -5230,6 +5683,15 @@ async function acRunCalc(){
       } else if(rule.type === 'allowance_add'){
         extra += rule.value;
         empLogs.push(`手当+¥${rule.value.toLocaleString()}（${rule.label}）`);
+      } else if(rule.type === 'perf_min'){
+        perf = Math.max(perf, rule.value); perfOverridden = true;
+        empLogs.push(`係数最低${rule.value}保証（${rule.label}）`);
+      } else if(rule.type === 'allowance_set'){
+        extra = rule.value;
+        empLogs.push(`手当${rule.value}円固定（${rule.label}）`);
+      } else if(rule.type === 'base_multiply'){
+        row.base = Math.round(row.base * rule.value);
+        empLogs.push(`基本給×${rule.value}（${rule.label}）`);
       }
     }
     if(applied) aiAffected++;
@@ -5260,6 +5722,39 @@ async function acRunCalc(){
   acLastAiN    = aiAffected;
 
   acRenderResultTable();
+
+  // Task 8: AI解説を非同期で取得・表示（結果表示をブロックしない）
+  (async () => {
+    const explainWrap = document.getElementById('acExplainWrap');
+    const explainText = document.getElementById('acExplainText');
+    if (!explainWrap || !explainText) return;
+    try {
+      const tG = acResults.reduce((a,e)=>a+e.gross, 0);
+      const tN = acResults.reduce((a,e)=>a+e.monthlyNet, 0);
+      const tBG = acResults.reduce((a,e)=>a+(e.bonusGross||0), 0);
+      const aiN = acResults.filter(e=>e.aiApplied).length;
+      const resp = await fetch('/api/ai-explain', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          summary: {
+            emp_count: acResults.length,
+            total_gross: tG,
+            total_net: tN,
+            total_bonus: tBG,
+            ai_affected: aiN,
+            instruction: document.getElementById('acAiInstruction')?.value || '',
+          }
+        }),
+      });
+      const data = await resp.json();
+      if (data.explanation) {
+        explainText.textContent = data.explanation;
+        explainWrap.style.display = 'block';
+      }
+    } catch(e) { console.warn('[AC] explain failed:', e.message); }
+  })();
+
   acGoStep(3);
   if(btn){ btn.disabled=false; btn.textContent='⚡ 給与計算を実行する'; }
   showToast(acResults.length + '名の計算が完了しました ✅','success');
@@ -5268,6 +5763,10 @@ async function acRunCalc(){
 function acMatchTarget(target, row){
   if(!target || target === 'all') return true;
   const t = String(target);
+  // 複合条件（dept:X|pos:Y）
+  if(t.includes('|')){
+    return t.split('|').every(part => acMatchTarget(part.trim(), row));
+  }
   if(t.startsWith('dept:'))  return row.dept && row.dept.includes(t.slice(5));
   if(t.startsWith('name:'))  return row.name === t.slice(5);
   if(t.startsWith('pos:'))   return row.pos  && row.pos.includes(t.slice(4));
@@ -5541,20 +6040,42 @@ async function acCallAI(instruction){
 
 function acParseManual(instruction){
   const rules = [];
-  instruction.split('\n').forEach(line=>{
-    const l = line.trim(); if(!l) return;
-    const mAll  = l.match(/(?:全員|全社員|全スタッフ|みんな).*?(\d+\.?\d*)\s*倍/);
-    if(mAll){ rules.push({type:'perf_multiply',target:'all',value:Number(mAll[1]),label:'全員×'+mAll[1]+'倍'}); return; }
-    const mPay  = l.match(/(?:給与|給料|基本給).*?(\d+\.?\d*)\s*倍/);
-    if(mPay){ rules.push({type:'perf_multiply',target:'all',value:Number(mPay[1]),label:'全員給与×'+mPay[1]+'倍'}); return; }
+  instruction.split('\n').forEach(line => {
+    const l = line.trim(); if (!l) return;
+
+    // ① 全員への倍率
+    const mAll = l.match(/(?:全員|全社員|全スタッフ|みんな).*?(\d+\.?\d*)\s*倍/);
+    if (mAll) { rules.push({ type:'perf_multiply', target:'all', value:Number(mAll[1]), label:'全員×'+mAll[1]+'倍' }); return; }
+
+    // ② 基本給・給与を倍率変更（全員）
+    const mBase = l.match(/(?:給与|給料|基本給).*?(?:全員|全社員)?.*?(\d+\.?\d*)\s*倍/);
+    if (mBase) { rules.push({ type:'base_multiply', target:'all', value:Number(mBase[1]), label:'全員基本給×'+mBase[1]+'倍' }); return; }
+
+    // ③ 部署への倍率
     const mDept = l.match(/([^\s]+[部課室グループ]).*?(\d+\.?\d*)\s*倍/);
-    if(mDept){ rules.push({type:'perf_multiply',target:'dept:'+mDept[1],value:Number(mDept[2]),label:mDept[1]+'×'+mDept[2]+'倍'}); return; }
-    const mAll2 = l.match(/(?:全員|全社員).*?(\d{3,8})\s*円/);
-    if(mAll2){ rules.push({type:'allowance_add',target:'all',value:Number(mAll2[1]),label:'全員手当+'+mAll2[1]+'円'}); return; }
-    const mSet  = l.match(/(?:係数|全員)\s*(\d+\.?\d*)\s*(?:固定|に設定|にする)/);
-    if(mSet){ rules.push({type:'perf_set',target:'all',value:Number(mSet[1]),label:'係数'+mSet[1]+'固定'}); }
+    if (mDept) { rules.push({ type:'perf_multiply', target:'dept:'+mDept[1], value:Number(mDept[2]), label:mDept[1]+'×'+mDept[2]+'倍' }); return; }
+
+    // ④ 役職への倍率
+    const mPos = l.match(/([^\s]+(?:長|役|員|部長|課長|主任|マネージャー|リーダー)).*?(\d+\.?\d*)\s*倍/);
+    if (mPos) { rules.push({ type:'perf_multiply', target:'pos:'+mPos[1], value:Number(mPos[2]), label:mPos[1]+'×'+mPos[2]+'倍' }); return; }
+
+    // ⑤ 全員への手当追加
+    const mAdd = l.match(/(?:全員|全社員).*?(\d{3,8})\s*円/);
+    if (mAdd) { rules.push({ type:'allowance_add', target:'all', value:Number(mAdd[1]), label:'全員手当+'+mAdd[1]+'円' }); return; }
+
+    // ⑥ 部署への手当追加
+    const mDeptAdd = l.match(/([^\s]+[部課室グループ]).*?(\d{3,8})\s*円/);
+    if (mDeptAdd) { rules.push({ type:'allowance_add', target:'dept:'+mDeptAdd[1], value:Number(mDeptAdd[2]), label:mDeptAdd[1]+'手当+'+mDeptAdd[2]+'円' }); return; }
+
+    // ⑦ 係数を固定値に
+    const mSet = l.match(/(?:係数|全員)\s*(\d+\.?\d*)\s*(?:固定|に設定|にする)/);
+    if (mSet) { rules.push({ type:'perf_set', target:'all', value:Number(mSet[1]), label:'係数'+mSet[1]+'固定' }); return; }
+
+    // ⑧ 最低係数保証
+    const mMin = l.match(/(?:最低|以上|以下.*引き上げ|保証).*?(\d+\.?\d*)/);
+    if (mMin) { rules.push({ type:'perf_min', target:'all', value:Number(mMin[1]), label:'係数最低'+mMin[1]+'保証' }); return; }
   });
-  return {rules, logs:['（パターンマッチで解析）']};
+  return { rules, logs: rules.length > 0 ? ['（パターンマッチで '+rules.length+' 件解析）'] : [] };
 }
 
 // ─────────────────────────────────────────
@@ -5616,6 +6137,94 @@ document.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('acBtnRestart')?.addEventListener('click', acReset);
   document.getElementById('acBtnTemplate')?.addEventListener('click', downloadImportTemplate);
 
+  // Salario給与計算へ反映
+  document.getElementById('acBtnSendToSalario')?.addEventListener('click', () => {
+    if (!acResults.length) { showToast('計算結果がありません', 'error'); return; }
+    const month = document.getElementById('acMonth')?.value || '';
+    localStorage.setItem('salario_autocalc_import', JSON.stringify({
+      company_id: typeof currentCompany !== 'undefined' ? currentCompany?.id : null,
+      timestamp:  Date.now(),
+      month,
+      employees: acResults.map(e => ({
+        name: e.name, dept: e.dept||'', pos: e.pos||'',
+        base: e.base, perf: e.perf, mag: e.mag||0,
+        age: e.age||35, dep: e.dep||0, bank: e.bank||'',
+      })),
+    }));
+    if (typeof showPage === 'function') showPage('payroll');
+    setTimeout(() => { if (typeof checkAutocalcImport === 'function') checkAutocalcImport(); }, 300);
+  });
+
+  // AIチャット（強化機能：会話履歴・バブルUI・タイピングアニメーション）
+  document.getElementById('acBtnChat')?.addEventListener('click', async () => {
+    const question = document.getElementById('acChatInput')?.value?.trim();
+    if (!question) return;
+    const btn = document.getElementById('acBtnChat');
+    const logEl = document.getElementById('acChatLog');
+    const wrap  = document.getElementById('acChatWrap');
+    btn.disabled = true; btn.textContent = '回答中...';
+    document.getElementById('acChatInput').value = '';
+
+    // 会話履歴に追加
+    acChatHistory.push({ role: 'user', content: question });
+
+    // ユーザーバブル表示
+    if (logEl && wrap) {
+      wrap.style.display = 'block';
+      logEl.innerHTML += `<div class="ac-chat-bubble user">${esc(question)}</div>`;
+    }
+
+    // タイピングインジケーター表示
+    const typingId = 'acTyping_' + Date.now();
+    if (logEl) {
+      logEl.innerHTML += `<div id="${typingId}" class="ac-typing"><div class="ac-typing-dot"></div><div class="ac-typing-dot"></div><div class="ac-typing-dot"></div></div>`;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    try {
+      const resp = await fetch('/api/ai-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question,
+          context: 'autocalc',
+          history: acChatHistory.slice(-10),
+        }),
+      });
+      const data = await resp.json();
+      const answer = data.answer || 'エラーが発生しました';
+
+      // 会話履歴に追加
+      acChatHistory.push({ role: 'assistant', content: answer });
+
+      // タイピングインジケーター削除
+      const typEl = document.getElementById(typingId);
+      if (typEl) typEl.remove();
+
+      // AIバブル表示（簡易マークダウン描画）
+      if (logEl) {
+        logEl.innerHTML += `<div class="ac-chat-bubble ai">${acRenderMd(answer)}</div>`;
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      // 次の質問候補表示
+      if (data.suggestions && data.suggestions.length > 0 && logEl) {
+        const pills = data.suggestions.map(s =>
+          `<button class="btn btn-sm btn-secondary" style="font-size:0.68rem;margin:0.15rem" onclick="document.getElementById('acChatInput').value=this.textContent;document.getElementById('acBtnChat').click()">${esc(s)}</button>`
+        ).join('');
+        logEl.innerHTML += `<div style="margin-bottom:0.5rem;text-align:center">${pills}</div>`;
+      }
+    } catch(e) {
+      const typEl = document.getElementById(typingId);
+      if (typEl) typEl.remove();
+      if (logEl) {
+        logEl.innerHTML += `<div class="ac-chat-bubble ai" style="border-color:var(--red)">⚠ エラー: ${esc(e.message)}</div>`;
+      }
+    } finally {
+      btn.disabled = false; btn.textContent = '💬 AIに質問する';
+    }
+  });
+
   // 出力
   document.getElementById('acBtnDlSlip')?.addEventListener('click', acExportExcel);
   document.getElementById('acBtnDlLedger')?.addEventListener('click', acExportLedger);
@@ -5653,3 +6262,4 @@ window.acOverride    = acOverride;
 </script>
 </body>
 </html>
+
