@@ -33,6 +33,18 @@ AutoCalcは給与計算SaaSで、Excelの名簿をアップロードして自然
 
 質問に対して簡潔・丁寧に日本語で答えてください。`;
 
+  // 会話履歴対応
+  const messages = [{ role: 'system', content: SYSTEM_PROMPT }];
+  if (body.history && Array.isArray(body.history)) {
+    body.history.forEach(h => {
+      if (h.role === 'user' || h.role === 'assistant') {
+        messages.push({ role: h.role, content: h.content });
+      }
+    });
+  } else {
+    messages.push({ role: 'user', content: body.question });
+  }
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
 
@@ -43,10 +55,7 @@ AutoCalcは給与計算SaaSで、Excelの名簿をアップロードして自然
       signal: controller.signal,
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: body.question },
-        ],
+        messages,
         temperature: 0.3,
         max_tokens: 512,
       }),
