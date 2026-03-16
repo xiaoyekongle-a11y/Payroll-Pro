@@ -1169,17 +1169,18 @@ body.dark .att-absence-sel{ background:var(--surface-2) }
     <button class="header-btn" id="btnSignOut">ログアウト</button>
   </header>
   <nav class="nav-tabs">
+    <div class="nav-tab" data-page="autocalc" style="font-weight:800;color:var(--accent)">⚡ AutoCalc</div>
     <div class="nav-tab active" data-page="dashboard">📊 ダッシュボード</div>
-    <div class="nav-tab" data-page="autocalc" style="color:var(--accent);font-weight:800">⚡ AutoCalc</div>
-    <div class="nav-tab" data-page="payroll">💴 給与計算</div>
     <div class="nav-tab" data-page="history">📂 履歴</div>
-    <div class="nav-tab" data-page="attendance">🕐 勤怠管理</div>
-    <div class="nav-tab" data-page="yearend">📋 年末調整</div>
-    <div class="nav-tab owner-only" data-page="transfer">🏦 振込管理</div>
-    <div class="nav-tab owner-only" data-page="shahou">🏛 社保届出</div>
-    <div class="nav-tab" data-page="taxrates">⚙ 税率管理</div>
-    <div class="nav-tab owner-only" data-page="users">👤 ユーザー</div>
-    <div class="nav-tab owner-only" data-page="settings">🏢 会社設定</div>
+    <div class="nav-tab" data-page="payroll">📝 給与計算</div>
+    <div class="nav-tab owner-only" data-page="settings">🏢 設定</div>
+    <!-- 詳細機能（設定画面から有効化） -->
+    <div class="nav-tab advanced-nav" data-page="attendance" style="display:none">🕐 勤怠</div>
+    <div class="nav-tab advanced-nav" data-page="yearend" style="display:none">📋 年末調整</div>
+    <div class="nav-tab owner-only advanced-nav" data-page="transfer" style="display:none">🏦 振込</div>
+    <div class="nav-tab owner-only advanced-nav" data-page="shahou" style="display:none">🏛 社保</div>
+    <div class="nav-tab advanced-nav" data-page="taxrates" style="display:none">⚙ 税率</div>
+    <div class="nav-tab owner-only advanced-nav" data-page="users" style="display:none">👤 ユーザー</div>
   </nav>
   <div id="pages">
     <div class="page active" id="pageDashboard">
@@ -1619,213 +1620,207 @@ body.dark .att-absence-sel{ background:var(--surface-2) }
   ══════════════════════════════════════════════════════ -->
   <div class="page" id="pageAutocalc">
 
-    <!-- ページヘッダー -->
-    <div style="margin-bottom:0.75rem">
-      <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;color:var(--blue)">⚡ AutoCalc — 給与自動計算</div>
-      <div style="font-size:0.75rem;color:var(--muted);margin-top:0.2rem">
-        業績名簿（Excel）を投げて、追加指示を書くだけで給与明細Excelが出てきます
+    <!-- ═══ HERO ═══ -->
+    <div style="text-align:center;padding:1.5rem 1rem 1rem;max-width:600px;margin:0 auto">
+      <div style="font-size:2.2rem;margin-bottom:0.4rem">⚡</div>
+      <h1 style="font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:var(--ink);margin-bottom:0.3rem">AutoCalc</h1>
+      <p style="font-size:0.82rem;color:var(--muted);line-height:1.6">
+        Excelの従業員名簿をアップロードして、AIに指示を出すだけ。<br>
+        給与計算→Excel出力まで1分で完了します。
+      </p>
+    </div>
+
+    <!-- ═══ 4ステップ表示 ═══ -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:1.5rem;overflow-x:auto;padding:0 1rem">
+      <div class="ac-step active" id="acStep1">
+        <div class="ac-step-num">1</div>
+        <div class="ac-step-label">名簿アップロード</div>
+      </div>
+      <div class="ac-step-connector"></div>
+      <div class="ac-step" id="acStep2">
+        <div class="ac-step-num">2</div>
+        <div class="ac-step-label">AI指示入力</div>
+      </div>
+      <div class="ac-step-connector"></div>
+      <div class="ac-step" id="acStep3">
+        <div class="ac-step-num">3</div>
+        <div class="ac-step-label">結果確認</div>
+      </div>
+      <div class="ac-step-connector"></div>
+      <div class="ac-step" id="acStep4icon">
+        <div class="ac-step-num">4</div>
+        <div class="ac-step-label">Excel出力</div>
       </div>
     </div>
 
-    <!-- ステップインジケーター（3ステップ） -->
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:0.65rem 1rem;margin-bottom:0.85rem;display:flex;align-items:center;overflow-x:auto" id="acStepBar">
-      <div class="ac-step active" id="acStep1"><div class="ac-step-num">1</div><div class="ac-step-label">設定</div></div>
-      <div class="ac-step-connector"></div>
-      <div class="ac-step" id="acStep2"><div class="ac-step-num">2</div><div class="ac-step-label">名簿 → 計算</div></div>
-      <div class="ac-step-connector"></div>
-      <div class="ac-step" id="acStep3"><div class="ac-step-num">3</div><div class="ac-step-label">Excel出力</div></div>
-    </div>
-
-    <!-- STEP 1: 設定（税率確認 + 配分設定 を1画面に統合） -->
-    <div id="acPanelStep1">
+    <!-- ═══ STEP 1: 名簿アップロード ═══ -->
+    <div id="acPanelStep1" style="max-width:720px;margin:0 auto">
       <div class="panel">
-        <div class="panel-header">⚙ STEP 1 — 計算設定</div>
+        <div class="panel-header primary">📂 STEP 1 — 従業員名簿をアップロード</div>
         <div class="panel-body">
-
-          <!-- 税率サマリー -->
-          <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.5rem">社会保険料率（税率管理ページで変更可）</div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.5rem;margin-bottom:1.1rem" id="acRateDisplay"></div>
-
-          <!-- 配分設定 -->
-          <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.5rem;padding-bottom:0.3rem;border-bottom:1px solid var(--border-light)">業績係数</div>
-          <div class="form-row" style="margin-bottom:0.85rem">
-            <div class="form-group">
-              <label>計算方法</label>
-              <select id="acPerfMethod">
-                <option value="direct">名簿の値をそのまま使用</option>
-                <option value="score">スコア正規化（0〜2.0に変換）</option>
-                <option value="rank">順位→係数変換（上位25%=1.2倍）</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>係数の最小値</label>
-              <input type="number" id="acPerfMin" value="0.80" step="0.01" min="0" max="5">
-            </div>
-            <div class="form-group">
-              <label>係数の最大値</label>
-              <input type="number" id="acPerfMax" value="1.30" step="0.01" min="0" max="5">
-            </div>
-          </div>
-
-          <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.5rem;padding-bottom:0.3rem;border-bottom:1px solid var(--border-light)">ボーナス</div>
-          <div class="form-row" style="margin-bottom:0.85rem">
-            <div class="form-group">
-              <label>計算方法</label>
-              <select id="acBonusMethod">
-                <option value="multiplier">基本給×倍率</option>
-                <option value="fixed_pool">総額プールを業績比で分配</option>
-                <option value="none">ボーナスなし（月給のみ）</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label id="acBonusParamLabel">ボーナス倍率（月）</label>
-              <input type="number" id="acBonusParam" value="2.0" step="0.1" min="0">
-            </div>
-            <div class="form-group">
-              <label>出力対象</label>
-              <select id="acBonusTarget">
-                <option value="both">月給＋ボーナス</option>
-                <option value="monthly">月給のみ</option>
-                <option value="bonus">ボーナスのみ</option>
-              </select>
-            </div>
-          </div>
-
-          <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.5rem;padding-bottom:0.3rem;border-bottom:1px solid var(--border-light)">共通手当・対象月</div>
-          <div class="form-row" style="margin-bottom:1rem">
-            <div class="form-group">
-              <label>通勤手当（円/人・月）</label>
-              <input type="number" id="acAllowCommute" value="0" step="1000" min="0">
-            </div>
-            <div class="form-group">
-              <label>住宅手当（円/人・月）</label>
-              <input type="number" id="acAllowHousing" value="0" step="1000" min="0">
-            </div>
-            <div class="form-group">
-              <label>給与年月</label>
-              <input type="month" id="acTargetMonth">
-            </div>
-          </div>
-
-          <!-- 設定記憶バッジ -->
-          <div id="acSettingSavedBadge" style="display:none;font-size:0.68rem;color:var(--green);margin-bottom:0.75rem">✅ 前回の設定を読み込みました</div>
-
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <button class="btn btn-secondary btn-sm" id="acBtnSaveSetting">💾 設定を保存</button>
-            <button class="btn btn-primary" id="acBtnGoStep2">次へ：名簿アップロード →</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- STEP 2: 名簿アップロード + AI指示 + 計算実行（1画面） -->
-    <div id="acPanelStep2" style="display:none">
-      <div class="panel" style="margin-bottom:0.85rem">
-        <div class="panel-header">📂 業績名簿をアップロード</div>
-        <div class="panel-body">
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.75rem">
-            <div style="font-size:0.75rem;color:var(--muted)">1行目がヘッダー行のExcel（.xlsx/.xls）またはCSV</div>
-            <button class="btn btn-secondary btn-sm" id="acBtnTemplate">⬇ テンプレDL</button>
-          </div>
 
           <!-- ドロップゾーン -->
-          <div id="acDropzone" style="border:2px dashed var(--border);border-radius:var(--radius-lg);padding:1.5rem;text-align:center;cursor:pointer;transition:all var(--t);background:var(--surface-sub);position:relative">
-            <input type="file" id="acFileInput" accept=".xlsx,.xls,.csv" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%">
-            <div id="acDropzoneIcon" style="font-size:2rem;margin-bottom:0.3rem;opacity:0.5">📊</div>
-            <div id="acDropzoneTitle" style="font-weight:700;font-size:0.85rem;margin-bottom:0.15rem">Excelファイルをドロップ、またはクリックして選択</div>
-            <div id="acDropzoneSub" style="font-size:0.7rem;color:var(--muted)">.xlsx / .xls / .csv 対応</div>
+          <div id="acDropzone" style="border:2.5px dashed var(--border);border-radius:var(--r-lg);padding:2.5rem 1.5rem;text-align:center;cursor:pointer;transition:all var(--t);background:var(--surface-2);position:relative;margin-bottom:1rem">
+            <input type="file" id="acFileInput" accept=".xlsx,.xls,.csv" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%">
+            <div id="acDropzoneIcon" style="font-size:2.5rem;margin-bottom:0.5rem">📊</div>
+            <div id="acDropzoneTitle" style="font-weight:700;font-size:0.95rem;margin-bottom:0.25rem">Excelファイルをドロップ、またはクリックして選択</div>
+            <div id="acDropzoneSub" style="font-size:0.72rem;color:var(--muted)">.xlsx / .xls / .csv 対応</div>
+          </div>
+
+          <div style="text-align:center;margin-bottom:1rem">
+            <button class="btn btn-ghost btn-sm" id="acBtnTemplate">📋 テンプレートをDL</button>
           </div>
 
           <!-- 列マッピング（アップロード後に表示） -->
-          <div id="acMappingPanel" style="display:none;margin-top:0.85rem">
-            <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.4rem">列マッピング確認</div>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0.4rem" id="acMappingFields"></div>
-            <div style="margin-top:0.65rem">
-              <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.3rem">データプレビュー（先頭5行）</div>
-              <div class="tbl-wrap" id="acPreviewTable"></div>
+          <div id="acMappingPanel" style="display:none">
+            <div style="font-size:0.72rem;font-weight:700;color:var(--ink);margin-bottom:0.5rem">✅ <span id="acFileName"></span> を読み込みました</div>
+            <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:0.4rem">列マッピング確認</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.4rem;margin-bottom:0.75rem" id="acMappingFields"></div>
+            <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:0.3rem">プレビュー（先頭5行）</div>
+            <div class="tbl-wrap" id="acPreviewTable" style="margin-bottom:1rem"></div>
+          </div>
+
+          <!-- ボーナス設定（シンプル化） -->
+          <div id="acBonusPanel" style="display:none;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r);padding:0.85rem;margin-bottom:1rem">
+            <div style="font-size:0.72rem;font-weight:700;color:var(--ink);margin-bottom:0.6rem">💴 ボーナス設定（任意）</div>
+            <div class="form-row" style="margin-bottom:0">
+              <div class="form-group">
+                <label>計算方法</label>
+                <select id="acBonusMethod">
+                  <option value="none">ボーナスなし（月給のみ）</option>
+                  <option value="multiplier">基本給 × 倍率</option>
+                  <option value="fixed_pool">総額プールを業績比で分配</option>
+                </select>
+              </div>
+              <div class="form-group" id="acBonusParamWrap">
+                <label id="acBonusParamLabel">ボーナス倍率（月）</label>
+                <input type="number" id="acBonusParam" value="2.0" step="0.1" min="0">
+              </div>
+              <div class="form-group">
+                <label>給与年月</label>
+                <input type="month" id="acTargetMonth">
+              </div>
             </div>
+          </div>
+
+          <!-- 非表示：互換性のための隠しフィールド -->
+          <input type="hidden" id="acBonusTarget" value="both">
+          <input type="hidden" id="acPerfMethod" value="direct">
+          <input type="hidden" id="acPerfMin" value="0">
+          <input type="hidden" id="acPerfMax" value="99">
+          <input type="hidden" id="acAllowCommute" value="0">
+          <input type="hidden" id="acAllowHousing" value="0">
+
+          <div style="text-align:right">
+            <button class="btn btn-primary" id="acBtnGoStep2" disabled>次へ：AI指示入力 →</button>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- AI指示 + 計算実行 -->
+    <!-- ═══ STEP 2: AI指示入力 ═══ -->
+    <div id="acPanelStep2" style="display:none;max-width:720px;margin:0 auto">
       <div class="panel">
-        <div class="panel-header">🤖 追加指示 → 計算実行</div>
+        <div class="panel-header primary">🤖 STEP 2 — AIへの指示（任意・書かなくてもOK）</div>
         <div class="panel-body">
-          <div style="font-size:0.72rem;font-weight:700;color:var(--blue);margin-bottom:0.4rem">追加指示（自然言語でOK・書かなくてもOK）</div>
-          <textarea id="acAiInstruction" rows="3" style="width:100%;padding:0.5rem 0.65rem;border:1px solid var(--border);border-radius:var(--radius);font-family:var(--font-body);font-size:0.82rem;background:#fff;color:var(--ink);resize:vertical;line-height:1.6;margin-bottom:0.5rem" placeholder="例：給与を全員2倍にする / 営業部の係数を1.2倍 / 全員に5000円の手当を追加"></textarea>
-          <div style="display:flex;flex-wrap:wrap;gap:0.35rem;margin-bottom:1rem" id="acAiExamples">
-            <span class="ac-ai-ex" data-text="給与を全員2倍にする">全員2倍</span>
-            <span class="ac-ai-ex" data-text="営業部の業績係数を1.2倍にする">営業部+20%</span>
-            <span class="ac-ai-ex" data-text="全員に特別手当5000円を追加する">手当+5000円</span>
-            <span class="ac-ai-ex" data-text="部長以上は係数1.3、それ以外は1.0にする">役職別係数</span>
+
+          <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.85rem">
+            自然言語で給与ルールを指示できます。AIが自動解釈して計算に反映します。
+          </p>
+
+          <textarea id="acAiInstruction" rows="4"
+            style="width:100%;padding:0.65rem 0.75rem;border:1.5px solid var(--border);border-radius:var(--r);font-family:var(--font-body);font-size:0.88rem;background:var(--surface);color:var(--ink);resize:vertical;line-height:1.65;margin-bottom:0.65rem"
+            placeholder="例：給与を全員2倍にする&#10;例：営業部の係数を1.2倍、全員に5000円の手当を追加&#10;（何も書かなければ名簿の値そのまま計算）"></textarea>
+
+          <!-- サンプルボタン -->
+          <div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:1.25rem">
+            <button class="btn btn-secondary btn-sm ac-ai-ex" data-text="給与を全員2倍にする">全員2倍</button>
+            <button class="btn btn-secondary btn-sm ac-ai-ex" data-text="営業部の係数を1.2倍にする">営業部+20%</button>
+            <button class="btn btn-secondary btn-sm ac-ai-ex" data-text="全員に5000円の手当を追加">手当+5000円</button>
+            <button class="btn btn-secondary btn-sm ac-ai-ex" data-text="部長以上は係数1.3、それ以外は1.0にする">役職別係数</button>
+            <button class="btn btn-ghost btn-sm ac-ai-ex" data-text="">指示なし（そのまま計算）</button>
           </div>
 
-          <div style="text-align:center;margin-bottom:0.75rem">
-            <button class="btn btn-primary btn-lg" id="acBtnCalc" disabled style="min-width:220px;font-size:0.9rem">
+          <div style="display:flex;gap:0.5rem;justify-content:space-between;align-items:center">
+            <button class="btn btn-ghost btn-sm" id="acBtnBackStep1">← 戻る</button>
+            <button class="btn btn-primary btn-lg" id="acBtnCalc" style="min-width:200px">
               ⚡ 給与計算を実行する
             </button>
           </div>
 
           <!-- 進捗 -->
-          <div id="acProgressWrap" style="display:none;margin:0.5rem 0">
+          <div id="acProgressWrap" style="display:none;margin-top:0.85rem">
             <div style="height:6px;background:var(--border);border-radius:99px;overflow:hidden">
-              <div id="acProgressBar" style="height:100%;background:var(--blue);border-radius:99px;transition:width 0.4s ease;width:0%"></div>
+              <div id="acProgressBar" style="height:100%;background:var(--accent);border-radius:99px;transition:width 0.4s ease;width:0%"></div>
             </div>
-            <div id="acProgressText" style="font-size:0.68rem;color:var(--muted);font-family:var(--font-mono);margin-top:0.2rem;text-align:right">計算中...</div>
-          </div>
-
-          <!-- 計算結果 -->
-          <div id="acResultPanel" style="display:none">
-            <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin:0.75rem 0 0.4rem;padding-bottom:0.3rem;border-bottom:1px solid var(--border-light)">計算結果</div>
-            <div id="acResultSummary"></div>
-            <div class="tbl-wrap" id="acResultTable"></div>
-            <div id="acAiLog" style="display:none;margin-top:0.5rem;font-size:0.74rem;font-family:var(--font-mono);background:var(--surface-sub);border:1px solid var(--border);border-radius:var(--radius);padding:0.65rem;line-height:1.8"></div>
-          </div>
-
-          <div class="btn-group" id="acStep4Btns" style="display:none">
-            <button class="btn btn-secondary btn-sm" id="acBtnBackStep1">← 設定に戻る</button>
-            <button class="btn btn-green" id="acBtnGoStep3">📥 Excelで出力する →</button>
+            <div id="acProgressText" style="font-size:0.68rem;color:var(--muted);font-family:var(--font-mono);margin-top:0.3rem;text-align:center">AIが指示を解析中...</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- STEP 3: Excel出力 -->
-    <div id="acPanelStep3" style="display:none">
+    <!-- ═══ STEP 3: 計算結果確認 ═══ -->
+    <div id="acPanelStep3" style="display:none;max-width:960px;margin:0 auto">
       <div class="panel">
-        <div class="panel-header">📥 STEP 3 — Excel出力</div>
+        <div class="panel-header primary">✅ STEP 3 — 計算結果を確認</div>
+        <div class="panel-body" style="padding:0">
+
+          <!-- サマリーカード -->
+          <div style="padding:1rem 1rem 0" id="acResultSummary"></div>
+
+          <!-- AIログ -->
+          <div id="acAiLog" style="display:none;margin:0.5rem 1rem;font-size:0.74rem;font-family:var(--font-mono);background:var(--accent-bg);border:1px solid var(--accent-ring);border-radius:var(--r);padding:0.65rem;line-height:1.8;color:var(--accent)"></div>
+
+          <!-- 結果テーブル -->
+          <div class="tbl-wrap" id="acResultTable" style="padding:0 0 0.5rem"></div>
+
+          <div style="padding:0.75rem 1rem;display:flex;gap:0.5rem;justify-content:space-between;border-top:1px solid var(--border-2)">
+            <button class="btn btn-ghost btn-sm" id="acBtnBackStep2">← 指示を修正する</button>
+            <button class="btn btn-green btn-lg" id="acBtnGoStep4">📥 Excelで出力する →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ STEP 4: 出力 ═══ -->
+    <div id="acPanelStep4" style="display:none;max-width:720px;margin:0 auto">
+      <div class="panel">
+        <div class="panel-header primary">📥 STEP 4 — 出力</div>
         <div class="panel-body">
-          <div style="text-align:center;padding:0.75rem 0 1.25rem">
-            <div style="font-size:2rem;margin-bottom:0.4rem">🎉</div>
-            <div style="font-weight:700;font-size:0.95rem;margin-bottom:0.2rem">計算完了！</div>
+
+          <div style="text-align:center;padding:0.5rem 0 1.25rem">
+            <div style="font-size:2.5rem;margin-bottom:0.3rem">🎉</div>
+            <div style="font-weight:900;font-size:1rem;margin-bottom:0.15rem">計算完了！</div>
             <div style="font-size:0.78rem;color:var(--muted)" id="acOutputSummary"></div>
           </div>
 
-          <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.75rem">出力形式を選択</div>
-          <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
-            <div class="stat-card" style="text-align:center;cursor:pointer;border-left:3px solid var(--blue)">
-              <div style="font-size:1.4rem;margin-bottom:0.3rem">📋</div>
-              <div style="font-weight:700;font-size:0.82rem;margin-bottom:0.15rem">給与明細一覧</div>
-              <div style="font-size:0.68rem;color:var(--muted);margin-bottom:0.6rem">全員の明細＋計算条件</div>
-              <button class="btn btn-primary btn-sm" style="width:100%" id="acBtnDlSlip">⬇ DL</button>
+          <!-- 出力ボタン（大きく・明確に） -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem">
+
+            <div style="border:2px solid var(--accent);border-radius:var(--r-lg);padding:1.25rem;text-align:center">
+              <div style="font-size:1.6rem;margin-bottom:0.4rem">📋</div>
+              <div style="font-weight:700;font-size:0.88rem;margin-bottom:0.2rem">給与明細一覧</div>
+              <div style="font-size:0.68rem;color:var(--muted);margin-bottom:0.75rem">全員の明細・合計・ボーナス含む</div>
+              <button class="btn btn-primary" style="width:100%" id="acBtnDlSlip">⬇ Excel DL</button>
             </div>
-            <div class="stat-card" style="text-align:center;cursor:pointer">
-              <div style="font-size:1.4rem;margin-bottom:0.3rem">📒</div>
-              <div style="font-weight:700;font-size:0.82rem;margin-bottom:0.15rem">給与台帳</div>
-              <div style="font-size:0.68rem;color:var(--muted);margin-bottom:0.6rem">会計・経理用の集計表</div>
-              <button class="btn btn-secondary btn-sm" style="width:100%" id="acBtnDlLedger">⬇ DL</button>
-            </div>
-            <div class="stat-card" style="text-align:center;cursor:pointer">
-              <div style="font-size:1.4rem;margin-bottom:0.3rem">💳</div>
-              <div style="font-weight:700;font-size:0.82rem;margin-bottom:0.15rem">振込データ</div>
-              <div style="font-size:0.68rem;color:var(--muted);margin-bottom:0.6rem">銀行振込用CSV</div>
-              <button class="btn btn-secondary btn-sm" style="width:100%" id="acBtnDlTransfer">⬇ DL</button>
+
+            <div style="border:1px solid var(--border);border-radius:var(--r-lg);padding:1.25rem;text-align:center">
+              <div style="font-size:1.6rem;margin-bottom:0.4rem">💳</div>
+              <div style="font-weight:700;font-size:0.88rem;margin-bottom:0.2rem">振込データ CSV</div>
+              <div style="font-size:0.68rem;color:var(--muted);margin-bottom:0.75rem">銀行振込用（氏名・金額）</div>
+              <button class="btn btn-secondary" style="width:100%" id="acBtnDlTransfer">⬇ CSV DL</button>
             </div>
           </div>
 
-          <div class="btn-group" style="justify-content:center;margin-top:1rem">
-            <button class="btn btn-secondary" id="acBtnRestart">🔄 新しく計算する</button>
+          <div style="border:1px solid var(--border);border-radius:var(--r-lg);padding:1rem;text-align:center;margin-bottom:1rem">
+            <div style="font-size:1.3rem;margin-bottom:0.3rem">📒</div>
+            <div style="font-weight:700;font-size:0.85rem;margin-bottom:0.15rem">給与台帳（会計・経理用）</div>
+            <div style="font-size:0.68rem;color:var(--muted);margin-bottom:0.6rem">仕訳・経費計上用の集計表</div>
+            <button class="btn btn-secondary btn-sm" id="acBtnDlLedger">⬇ Excel DL</button>
+          </div>
+
+          <div style="text-align:center">
+            <button class="btn btn-ghost" id="acBtnRestart">🔄 新しく計算する</button>
           </div>
         </div>
       </div>
@@ -2128,17 +2123,12 @@ function authErrMsg(err) {
   const m = msg.toLowerCase();
   if(m.includes('invalid login credentials'))      return 'メールアドレスまたはパスワードが正しくありません';
   if(m.includes('email not confirmed'))            return 'メールアドレスの確認が完了していません。受信トレイをご確認ください';
-  if(m.includes('user already registered') ||
-     m.includes('already been registered') ||
-     m.includes('email already') ||
-     m.includes('already registered'))             return 'このメールアドレスは既に登録されています。ログインをお試しください';
-  if(m.includes('password should be at least') ||
-     m.includes('password is too short'))          return 'パスワードは6文字以上にしてください';
-  if(m.includes('unable to validate email') ||
-     m.includes('invalid email'))                  return 'メールアドレスの形式が正しくありません';
+  if(m.includes('user already registered') || m.includes('already been registered') ||
+     m.includes('email already') || m.includes('already registered')) return 'このメールアドレスは既に登録されています。ログインをお試しください';
+  if(m.includes('password should be at least') || m.includes('password is too short')) return 'パスワードは6文字以上にしてください';
+  if(m.includes('unable to validate email') || m.includes('invalid email')) return 'メールアドレスの形式が正しくありません';
   if(m.includes('signup_disabled'))                return '現在新規登録は無効です。管理者にお問い合わせください';
-  if(m.includes('over_email_send_rate_limit') ||
-     m.includes('rate limit'))                     return 'メール送信の上限に達しました。しばらく待ってから再試行してください';
+  if(m.includes('over_email_send_rate_limit') || m.includes('rate limit')) return 'メール送信の上限に達しました。しばらく待ってから再試行してください';
   if(m.includes('network') || m.includes('fetch')) return 'ネットワークエラーが発生しました。接続を確認してください';
   return msg;
 }
@@ -2157,13 +2147,13 @@ $('btnLogin').addEventListener('click',async()=>{
     showAuthErr('loginErr', authErrMsg(error.message));
   } else {
     btn.textContent='接続中...';
-    // 5秒以内に画面遷移しなければボタンを復元
+    // 10秒以内に画面遷移しなければボタンを復元（固まり防止）
     setTimeout(()=>{
       if(btn.disabled){
         btn.disabled=false;btn.textContent='ログイン';
         showAuthErr('loginErr','接続がタイムアウトしました。再度お試しください。');
       }
-    },5000);
+    },10000);
   }
 });
 
@@ -2224,10 +2214,9 @@ $('btnJoin').addEventListener('click',async()=>{
 
   const btn = $('btnJoin');
   if(btn.disabled) return;
-  btn.disabled = true;
-  btn.textContent = 'コード確認中...';
+  btn.disabled = true; btn.textContent = 'コード確認中...';
 
-  // ── Step 1: 招待コードを最初に確認（アカウント操作の前）──
+  // Step 1: 招待コードを最初に確認
   const company = await dbGet('companies', { invite_code: code });
   if(!company) {
     btn.disabled = false; btn.textContent = '参加する';
@@ -2236,22 +2225,16 @@ $('btnJoin').addEventListener('click',async()=>{
   }
 
   btn.textContent = 'アカウント処理中...';
-
-  // ── Step 2: アカウント作成 or ログイン ──
-  let uid = null;
-  let isExistingUser = false;
+  let uid = null, isExistingUser = false;
 
   const { data: signUpData, error: signUpErr } = await sb.auth.signUp({
     email, password: pass, options: { data: { name: uName } }
   });
 
   if(signUpErr) {
-    const isExisting =
-      signUpErr.status === 422 ||
-      signUpErr.status === 400 ||
+    const isExisting = signUpErr.status === 422 || signUpErr.status === 400 ||
       (signUpErr.message||'').toLowerCase().includes('already') ||
       (signUpErr.message||'').toLowerCase().includes('registered');
-
     if(isExisting) {
       const { data: loginData, error: loginErr } = await sb.auth.signInWithPassword({ email, password: pass });
       if(loginErr) {
@@ -2259,12 +2242,10 @@ $('btnJoin').addEventListener('click',async()=>{
         showAuthErr('joinErr', 'このメールアドレスは既に登録されています。正しいパスワードを入力してください');
         return;
       }
-      uid = loginData.user?.id;
-      isExistingUser = true;
+      uid = loginData.user?.id; isExistingUser = true;
     } else {
       btn.disabled = false; btn.textContent = '参加する';
-      showAuthErr('joinErr', authErrMsg(signUpErr));
-      return;
+      showAuthErr('joinErr', authErrMsg(signUpErr)); return;
     }
   } else {
     uid = signUpData.user?.id;
@@ -2276,45 +2257,34 @@ $('btnJoin').addEventListener('click',async()=>{
 
   if(!uid) {
     btn.disabled = false; btn.textContent = '参加する';
-    showAuthErr('joinErr', 'アカウントの処理に失敗しました。再度お試しください');
-    return;
+    showAuthErr('joinErr', 'アカウントの処理に失敗しました。再度お試しください'); return;
   }
 
   btn.textContent = '参加中...';
-
-  // ── Step 3: company_usersに追加 ──
   const existing = await dbGet('company_users', { company_id: company.id, user_id: uid });
   if(existing) {
     btn.disabled = false; btn.textContent = '参加する';
     showToast(`「${esc(company.name)}」には既に参加しています`, 'success');
-    if(isExistingUser) {
-      _justJoined = false;
-      await loadCompanyList(uid);
-    } else {
-      await sb.auth.signOut();
-    }
+    if(isExistingUser) { _justJoined = false; await loadCompanyList(uid); }
+    else await sb.auth.signOut();
     return;
   }
 
   const { error: insertErr } = await sb.from('company_users').insert({
-    company_id: company.id, user_id: uid,
-    name: uName, role: 'editor',
+    company_id: company.id, user_id: uid, name: uName, role: 'editor',
     joined_at: new Date().toISOString(),
   });
 
   if(insertErr) {
     btn.disabled = false; btn.textContent = '参加する';
     showAuthErr('joinErr', '会社への参加処理に失敗しました: ' + (insertErr.message || ''));
-    if(!isExistingUser) await sb.auth.signOut();
-    return;
+    if(!isExistingUser) await sb.auth.signOut(); return;
   }
 
   btn.disabled = false; btn.textContent = '参加する';
-
   if(isExistingUser) {
     showToast(`「${esc(company.name)}」に参加しました！`, 'success');
-    _justJoined = true;
-    await loadCompanyList(uid);
+    _justJoined = true; await loadCompanyList(uid);
   } else {
     await sb.auth.signOut();
     showToast(`「${esc(company.name)}」に参加しました！ログインしてください。`, 'success');
@@ -2370,7 +2340,6 @@ async function loadCompanyList(uid){
   }
 
   if(!members.length){
-    // pending_company があれば自動で会社作成を試みる
     const pendingCo=currentUser&&(await sb.auth.getUser())?.data?.user?.user_metadata?.pending_company;
     if(pendingCo){
       showToast('会社を自動作成しています...','');
@@ -2465,6 +2434,8 @@ async function initApp(){
     await renderUserList();
   }
   renderPayrollTable();renderDashboard();renderTaxRatePanel();
+  // AutoCalcをデフォルトページとして表示
+  showPage('autocalc');
   await renderHistorySelect();
   // 新機能初期化
   buildAttPeriodSelector();
@@ -5008,16 +4979,18 @@ const acSleep = ms => new Promise(r => setTimeout(r, ms));
 
 // ── ステップ切替 ──
 function acGoStep(n){
-  [1,2,3].forEach(i=>{
+  [1,2,3,4].forEach(i=>{
     const panel = document.getElementById('acPanelStep'+i);
     if(panel) panel.style.display = i===n ? 'block' : 'none';
-    const stepEl = document.getElementById('acStep'+i);
+    const stepEl = document.getElementById('acStep'+i) || document.getElementById('acStep'+i+'icon');
     if(stepEl) stepEl.className = 'ac-step' + (i<n?' done':i===n?' active':'');
   });
   acStep = n;
-  const pagesEl = document.getElementById('pages');
-  if(pagesEl) pagesEl.scrollTop = 0;
-  else window.scrollTo({top:0, behavior:'instant'});
+  // ボーナス設定パネルの表示（Step1でファイル読み込み後）
+  const bonusPanel = document.getElementById('acBonusPanel');
+  if(bonusPanel && n===1) bonusPanel.style.display = 'none';
+  const pageEl = document.getElementById('pageAutocalc');
+  if(pageEl) pageEl.scrollTop = 0;
 }
 
 // ── 設定の保存・復元 ──
@@ -5123,22 +5096,34 @@ function acHandleFile(file){
 }
 
 function acOnFileLoaded(fname){
-  const titleEl = document.getElementById('acDropzoneTitle');
-  const subEl   = document.getElementById('acDropzoneSub');
-  const calcBtn = document.getElementById('acBtnCalc');
-  if(titleEl) titleEl.textContent = '✅ ' + fname;
-  if(subEl)   subEl.textContent   = acExcelRows.length + '名 読み込み済み';
-  if(calcBtn) calcBtn.disabled = false; // ファイル読み込み後に計算ボタンを有効化
-  // マッピングパネル表示・列マッピング初期化
+  // ドロップゾーン表示更新
+  const titleEl  = document.getElementById('acDropzoneTitle');
+  const subEl    = document.getElementById('acDropzoneSub');
+  const iconEl   = document.getElementById('acDropzoneIcon');
+  const fileNameEl = document.getElementById('acFileName');
+  const goBtn    = document.getElementById('acBtnGoStep2');
+
+  if(titleEl)    titleEl.textContent  = fname;
+  if(subEl)      subEl.textContent    = acExcelRows.length + '名 読み込み済み — クリックで変更';
+  if(iconEl)     iconEl.textContent   = '✅';
+  if(fileNameEl) fileNameEl.textContent = fname;
+  if(goBtn)      goBtn.disabled = false;
+
+  // マッピングパネル初期化・表示
   acInitStep2();
-  // プレビュー表示
-  const preview = acExcelRows.slice(0,5);
+
+  // ボーナス設定パネルを表示
+  const bonusPanel = document.getElementById('acBonusPanel');
+  if(bonusPanel) bonusPanel.style.display = 'block';
+
+  // プレビュー表示（先頭5行）
+  const preview   = acExcelRows.slice(0, 5);
   const previewEl = document.getElementById('acPreviewTable');
   if(previewEl){
     previewEl.innerHTML = `
-      <table style="width:100%;border-collapse:collapse;font-size:0.75rem">
-        <thead><tr>${acExcelHeaders.map(h=>`<th style="padding:4px 8px;background:var(--ink);color:var(--paper);white-space:nowrap">${esc(String(h))}</th>`).join('')}</tr></thead>
-        <tbody>${preview.map(row=>`<tr>${acExcelHeaders.map((_,i)=>`<td style="padding:4px 8px;border-bottom:1px solid var(--border)">${esc(String(row[i]??''))}</td>`).join('')}</tr>`).join('')}</tbody>
+      <table class="data-tbl" style="font-size:0.75rem">
+        <thead><tr>${acExcelHeaders.map(h=>`<th>${esc(String(h))}</th>`).join('')}</tr></thead>
+        <tbody>${preview.map(row=>`<tr>${acExcelHeaders.map((_,i)=>`<td>${esc(String(row[i]??''))}</td>`).join('')}</tr>`).join('')}</tbody>
       </table>`;
   }
   showToast(acExcelRows.length+'名のデータを読み込みました ✅','success');
@@ -5303,19 +5288,17 @@ async function acRunCalc(){
     let applied = false;
 
     // AI指示を適用
-    let perfOverridden = false;  // AIでperf変更があったかフラグ
+    let perfOverridden = false;
     for(const rule of aiRules){
       if(!acMatchTarget(rule.target,{name,dept,pos})) continue;
       applied = true;
       if(rule.type==='perf_multiply'){
-        perf *= rule.value;
+        perf *= rule.value; perfOverridden = true;
         empLogs.push(name+'→係数×'+rule.value+'（'+rule.label+'）');
-        perfOverridden = true;
       }
       if(rule.type==='perf_set'){
-        perf = rule.value;
+        perf = rule.value; perfOverridden = true;
         empLogs.push(name+'→係数='+rule.value+'固定（'+rule.label+'）');
-        perfOverridden = true;
       }
       if(rule.type==='allowance_add'){
         extra += rule.value;
@@ -5324,7 +5307,7 @@ async function acRunCalc(){
     }
     if(applied) aiAffected++;
 
-    // 業績係数クランプ：AIで明示的に変更した場合はperfMaxを無視（「2倍」等が潰れないよう）
+    // AIで明示的に変更した場合はperfMaxを無視（「2倍」等が潰れないよう）
     if(perfOverridden){
       perf = Math.max(0, perf);
     } else {
@@ -5372,20 +5355,11 @@ async function acRunCalc(){
     return;
   }
 
-  // 結果をSTEP2画面内に表示
+  // STEP3（結果確認）へ自動遷移
   acShowResults(aiAffected, aiLogs);
+  acGoStep(3);
   if(btn){ btn.disabled=false; btn.textContent='⚡ 給与計算を実行する'; }
   showToast(acResults.length+'名の計算が完了しました ✅','success');
-
-  // STEP3（出力）のサマリー更新
-  const summaryEl = document.getElementById('acOutputSummary');
-  if(summaryEl){
-    const tG = acResults.reduce((a,e)=>a+e.gross,0);
-    summaryEl.textContent = acResults.length+'名 / 支給総額 '+fmtY(tG);
-  }
-  // 「出力へ」ボタンを表示（STEP2内に留まる・ユーザーが結果確認後に進める）
-  const step4Btns = document.getElementById('acStep4Btns');
-  if(step4Btns) step4Btns.style.display = 'flex';
 }
 
 function acMatchTarget(target, emp){
@@ -5401,62 +5375,89 @@ function acShowResults(aiN, aiLogs){
   const container = document.getElementById('acResultSummary');
   const tableWrap  = document.getElementById('acResultTable');
   if(!container) return;
-  const tG = acResults.reduce((a,e)=>a+e.gross,0);
-  const tN = acResults.reduce((a,e)=>a+e.monthlyNet,0);
-  const tI = acResults.reduce((a,e)=>a+e.insurance,0);
+
+  const tG  = acResults.reduce((a,e)=>a+e.gross,0);
+  const tN  = acResults.reduce((a,e)=>a+e.monthlyNet,0);
+  const tI  = acResults.reduce((a,e)=>a+e.insurance,0);
+  const tBG = acResults.reduce((a,e)=>a+(e.bonusGross||0),0);
+  const tBN = acResults.reduce((a,e)=>a+(e.bonusNet||0),0);
+  const hasBonus = tBG > 0;
 
   // サマリーカード
   container.innerHTML = `
-    <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));margin-bottom:0.75rem">
-      <div class="stat-card"><div class="stat-label">計算人数</div><div class="stat-value blue">${acResults.length}名</div></div>
-      <div class="stat-card"><div class="stat-label">支給額合計</div><div class="stat-value">${fmtY(tG)}</div></div>
-      <div class="stat-card"><div class="stat-label">手取り合計</div><div class="stat-value green">${fmtY(tN)}</div></div>
-      <div class="stat-card"><div class="stat-label">社保合計</div><div class="stat-value accent">${fmtY(tI)}</div></div>
-      ${aiN>0?`<div class="stat-card" style="border-left:3px solid var(--gold)"><div class="stat-label">AI調整</div><div class="stat-value" style="color:var(--gold)">${aiN}名</div><div class="stat-sub">指示で調整済</div></div>`:''}
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:0.75rem;padding:1rem 1rem 0">
+      <div class="stat-card variant-blue">
+        <div class="stat-label">計算人数</div>
+        <div class="stat-value blue">${acResults.length}名</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">月給 支給額合計</div>
+        <div class="stat-value">${fmtY(tG)}</div>
+      </div>
+      <div class="stat-card variant-green">
+        <div class="stat-label">月給 手取り合計</div>
+        <div class="stat-value green">${fmtY(tN)}</div>
+      </div>
+      ${hasBonus ? `
+      <div class="stat-card">
+        <div class="stat-label">ボーナス 支給合計</div>
+        <div class="stat-value">${fmtY(tBG)}</div>
+      </div>
+      <div class="stat-card variant-green">
+        <div class="stat-label">ボーナス 手取り合計</div>
+        <div class="stat-value green">${fmtY(tBN)}</div>
+      </div>` : ''}
+      ${aiN>0 ? `
+      <div class="stat-card" style="border-top:3px solid var(--amber)">
+        <div class="stat-label">AI調整</div>
+        <div class="stat-value" style="color:var(--amber)">${aiN}名</div>
+        <div class="stat-sub">指示で調整済</div>
+      </div>` : ''}
     </div>`;
 
-  // 結果テーブル（変化前後を明確に表示）
+  // AIログ
+  const logEl = document.getElementById('acAiLog');
+  if(logEl){
+    if(aiLogs.length > 0){
+      logEl.style.display = 'block';
+      logEl.innerHTML = '🤖 AI適用ログ：' + aiLogs.map(l=>esc(l)).join(' ／ ');
+    } else {
+      logEl.style.display = 'none';
+    }
+  }
+
+  // 結果テーブル
   if(tableWrap){
+    const bonusHeader = hasBonus ? '<th class="num">ボーナス支給</th><th class="num">ボーナス手取り</th>' : '';
+    const rows = acResults.map(e=>{
+      const bG = e.bonusGross||0;
+      const bN = e.bonusNet||0;
+      const perfChanged = Math.abs(e.perf - 1.0) > 0.001;
+      return `<tr${e.aiApplied ? ' style="background:rgba(26,86,219,0.03)"' : ''}>
+        <td><b>${esc(e.name)}</b></td>
+        <td style="color:var(--muted);font-size:0.78rem">${esc(e.dept||'—')}</td>
+        <td class="num">${fmtY(e.base)}</td>
+        <td class="num" style="${perfChanged?'color:var(--accent);font-weight:700':''}">${e.perf.toFixed(2)}</td>
+        <td class="num"><b>${fmtY(e.gross)}</b></td>
+        <td class="num" style="color:var(--green)"><b>${fmtY(e.monthlyNet)}</b></td>
+        ${hasBonus ? `<td class="num">${bG>0?fmtY(bG):'—'}</td><td class="num" style="color:var(--green)">${bN>0?fmtY(bN):'—'}</td>` : ''}
+        <td style="font-size:0.7rem;color:var(--muted)">
+          ${e.aiLogs&&e.aiLogs.length ? e.aiLogs.map(l=>esc(l.replace(e.name+'→',''))).join('<br>') : ''}
+        </td>
+      </tr>`;
+    }).join('');
+
     tableWrap.innerHTML = `
       <table class="data-tbl">
         <thead><tr>
           <th>氏名</th><th>部署</th>
           <th class="num">基本給</th><th class="num">係数</th>
-          <th class="num">支給額</th><th class="num">手取り</th>
+          <th class="num">月給支給額</th><th class="num">月給手取り</th>
+          ${bonusHeader}
           <th>AI調整内容</th>
         </tr></thead>
-        <tbody>${acResults.map(e=>`
-          <tr${e.aiApplied?' style="background:rgba(26,86,219,0.04)"':''}>
-            <td><b>${esc(e.name)}</b></td>
-            <td style="font-size:0.78rem;color:var(--muted)">${esc(e.dept||'—')}</td>
-            <td class="num">${fmtY(e.base)}</td>
-            <td class="num" style="${e.perf!==1?'color:var(--accent);font-weight:700':''}">
-              ${e.perf.toFixed(2)}${e.perf!==1?'<span style="font-size:0.65rem;color:var(--muted)"> (×'+e.perf.toFixed(2)+')</span>':''}
-            </td>
-            <td class="num" style="font-weight:${e.aiApplied?'700':'400'}">${fmtY(e.gross)}</td>
-            <td class="num" style="color:var(--green);font-weight:700">${fmtY(e.monthlyNet)}</td>
-            <td style="font-size:0.72rem;color:var(--muted)">
-              ${e.aiLogs&&e.aiLogs.length
-                ? e.aiLogs.map(l=>esc(l.replace(e.name+'→',''))).join('<br>')
-                : '<span style="color:var(--border)">—</span>'}
-            </td>
-          </tr>`).join('')}
-        </tbody>
+        <tbody>${rows}</tbody>
       </table>`;
-  }
-
-  // パネルと「出力へ」ボタンを表示
-  const resultPanel = document.getElementById('acResultPanel');
-  const step4Btns   = document.getElementById('acStep4Btns');
-  if(resultPanel) resultPanel.style.display = 'block';
-  if(step4Btns)   step4Btns.style.display   = 'flex';
-
-  // AIログ
-  const logEl = document.getElementById('acAiLog');
-  if(logEl && aiLogs.length>0){
-    logEl.style.display='block';
-    logEl.innerHTML = '<div style="font-size:0.72rem;font-weight:700;margin-bottom:0.4rem;color:var(--muted)">AI適用ログ</div>'+
-      aiLogs.map(l=>`<div style="font-size:0.75rem;padding:2px 0">• ${esc(l)}</div>`).join('');
   }
 }
 
@@ -5490,30 +5491,17 @@ async function acCallAI(instruction){
 function acParseManual(instruction){
   const rules=[], logs=['（パターンマッチで解析）'];
   instruction.split('\n').forEach(line=>{
-    const l = line.trim();
-    if(!l) return;
-
-    // 「全員N倍」「全社員N倍」「みんなN倍」
+    const l = line.trim(); if(!l) return;
     const mAll = l.match(/(?:全員|全社員|全スタッフ|みんな).*?(\d+\.?\d*)\s*倍/);
     if(mAll){ rules.push({type:'perf_multiply',target:'all',value:Number(mAll[1]),label:'全員×'+mAll[1]+'倍'}); return; }
-
-    // 「給与N倍」「給料N倍」「基本給N倍」（全員対象）
     const mPay = l.match(/(?:給与|給料|基本給|お給料).*?(\d+\.?\d*)\s*倍/);
     if(mPay){ rules.push({type:'perf_multiply',target:'all',value:Number(mPay[1]),label:'全員給与×'+mPay[1]+'倍'}); return; }
-
-    // 「部署名N倍」
     const mDept = l.match(/([^\s]+[部課室グループ]).*?(\d+\.?\d*)\s*倍/);
     if(mDept){ rules.push({type:'perf_multiply',target:'dept:'+mDept[1],value:Number(mDept[2]),label:mDept[1]+'×'+mDept[2]+'倍'}); return; }
-
-    // 「全員にN円の手当」「全員+N円」
     const mAllow = l.match(/(?:全員|全社員).*?(\d{3,8})\s*円/);
     if(mAllow){ rules.push({type:'allowance_add',target:'all',value:Number(mAllow[1]),label:'全員手当+'+mAllow[1]+'円'}); return; }
-
-    // 「係数N固定」「全員N.Nにする」
     const mFixed = l.match(/(?:係数|全員)\s*(\d+\.?\d*)\s*(?:固定|に設定|にする)/);
     if(mFixed){ rules.push({type:'perf_set',target:'all',value:Number(mFixed[1]),label:'係数'+mFixed[1]+'固定'}); return; }
-
-    // 「最低係数N」
     const mMin = l.match(/最低.{0,8}?(\d+\.?\d*)/);
     if(mMin){ rules.push({type:'perf_set',target:'all',value:Number(mMin[1]),label:'最低係数'+mMin[1]}); }
   });
@@ -5525,37 +5513,56 @@ function acExportExcel(){
   if(!acResults.length){ showToast('計算結果がありません','error'); return; }
   if(typeof XLSX==='undefined'){ showToast('ライブラリ読み込み中','error'); return; }
   const month = document.getElementById('acTargetMonth')?.value || '';
-  const hasBonus = acResults.some(e=>e.bonusGross>0);
+  const bonusTarget = document.getElementById('acBonusTarget')?.value || 'both';
+  const hasBonus = bonusTarget !== 'monthly' && acResults.some(e=>(e.bonusGross||0)>0);
 
-  const headers = ['氏名','部署','役職','基本給','業績係数','支給額','社会保険','所得税','住民税','手取り',...(hasBonus?['ボーナス支給','ボーナス手取り']:[])];
-  const rows = acResults.map(e=>[
-    e.name, e.dept||'', e.pos||'',
-    e.base, e.perf, e.gross,
-    e.insurance, e.tax, e.municipal||0, e.monthlyNet,
-    ...(hasBonus?[e.bonusGross||0, e.bonusNet||0]:[])
-  ]);
+  const headers = ['氏名','部署','役職','基本給','業績係数','支給額（月給）','社会保険','所得税','住民税','手取り（月給）',
+    ...(hasBonus?['ボーナス支給','ボーナス手取り','合計支給','合計手取り']:[])];
+
+  const rows = acResults.map(e=>{
+    const bG = e.bonusGross||0;
+    const bN = e.bonusNet||0;
+    return [
+      e.name, e.dept||'', e.pos||'',
+      e.base, e.perf, e.gross,
+      e.insurance, e.tax, e.municipal||0, e.monthlyNet,
+      ...(hasBonus?[bG, bN, e.gross+bG, e.monthlyNet+bN]:[])
+    ];
+  });
+
+  const totals = [
+    '合計','','',
+    acResults.reduce((a,e)=>a+e.base,0), '',
+    acResults.reduce((a,e)=>a+e.gross,0),
+    acResults.reduce((a,e)=>a+e.insurance,0),
+    acResults.reduce((a,e)=>a+e.tax,0),
+    acResults.reduce((a,e)=>a+(e.municipal||0),0),
+    acResults.reduce((a,e)=>a+e.monthlyNet,0),
+    ...(hasBonus?[
+      acResults.reduce((a,e)=>a+(e.bonusGross||0),0),
+      acResults.reduce((a,e)=>a+(e.bonusNet||0),0),
+      acResults.reduce((a,e)=>a+e.gross+(e.bonusGross||0),0),
+      acResults.reduce((a,e)=>a+e.monthlyNet+(e.bonusNet||0),0),
+    ]:[])
+  ];
 
   const ws = XLSX.utils.aoa_to_sheet([
-    ['Salario 給与明細', month, ''],
-    ['健康保険率', taxRates.hRate/100, '厚生年金率', taxRates.pRate/100, '住民税率', taxRates.mRate/100],
+    ['Salario 給与明細', month, '', '健康保険率', taxRates.hRate/100, '厚生年金率', taxRates.pRate/100, '住民税率', taxRates.mRate/100],
     [],
     headers,
     ...rows,
     [],
-    ['合計','','',
-      acResults.reduce((a,e)=>a+e.base,0),'',
-      acResults.reduce((a,e)=>a+e.gross,0),
-      acResults.reduce((a,e)=>a+e.insurance,0),
-      acResults.reduce((a,e)=>a+e.tax,0),
-      acResults.reduce((a,e)=>a+(e.municipal||0),0),
-      acResults.reduce((a,e)=>a+e.monthlyNet,0),
-    ]
+    totals
   ]);
-  ws['!cols'] = [12,10,8,12,8,12,10,10,10,12,12,12].map(w=>({wch:w}));
+
+  // 列幅
+  const colW = [12,10,8,12,8,14,10,10,10,14,12,12,14,14];
+  ws['!cols'] = colW.map(w=>({wch:w}));
+
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, '給与明細');
-  XLSX.writeFile(wb, 'Salario_給与明細_'+(month||'output')+'.xlsx');
-  showToast('給与明細Excelを出力しました','success');
+  XLSX.writeFile(wb, `Salario_給与明細_${month||'output'}.xlsx`);
+  showToast('給与明細Excelを出力しました ✅','success');
 }
 
 function acExportLedger(){
@@ -5613,26 +5620,29 @@ function acExportTransfer(){
 // ── リセット ──
 function acReset(){
   acStep=1; acExcelHeaders=[]; acExcelRows=[]; acColMapping={}; acResults=[];
-  const titleEl=document.getElementById('acDropzoneTitle');
-  const subEl=document.getElementById('acDropzoneSub');
-  const calcBtn=document.getElementById('acBtnCalc');
-  const previewEl=document.getElementById('acPreviewTable');
-  const mappingPanel=document.getElementById('acMappingPanel');
-  const aiInst=document.getElementById('acAiInstruction');
-  const logEl=document.getElementById('acAiLog');
-  const resultPanel=document.getElementById('acResultPanel');
-  const step4Btns=document.getElementById('acStep4Btns');
-  const dz=document.getElementById('acDropzone');
-  if(titleEl) titleEl.textContent='Excelファイルをドロップ、またはクリックして選択';
-  if(subEl)   subEl.textContent='.xlsx / .xls / .csv 対応';
-  if(calcBtn) calcBtn.disabled=true;
-  if(previewEl) previewEl.innerHTML='';
-  if(mappingPanel) mappingPanel.style.display='none';
-  if(aiInst) aiInst.value='';
+
+  // ドロップゾーンリセット
+  const titleEl  = document.getElementById('acDropzoneTitle');
+  const subEl    = document.getElementById('acDropzoneSub');
+  const iconEl   = document.getElementById('acDropzoneIcon');
+  const goBtn    = document.getElementById('acBtnGoStep2');
+  if(titleEl) titleEl.textContent = 'Excelファイルをドロップ、またはクリックして選択';
+  if(subEl)   subEl.textContent   = '.xlsx / .xls / .csv 対応';
+  if(iconEl)  iconEl.textContent  = '📊';
+  if(goBtn)   goBtn.disabled = true;
+
+  // パネルリセット
+  const previewEl    = document.getElementById('acPreviewTable');
+  const mappingPanel = document.getElementById('acMappingPanel');
+  const bonusPanel   = document.getElementById('acBonusPanel');
+  const aiInst       = document.getElementById('acAiInstruction');
+  const logEl        = document.getElementById('acAiLog');
+  if(previewEl)    previewEl.innerHTML = '';
+  if(mappingPanel) mappingPanel.style.display = 'none';
+  if(bonusPanel)   bonusPanel.style.display   = 'none';
+  if(aiInst)       aiInst.value = '';
   if(logEl){ logEl.style.display='none'; logEl.innerHTML=''; }
-  if(resultPanel) resultPanel.style.display='none';
-  if(step4Btns) step4Btns.style.display='none';
-  if(dz) dz.className='ac-dropzone';
+
   acGoStep(1);
 }
 
@@ -5656,27 +5666,50 @@ document.addEventListener('DOMContentLoaded',()=>{
     fi.addEventListener('change',e=>{const f=e.target.files[0];if(f)acHandleFile(f);e.target.value='';});
   }
 
-  // ステップナビ（3ステップ）
+  // ステップナビ（4ステップ）
   document.getElementById('acBtnGoStep2')?.addEventListener('click',()=>acGoStep(2));
   document.getElementById('acBtnBackStep1')?.addEventListener('click',()=>acGoStep(1));
-  document.getElementById('acBtnGoStep3')?.addEventListener('click',()=>acGoStep(3));
+  document.getElementById('acBtnBackStep2')?.addEventListener('click',()=>acGoStep(2));
+  document.getElementById('acBtnGoStep4')?.addEventListener('click',()=>{
+    acGoStep(4);
+    // 出力サマリー更新
+    const tG=acResults.reduce((a,e)=>a+e.gross,0);
+    const tN=acResults.reduce((a,e)=>a+e.monthlyNet,0);
+    const tBG=acResults.reduce((a,e)=>a+(e.bonusGross||0),0);
+    const summaryEl=document.getElementById('acOutputSummary');
+    if(summaryEl){
+      const bonusTxt = tBG>0 ? ` ／ ボーナス ${fmtY(tBG)}` : '';
+      summaryEl.textContent = `${acResults.length}名 ／ 支給額合計 ${fmtY(tG)}${bonusTxt} ／ 手取り合計 ${fmtY(tN)}`;
+    }
+  });
   document.getElementById('acBtnCalc')?.addEventListener('click',acRunCalc);
   document.getElementById('acBtnRestart')?.addEventListener('click',acReset);
   document.getElementById('acBtnTemplate')?.addEventListener('click',downloadImportTemplate);
-  document.getElementById('acBtnSaveSetting')?.addEventListener('click',acSaveSetting);
 
-  // 出力ボタン（STEP3）
+  // 出力ボタン（STEP4）
   document.getElementById('acBtnDlSlip')?.addEventListener('click',acExportExcel);
   document.getElementById('acBtnDlLedger')?.addEventListener('click',acExportLedger);
   document.getElementById('acBtnDlTransfer')?.addEventListener('click',acExportTransfer);
+
+  // ボーナス方法変更時にパラメータラベル更新
+  document.getElementById('acBonusMethod')?.addEventListener('change',function(){
+    const wrap=document.getElementById('acBonusParamWrap');
+    const label=document.getElementById('acBonusParamLabel');
+    if(this.value==='none'){
+      if(wrap) wrap.style.display='none';
+    } else {
+      if(wrap) wrap.style.display='';
+      if(label) label.textContent = this.value==='multiplier' ? 'ボーナス倍率（月）' : '総額プール（円）';
+    }
+  });
 
   // AI指示サンプル
   document.querySelectorAll('.ac-ai-ex').forEach(el=>{
     el.addEventListener('click',()=>{
       const ta=document.getElementById('acAiInstruction');
       if(!ta) return;
-      const curr=ta.value.trim();
-      ta.value = curr ? curr+'\n'+el.dataset.text : el.dataset.text;
+      ta.value = el.dataset.text || '';
+      ta.focus();
     });
   });
 
