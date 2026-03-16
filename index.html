@@ -5017,19 +5017,24 @@
         if (!email) { showAuthErr('loginErr', 'メールアドレスを入力してください'); return; }
         if (!pass) { showAuthErr('loginErr', 'パスワードを入力してください'); return; }
         btn.disabled = true; btn.textContent = 'ログイン中...';
-        const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+        const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
         if (error) {
           btn.disabled = false; btn.textContent = 'ログイン';
           showAuthErr('loginErr', authErrMsg(error.message));
         } else {
+          // onAuthStateChangeを待たず直接処理（タイムアウト問題の根本解決）
           btn.textContent = '接続中...';
-          // 10秒以内に画面遷移しなければボタンを復元（固まり防止）
-          setTimeout(() => {
-            if (btn.disabled) {
-              btn.disabled = false; btn.textContent = 'ログイン';
-              showAuthErr('loginErr', '接続がタイムアウトしました。再度お試しください。');
-            }
-          }, 5000);
+          try {
+            currentUser = {
+              id: data.user.id,
+              email: data.user.email,
+              name: data.user.user_metadata?.name || data.user.email
+            };
+            await loadCompanyList(data.user.id);
+          } catch(e) {
+            btn.disabled = false; btn.textContent = 'ログイン';
+            showAuthErr('loginErr', '接続エラーが発生しました。再度お試しください。');
+          }
         }
       });
 
@@ -7123,53 +7128,39 @@
 
       // ── 認証状態監視 ──
       let _lastHandledUserId = null;
-      let _isHandlingAuth = false;
 
       if (window.__PA_AUTH_UNSUB) { try { window.__PA_AUTH_UNSUB(); } catch (_) { } }
 
-      // ── 認証処理の本体（ログイン・リロード共通）──
-      async function handleSession(user) {
-        if (_isHandlingAuth) return;
-        const uid = user.id;
-        const appVisible = document.getElementById('appScreen')?.classList.contains('active');
-        if (appVisible && _lastHandledUserId === uid) return;
-
-        _isHandlingAuth = true;
-        _lastHandledUserId = uid;
+      // ── ページロード時：getSessionで既存セッションを確認 ──
+      // onAuthStateChangeはセッション変化の監視のみに使用
+      (async () => {
         try {
-          currentUser = { id: user.id, email: user.email, name: user.user_metadata?.name || user.email };
-          await loadCompanyList(user.id);
-        } catch (e) {
-          console.error('[PA] auth handler error:', e);
-          _lastHandledUserId = null;
-          const btn = $('btnLogin');
-          if (btn) { btn.disabled = false; btn.textContent = 'ログイン'; }
-          showToast('接続エラーが発生しました。再度ログインしてください。', 'error');
-        } finally {
-          _isHandlingAuth = false;
+          const { data: { session } } = await sb.auth.getSession();
+          if (session?.user) {
+            currentUser = {
+              id: session.user.id,
+              email: session.user.email,
+              name: session.user.user_metadata?.name || session.user.email
+            };
+            await loadCompanyList(session.user.id);
+          } else {
+            showScreen('authScreen');
+          }
+        } catch(e) {
+          console.error('[PA] getSession error:', e);
+          showScreen('authScreen');
         }
-      }
+      })();
 
-      // ── onAuthStateChange だけで全て管理（シンプル版）──
-      // INITIAL_SESSION: リロード時（セッションあり→そのまま、なし→authScreen）
-      // SIGNED_IN:       ログインボタン押下後
-      // SIGNED_OUT:      ログアウト後
-      // TOKEN_REFRESHED: 無視
-      const { data: { subscription } } = sb.auth.onAuthStateChange(async (event, session) => {
-        if (event === 'TOKEN_REFRESHED') return;
-
-        if (!session) {
+      // ── セッション変化の監視（ログアウト検知のみ）──
+      const { data: { subscription } } = sb.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_OUT') {
           _lastHandledUserId = null;
-          _isHandlingAuth = false;
           currentUser = null; currentCompany = null;
           const btn = $('btnLogin');
           if (btn) { btn.disabled = false; btn.textContent = 'ログイン'; }
           showScreen('authScreen');
-          return;
         }
-
-        // セッションあり（INITIAL_SESSION=リロード / SIGNED_IN=ログイン）
-        await handleSession(session.user);
       });
 
       window.__PA_AUTH_UNSUB = () => subscription.unsubscribe();
