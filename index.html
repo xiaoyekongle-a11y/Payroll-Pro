@@ -5023,13 +5023,13 @@
           showAuthErr('loginErr', authErrMsg(error.message));
         } else {
           btn.textContent = '接続中...';
-          // 5秒以内に画面遷移しなければボタンを復元
+          // 10秒以内に画面遷移しなければボタンを復元（固まり防止）
           setTimeout(() => {
             if (btn.disabled) {
               btn.disabled = false; btn.textContent = 'ログイン';
               showAuthErr('loginErr', '接続がタイムアウトしました。再度お試しください。');
             }
-          }, 5000);
+          }, 10000);
         }
       });
 
@@ -5282,19 +5282,19 @@
         document.querySelectorAll('.owner-only').forEach(el => el.style.display = isOwner ? '' : 'none');
         document.querySelectorAll('.editor-only').forEach(el => el.style.display = isEditor ? '' : 'none');
 
-        // ── まずアプリ画面を表示（「接続中...」から脱出）──
+        // ── まずアプリ画面を表示（ログイン・リロード共にここで即表示）──
         initDarkMode();
         showScreen('appScreen');
         showPage('autocalc');
 
-        // ── Stripeチェックアウト完了検知 ──
+        // Stripeチェックアウト完了検知
         const urlParams = new URLSearchParams(location.search);
         if (urlParams.get('checkout') === 'success') {
           history.replaceState(null, '', location.pathname);
           setTimeout(() => location.reload(), 2000);
         }
 
-        // ── バックグラウンドで初期化（画面表示後に実行）──
+        // ── 残りの初期化（画面表示後にバックグラウンドで実行）──
         await loadTaxRates();
         buildPeriodSelector();
         await loadLocks();
@@ -7128,35 +7128,16 @@
       // 既存の購読があれば解除してから再登録（Hot Reload対策）
       if (window.__PA_AUTH_UNSUB) { try { window.__PA_AUTH_UNSUB(); } catch (_) { } }
 
-      const { data: { subscription } } = sb.auth.onAuthStateChange(async (event, session) => {
-        // ログアウト・セッション切れ
-        if (!session) {
-          _lastHandledUserId = null;
-          _isHandlingAuth = false;
-          currentUser = null; currentCompany = null;
-          // ログインボタンをリセット
-          const btn = $('btnLogin');
-          if (btn) { btn.disabled = false; btn.textContent = 'ログイン'; }
-          showScreen('authScreen');
-          return;
-        }
-
-        // TOKEN_REFRESHED は画面遷移済みなら無視
-        if (event === 'TOKEN_REFRESHED') return;
-
-        // 処理中のみスキップ（同じユーザーの再ログインは通す）
+      // ── 認証処理の本体（ログイン時・リロード時共通）──
+      async function handleSession(user) {
         if (_isHandlingAuth) return;
-
-        // appScreenが既に表示されていて同じユーザーならスキップ
-        const uid = session.user.id;
+        const uid = user.id;
         const appVisible = document.getElementById('appScreen')?.classList.contains('active');
         if (appVisible && _lastHandledUserId === uid) return;
 
         _isHandlingAuth = true;
         _lastHandledUserId = uid;
-
         try {
-          const user = session.user;
           currentUser = { id: user.id, email: user.email, name: user.user_metadata?.name || user.email };
           await loadCompanyList(user.id);
         } catch (e) {
@@ -7168,6 +7149,39 @@
         } finally {
           _isHandlingAuth = false;
         }
+      }
+
+      // ── ページロード時：まず既存セッションを確認 ──
+      // リロード時に onAuthStateChange の null → session の順で発火する問題を回避
+      (async () => {
+        const { data: { session } } = await sb.auth.getSession();
+        if (session?.user) {
+          await handleSession(session.user);
+        } else {
+          showScreen('authScreen');
+        }
+      })();
+
+      // ── 以降の変化（ログイン・ログアウト）を監視 ──
+      const { data: { subscription } } = sb.auth.onAuthStateChange(async (event, session) => {
+        // ログアウト・セッション切れ
+        if (!session) {
+          _lastHandledUserId = null;
+          _isHandlingAuth = false;
+          currentUser = null; currentCompany = null;
+          const btn = $('btnLogin');
+          if (btn) { btn.disabled = false; btn.textContent = 'ログイン'; }
+          showScreen('authScreen');
+          return;
+        }
+
+        // INITIAL_SESSION はページロード時の getSession() で処理済みなのでスキップ
+        if (event === 'INITIAL_SESSION') return;
+        // TOKEN_REFRESHED は画面遷移済みなら無視
+        if (event === 'TOKEN_REFRESHED') return;
+
+        // SIGNED_IN（ログインボタン押下後）のみ処理
+        await handleSession(session.user);
       });
 
       window.__PA_AUTH_UNSUB = () => subscription.unsubscribe();
