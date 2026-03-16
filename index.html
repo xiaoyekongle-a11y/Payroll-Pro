@@ -5096,7 +5096,6 @@ function acHandleFile(file){
 }
 
 function acOnFileLoaded(fname){
-  // ドロップゾーン表示更新
   const titleEl  = document.getElementById('acDropzoneTitle');
   const subEl    = document.getElementById('acDropzoneSub');
   const iconEl   = document.getElementById('acDropzoneIcon');
@@ -5109,24 +5108,120 @@ function acOnFileLoaded(fname){
   if(fileNameEl) fileNameEl.textContent = fname;
   if(goBtn)      goBtn.disabled = false;
 
-  // マッピングパネル初期化・表示
   acInitStep2();
 
-  // ボーナス設定パネルを表示
   const bonusPanel = document.getElementById('acBonusPanel');
   if(bonusPanel) bonusPanel.style.display = 'block';
 
-  // プレビュー表示（先頭5行）
-  const preview   = acExcelRows.slice(0, 5);
-  const previewEl = document.getElementById('acPreviewTable');
-  if(previewEl){
-    previewEl.innerHTML = `
-      <table class="data-tbl" style="font-size:0.75rem">
-        <thead><tr>${acExcelHeaders.map(h=>`<th>${esc(String(h))}</th>`).join('')}</tr></thead>
-        <tbody>${preview.map(row=>`<tr>${acExcelHeaders.map((_,i)=>`<td>${esc(String(row[i]??''))}</td>`).join('')}</tr>`).join('')}</tbody>
-      </table>`;
-  }
+  acRenderEditablePreview();
   showToast(acExcelRows.length+'名のデータを読み込みました ✅','success');
+}
+
+// ── 取り込みデータの編集可能プレビューテーブル ──
+function acRenderEditablePreview(){
+  const previewEl = document.getElementById('acPreviewTable');
+  if(!previewEl) return;
+
+  // マッピングから主要列インデックスを取得
+  const nameIdx = acColMapping.name  ?? -1;
+  const deptIdx = acColMapping.dept  ?? -1;
+  const posIdx  = acColMapping.pos   ?? -1;
+  const baseIdx = acColMapping.base  ?? -1;
+  const perfIdx = acColMapping.perf  ?? -1;
+
+  const editCols = [
+    { idx: nameIdx, label: '氏名 *',   key: 'name', type: 'text',   required: true },
+    { idx: deptIdx, label: '部署',      key: 'dept', type: 'text',   required: false },
+    { idx: posIdx,  label: '役職',      key: 'pos',  type: 'text',   required: false },
+    { idx: baseIdx, label: '基本給 *',  key: 'base', type: 'number', required: true },
+    { idx: perfIdx, label: '業績係数',  key: 'perf', type: 'number', required: false },
+  ].filter(c => c.idx >= 0 || c.required);
+
+  const inputStyle = `border:1px solid var(--border);border-radius:3px;padding:0.22rem 0.4rem;
+    font-size:0.78rem;font-family:var(--font-body);background:var(--surface);
+    color:var(--ink);width:100%;min-width:60px;transition:border-color var(--t);`;
+  const numStyle = inputStyle + 'text-align:right;font-family:var(--font-mono);';
+
+  const headerHtml = editCols.map(c =>
+    `<th style="white-space:nowrap">${c.label}</th>`
+  ).join('') + '<th style="width:36px"></th>';
+
+  const rowsHtml = acExcelRows.map((row, ri) =>
+    `<tr data-ri="${ri}">
+      ${editCols.map(c => {
+        const val = c.idx >= 0 ? (row[c.idx] ?? '') : '';
+        const s = c.type === 'number' ? numStyle : inputStyle;
+        return `<td><input
+          style="${s}"
+          type="${c.type === 'number' ? 'number' : 'text'}"
+          ${c.type === 'number' ? 'step="any"' : ''}
+          data-ri="${ri}" data-col="${c.idx}" data-key="${c.key}"
+          value="${esc(String(val))}"
+          oninput="acEditCell(this)"
+          onfocus="this.style.borderColor='var(--accent)'"
+          onblur="this.style.borderColor='var(--border)'"
+        ></td>`;
+      }).join('')}
+      <td style="text-align:center">
+        <button onclick="acDeleteRow(${ri})"
+          style="background:none;border:1px solid var(--border);border-radius:3px;
+          width:26px;height:26px;cursor:pointer;color:var(--muted);font-size:0.8rem;
+          transition:all var(--t);display:flex;align-items:center;justify-content:center"
+          onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'"
+          onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"
+          title="この行を削除">✕</button>
+      </td>
+    </tr>`
+  ).join('');
+
+  previewEl.innerHTML = `
+    <div style="margin-bottom:0.4rem;display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)">
+        取り込みデータ（直接編集できます）
+      </span>
+      <button onclick="acAddRow()"
+        style="font-size:0.68rem;padding:0.2rem 0.55rem;border:1px solid var(--accent);
+        border-radius:3px;color:var(--accent);background:var(--accent-bg);cursor:pointer">
+        ＋ 行を追加
+      </button>
+    </div>
+    <table class="data-tbl" id="acEditTable" style="font-size:0.78rem">
+      <thead><tr>${headerHtml}</tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>`;
+}
+
+// セル編集時にacExcelRowsを更新
+function acEditCell(input){
+  const ri  = Number(input.dataset.ri);
+  const col = Number(input.dataset.col);
+  if(col < 0 || ri < 0 || ri >= acExcelRows.length) return;
+  acExcelRows[ri][col] = input.type === 'number'
+    ? (input.value === '' ? '' : Number(input.value))
+    : input.value;
+}
+
+// 行削除
+function acDeleteRow(ri){
+  acExcelRows.splice(ri, 1);
+  const subEl = document.getElementById('acDropzoneSub');
+  if(subEl) subEl.textContent = acExcelRows.length + '名 — クリックで変更';
+  acRenderEditablePreview();
+}
+
+// 行追加（末尾に空行）
+function acAddRow(){
+  const emptyRow = new Array(acExcelHeaders.length).fill('');
+  acExcelRows.push(emptyRow);
+  acRenderEditablePreview();
+  // 追加した行の最初のinputにフォーカス
+  setTimeout(() => {
+    const table = document.getElementById('acEditTable');
+    if(table){
+      const lastRow = table.querySelector('tbody tr:last-child');
+      lastRow?.querySelector('input')?.focus();
+    }
+  }, 50);
 }
 
 // ── STEP2: 列マッピング ──
@@ -5426,21 +5521,45 @@ function acShowResults(aiN, aiLogs){
     }
   }
 
-  // 結果テーブル
+  // 結果テーブル（編集可能・ライブ再計算）
   if(tableWrap){
     const bonusHeader = hasBonus ? '<th class="num">ボーナス支給</th><th class="num">ボーナス手取り</th>' : '';
-    const rows = acResults.map(e=>{
+    const inputStyle = `border:1px solid var(--border-2);border-radius:3px;padding:0.18rem 0.35rem;
+      font-size:0.75rem;font-family:var(--font-mono);text-align:right;
+      background:var(--surface);color:var(--ink);width:68px;transition:border-color 0.15s;`;
+
+    const rows = acResults.map((e, ri) => {
       const bG = e.bonusGross||0;
       const bN = e.bonusNet||0;
       const perfChanged = Math.abs(e.perf - 1.0) > 0.001;
-      return `<tr${e.aiApplied ? ' style="background:rgba(26,86,219,0.03)"' : ''}>
+      const extra = e.extraOverride || 0;
+      return `<tr id="acResultRow-${ri}" ${e.aiApplied ? 'style="background:rgba(26,86,219,0.03)"' : ''}>
         <td><b>${esc(e.name)}</b></td>
         <td style="color:var(--muted);font-size:0.78rem">${esc(e.dept||'—')}</td>
         <td class="num">${fmtY(e.base)}</td>
-        <td class="num" style="${perfChanged?'color:var(--accent);font-weight:700':''}">${e.perf.toFixed(2)}</td>
-        <td class="num"><b>${fmtY(e.gross)}</b></td>
-        <td class="num" style="color:var(--green)"><b>${fmtY(e.monthlyNet)}</b></td>
-        ${hasBonus ? `<td class="num">${bG>0?fmtY(bG):'—'}</td><td class="num" style="color:var(--green)">${bN>0?fmtY(bN):'—'}</td>` : ''}
+        <td class="num">
+          <input type="number" step="0.01" min="0" id="acPerfInput-${ri}"
+            value="${e.perf.toFixed(2)}"
+            style="${inputStyle}${perfChanged?'border-color:var(--accent);color:var(--accent);font-weight:700':''}"
+            title="係数を直接編集できます"
+            onchange="acOverrideRow(${ri},'perf',this.value)"
+            onfocus="this.style.borderColor='var(--accent)'"
+            onblur="this.style.borderColor='${perfChanged?'var(--accent)':'var(--border-2)'}'">
+        </td>
+        <td class="num">
+          <input type="number" step="1" min="0" id="acExtraInput-${ri}"
+            value="${extra||''}" placeholder="0円"
+            style="${inputStyle}"
+            title="追加手当（円）"
+            onchange="acOverrideRow(${ri},'extra',this.value)"
+            onfocus="this.style.borderColor='var(--accent)'"
+            onblur="this.style.borderColor='var(--border-2)'">
+        </td>
+        <td class="num" id="acGross-${ri}"><b>${fmtY(e.gross)}</b></td>
+        <td class="num" id="acNet-${ri}" style="color:var(--green)"><b>${fmtY(e.monthlyNet)}</b></td>
+        ${hasBonus ? `
+        <td class="num" id="acBG-${ri}">${bG>0?fmtY(bG):'—'}</td>
+        <td class="num" id="acBN-${ri}" style="color:var(--green)">${bN>0?fmtY(bN):'—'}</td>` : ''}
         <td style="font-size:0.7rem;color:var(--muted)">
           ${e.aiLogs&&e.aiLogs.length ? e.aiLogs.map(l=>esc(l.replace(e.name+'→',''))).join('<br>') : ''}
         </td>
@@ -5448,10 +5567,15 @@ function acShowResults(aiN, aiLogs){
     }).join('');
 
     tableWrap.innerHTML = `
+      <div style="padding:0.35rem 1rem;font-size:0.65rem;color:var(--muted);background:var(--surface-2);border-bottom:1px solid var(--border-2)">
+        ✏️ 係数・追加手当を直接編集できます。変更後は即座に再計算されます。
+      </div>
       <table class="data-tbl">
         <thead><tr>
           <th>氏名</th><th>部署</th>
-          <th class="num">基本給</th><th class="num">係数</th>
+          <th class="num">基本給</th>
+          <th class="num" title="直接編集可">係数 ✏️</th>
+          <th class="num" title="追加手当（円）">手当追加 ✏️</th>
           <th class="num">月給支給額</th><th class="num">月給手取り</th>
           ${bonusHeader}
           <th>AI調整内容</th>
@@ -5459,6 +5583,96 @@ function acShowResults(aiN, aiLogs){
         <tbody>${rows}</tbody>
       </table>`;
   }
+}
+
+// ── 計算後テーブルの1行オーバーライド・再計算 ──
+function acOverrideRow(ri, field, value){
+  if(ri < 0 || ri >= acResults.length) return;
+  const e = acResults[ri];
+  const tr = typeof taxRates !== 'undefined' ? taxRates : {hRate:5,pRate:9,eRate:0.6,mRate:10};
+
+  if(field === 'perf'){
+    const newPerf = Math.max(0, Number(value) || 0);
+    e.perf = newPerf;
+    // 入力欄の色更新
+    const inp = document.getElementById('acPerfInput-'+ri);
+    if(inp){
+      const changed = Math.abs(newPerf - 1.0) > 0.001;
+      inp.style.borderColor = changed ? 'var(--accent)' : 'var(--border-2)';
+      inp.style.color       = changed ? 'var(--accent)' : 'var(--ink)';
+      inp.style.fontWeight  = changed ? '700' : '400';
+    }
+  } else if(field === 'extra'){
+    e.extraOverride = Math.max(0, Number(value) || 0);
+  }
+
+  // 1行だけ再計算
+  const extra = (e.extraOverride || 0) + (e.allowanceTotal || 0) - (e.extraOverride_prev || 0);
+  const bonusMethod = document.getElementById('acBonusMethod')?.value || 'none';
+  const bonusParam  = Number(document.getElementById('acBonusParam')?.value) || 2.0;
+  const mag = bonusMethod === 'multiplier' ? bonusParam
+            : bonusMethod === 'fixed_pool' ? e.perf * bonusParam : 0;
+
+  const r = calc(e.base, e.perf, mag,
+    tr.hRate, tr.pRate, tr.eRate, tr.mRate, 'round',
+    e.age||35, e.dep||0, e.spDed||0, e.disDed||0,
+    (e.extraOverride||0) + (e.commute||0) + (e.housing||0));
+
+  // acResultsを更新
+  Object.assign(e, r);
+
+  // DOMをその行だけ更新（テーブル全体再描画しない）
+  const setCell = (id, html) => {
+    const el = document.getElementById(id);
+    if(el) el.innerHTML = html;
+  };
+  setCell(`acGross-${ri}`, `<b>${fmtY(r.gross)}</b>`);
+  setCell(`acNet-${ri}`,   `<b>${fmtY(r.monthlyNet)}</b>`);
+  const bG = r.bonusGross||0, bN = r.bonusNet||0;
+  setCell(`acBG-${ri}`, bG>0 ? fmtY(bG) : '—');
+  setCell(`acBN-${ri}`, bN>0 ? fmtY(bN) : '—');
+
+  // サマリーカードを再集計
+  acUpdateSummaryCards();
+}
+
+// サマリーカードの数値を再計算して更新
+function acUpdateSummaryCards(){
+  const tG  = acResults.reduce((a,e)=>a+e.gross,0);
+  const tN  = acResults.reduce((a,e)=>a+e.monthlyNet,0);
+  const tI  = acResults.reduce((a,e)=>a+e.insurance,0);
+  const tBG = acResults.reduce((a,e)=>a+(e.bonusGross||0),0);
+  const tBN = acResults.reduce((a,e)=>a+(e.bonusNet||0),0);
+
+  const container = document.getElementById('acResultSummary');
+  if(!container) return;
+  const hasBonus = tBG > 0;
+  container.innerHTML = `
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:0.75rem;padding:1rem 1rem 0">
+      <div class="stat-card variant-blue">
+        <div class="stat-label">計算人数</div>
+        <div class="stat-value blue">${acResults.length}名</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">月給 支給額合計</div>
+        <div class="stat-value">${fmtY(tG)}</div>
+      </div>
+      <div class="stat-card variant-green">
+        <div class="stat-label">月給 手取り合計</div>
+        <div class="stat-value green">${fmtY(tN)}</div>
+      </div>
+      ${hasBonus ? `
+      <div class="stat-card">
+        <div class="stat-label">ボーナス 支給合計</div>
+        <div class="stat-value">${fmtY(tBG)}</div>
+      </div>
+      <div class="stat-card variant-green">
+        <div class="stat-label">ボーナス 手取り合計</div>
+        <div class="stat-value green">${fmtY(tBN)}</div>
+      </div>` : ''}
+    </div>`;
+}
+
 }
 
 // ── Gemini APIプロキシ経由呼び出し（APIキーはサーバー管理）──
@@ -5733,8 +5947,13 @@ document.addEventListener('DOMContentLoaded',()=>{
 });
 
 // グローバル登録
-window.acInitStep1 = acInitStep1;
-window.acGoStep    = acGoStep;
+window.acInitStep1        = acInitStep1;
+window.acGoStep           = acGoStep;
+window.acEditCell         = acEditCell;
+window.acDeleteRow        = acDeleteRow;
+window.acAddRow           = acAddRow;
+window.acOverrideRow      = acOverrideRow;
+window.acUpdateSummaryCards = acUpdateSummaryCards;
 
 </script>
 </body>
