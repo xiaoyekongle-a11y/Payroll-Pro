@@ -5023,13 +5023,13 @@
           showAuthErr('loginErr', authErrMsg(error.message));
         } else {
           btn.textContent = '接続中...';
-          // 10秒以内に画面遷移しなければボタンを復元（固まり防止）
+          // 5秒以内に画面遷移しなければボタンを復元
           setTimeout(() => {
             if (btn.disabled) {
               btn.disabled = false; btn.textContent = 'ログイン';
               showAuthErr('loginErr', '接続がタイムアウトしました。再度お試しください。');
             }
-          }, 10000);
+          }, 5000);
         }
       });
 
@@ -5282,16 +5282,19 @@
         document.querySelectorAll('.owner-only').forEach(el => el.style.display = isOwner ? '' : 'none');
         document.querySelectorAll('.editor-only').forEach(el => el.style.display = isEditor ? '' : 'none');
 
-        // プランステータス評価・バナー表示
+        // ── まずアプリ画面を表示（「接続中...」から脱出）──
+        initDarkMode();
+        showScreen('appScreen');
+        showPage('autocalc');
 
-        // Stripeチェックアウト完了検知
+        // ── Stripeチェックアウト完了検知 ──
         const urlParams = new URLSearchParams(location.search);
         if (urlParams.get('checkout') === 'success') {
           history.replaceState(null, '', location.pathname);
-          // DB更新を待ってリロード
           setTimeout(() => location.reload(), 2000);
         }
 
+        // ── バックグラウンドで初期化（画面表示後に実行）──
         await loadTaxRates();
         buildPeriodSelector();
         await loadLocks();
@@ -5310,17 +5313,12 @@
           await renderUserList();
         }
         renderPayrollTable(); renderDashboard(); renderTaxRatePanel();
-        // AutoCalcからのデータインポートをチェック
         checkAutocalcImport();
-        showPage('autocalc');
         await renderHistorySelect();
-        // 新機能初期化
         buildAttPeriodSelector();
         buildYearendYearSelector();
         buildTransferPeriodSelector();
         buildShahouPeriodSelector();
-        showScreen('appScreen'); showPage('dashboard'); initDarkMode();
-        // SaaS品質機能初期化
         resetSessionTimer();
         addNotification('✅', `${currentCompany.name} にログインしました`);
         showOnboarding();
