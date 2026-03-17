@@ -3637,7 +3637,7 @@
       <button class="header-btn" id="btnSignOut">ログアウト</button>
     </header>
     <nav class="nav-tabs">
-      <div class="nav-tab" data-page="autocalc">⚡ AutoCalc</div>
+      <div class="nav-tab" data-page="autocalc">⚡ Calc AI</div>
       <div class="nav-tab active" data-page="dashboard">📊 ダッシュボード</div>
       <div class="nav-tab" data-page="history">📂 履歴</div>
       <div class="nav-tab" data-page="payroll">📝 給与計算</div>
@@ -3736,7 +3736,7 @@
                 style="flex-direction:column;gap:0.3rem;padding:0.85rem;height:auto;align-items:center;border:none;cursor:pointer"
                 onclick="showPage('autocalc')">
                 <span style="font-size:1.3rem">⚡</span>
-                <span style="font-size:0.72rem;font-weight:700">AutoCalc</span>
+                <span style="font-size:0.72rem;font-weight:700">Calc AI</span>
               </button>
               <button class="btn btn-secondary"
                 style="flex-direction:column;gap:0.3rem;padding:0.85rem;height:auto;align-items:center"
@@ -4200,14 +4200,14 @@
 
 
       <!-- ══════════════════════════════════════════════════════
-       AutoCalc — Excel→AI→Excel 給与自動計算
+       Calc AI — Excel→AI→Excel 給与自動計算
   ══════════════════════════════════════════════════════ -->
       <div class="page" id="pageAutocalc">
 
         <!-- ヘッダー -->
         <div style="margin-bottom:0.85rem">
           <div style="font-family:var(--font-display);font-size:1.05rem;font-weight:900;color:var(--accent)">
-            ⚡ AutoCalc — AI給与自動計算 <span class="help-icon" onclick="showToast('Excelで名簿をアップロード → AIに自然言語で指示 → 自動計算 → Excel出力。4ステップで完結します。','')">？</span>
+            ⚡ Calc AI — AI給与自動計算 <span class="help-icon" onclick="showToast('Excelで名簿をアップロード → AIに自然言語で指示 → 自動計算 → Excel出力。4ステップで完結します。','')">？</span>
           </div>
           <div style="font-size:0.75rem;color:var(--muted);margin-top:0.15rem">
             名簿Excelをアップロードして自然言語で指示するだけで給与計算→Excel出力まで完結
@@ -4544,7 +4544,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- SheetJS Community Edition — セルスタイル対応のビルド -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
@@ -4800,11 +4801,11 @@
       /* ── オンボーディングツアー ── */
       const ONBOARD_STEPS = [
         { emoji: '👋', title: 'Salarioへようこそ！', desc: '月額3,000円で使える給与計算SaaSです。\nこのガイドで主な機能を紹介します。' },
-        { emoji: '⚡', title: 'AutoCalc — AI給与計算', desc: 'Excelをアップロードし、自然言語で指示するだけで\n給与計算 → Excel出力まで完結します。' },
+        { emoji: '⚡', title: 'Calc AI — AI給与計算', desc: 'Excelをアップロードし、自然言語で指示するだけで\n給与計算 → Excel出力まで完結します。' },
         { emoji: '📊', title: 'ダッシュボード', desc: '人件費推移・部署別コスト・扶養の壁アラートなど\n経営に必要な指標を一目で確認できます。' },
         { emoji: '📝', title: '給与計算', desc: '個別の従業員登録・計算・PDF明細発行が可能。\n前月データのコピーやCSV/Excelインポートにも対応。' },
         { emoji: '🏢', title: 'その他の機能', desc: '勤怠管理・年末調整・振込管理・社保届出など\n給与業務をまるごとカバーします。' },
-        { emoji: '🚀', title: '準備完了！', desc: 'さっそくAutoCalcから始めてみましょう。\nヘッダーの🔔で操作ログ、?キーでショートカット一覧を確認できます。' },
+        { emoji: '🚀', title: '準備完了！', desc: 'さっそくCalc AIから始めてみましょう。\nヘッダーの🔔で操作ログ、?キーでショートカット一覧を確認できます。' },
       ];
       let _onboardStep = 0;
       function showOnboarding() {
@@ -5017,24 +5018,19 @@
         if (!email) { showAuthErr('loginErr', 'メールアドレスを入力してください'); return; }
         if (!pass) { showAuthErr('loginErr', 'パスワードを入力してください'); return; }
         btn.disabled = true; btn.textContent = 'ログイン中...';
-        const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+        const { error } = await sb.auth.signInWithPassword({ email, password: pass });
         if (error) {
           btn.disabled = false; btn.textContent = 'ログイン';
           showAuthErr('loginErr', authErrMsg(error.message));
         } else {
-          // onAuthStateChangeを待たず直接処理（タイムアウト問題の根本解決）
           btn.textContent = '接続中...';
-          try {
-            currentUser = {
-              id: data.user.id,
-              email: data.user.email,
-              name: data.user.user_metadata?.name || data.user.email
-            };
-            await loadCompanyList(data.user.id);
-          } catch(e) {
-            btn.disabled = false; btn.textContent = 'ログイン';
-            showAuthErr('loginErr', '接続エラーが発生しました。再度お試しください。');
-          }
+          // 10秒以内に画面遷移しなければボタンを復元（固まり防止）
+          setTimeout(() => {
+            if (btn.disabled) {
+              btn.disabled = false; btn.textContent = 'ログイン';
+              showAuthErr('loginErr', '接続がタイムアウトしました。再度お試しください。');
+            }
+          }, 10000);
         }
       });
 
@@ -5287,19 +5283,16 @@
         document.querySelectorAll('.owner-only').forEach(el => el.style.display = isOwner ? '' : 'none');
         document.querySelectorAll('.editor-only').forEach(el => el.style.display = isEditor ? '' : 'none');
 
-        // ── まずアプリ画面を即表示（DB通信完了を待たない）──
-        initDarkMode();
-        showScreen('appScreen');
-        showPage('autocalc');
+        // プランステータス評価・バナー表示
 
         // Stripeチェックアウト完了検知
         const urlParams = new URLSearchParams(location.search);
         if (urlParams.get('checkout') === 'success') {
           history.replaceState(null, '', location.pathname);
+          // DB更新を待ってリロード
           setTimeout(() => location.reload(), 2000);
         }
 
-        // ── バックグラウンドで残りを初期化 ──
         await loadTaxRates();
         buildPeriodSelector();
         await loadLocks();
@@ -5318,12 +5311,17 @@
           await renderUserList();
         }
         renderPayrollTable(); renderDashboard(); renderTaxRatePanel();
+        // AutoCalcからのデータインポートをチェック
         checkAutocalcImport();
+        showPage('autocalc');
         await renderHistorySelect();
+        // 新機能初期化
         buildAttPeriodSelector();
         buildYearendYearSelector();
         buildTransferPeriodSelector();
         buildShahouPeriodSelector();
+        showScreen('appScreen'); showPage('dashboard'); initDarkMode();
+        // SaaS品質機能初期化
         resetSessionTimer();
         addNotification('✅', `${currentCompany.name} にログインしました`);
         showOnboarding();
@@ -7128,38 +7126,50 @@
 
       // ── 認証状態監視 ──
       let _lastHandledUserId = null;
+      let _isHandlingAuth = false;
 
+      // 既存の購読があれば解除してから再登録（Hot Reload対策）
       if (window.__PA_AUTH_UNSUB) { try { window.__PA_AUTH_UNSUB(); } catch (_) { } }
 
-      // ── ページロード時：getSessionで既存セッションを確認 ──
-      // onAuthStateChangeはセッション変化の監視のみに使用
-      (async () => {
-        try {
-          const { data: { session } } = await sb.auth.getSession();
-          if (session?.user) {
-            currentUser = {
-              id: session.user.id,
-              email: session.user.email,
-              name: session.user.user_metadata?.name || session.user.email
-            };
-            await loadCompanyList(session.user.id);
-          } else {
-            showScreen('authScreen');
-          }
-        } catch(e) {
-          console.error('[PA] getSession error:', e);
-          showScreen('authScreen');
-        }
-      })();
-
-      // ── セッション変化の監視（ログアウト検知のみ）──
-      const { data: { subscription } } = sb.auth.onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_OUT') {
+      const { data: { subscription } } = sb.auth.onAuthStateChange(async (event, session) => {
+        // ログアウト・セッション切れ
+        if (!session) {
           _lastHandledUserId = null;
+          _isHandlingAuth = false;
           currentUser = null; currentCompany = null;
+          // ログインボタンをリセット
           const btn = $('btnLogin');
           if (btn) { btn.disabled = false; btn.textContent = 'ログイン'; }
           showScreen('authScreen');
+          return;
+        }
+
+        // TOKEN_REFRESHED は画面遷移済みなら無視
+        if (event === 'TOKEN_REFRESHED') return;
+
+        // 処理中のみスキップ（同じユーザーの再ログインは通す）
+        if (_isHandlingAuth) return;
+
+        // appScreenが既に表示されていて同じユーザーならスキップ
+        const uid = session.user.id;
+        const appVisible = document.getElementById('appScreen')?.classList.contains('active');
+        if (appVisible && _lastHandledUserId === uid) return;
+
+        _isHandlingAuth = true;
+        _lastHandledUserId = uid;
+
+        try {
+          const user = session.user;
+          currentUser = { id: user.id, email: user.email, name: user.user_metadata?.name || user.email };
+          await loadCompanyList(user.id);
+        } catch (e) {
+          console.error('[PA] auth handler error:', e);
+          _lastHandledUserId = null;
+          const btn = $('btnLogin');
+          if (btn) { btn.disabled = false; btn.textContent = 'ログイン'; }
+          showToast('接続エラーが発生しました。再度ログインしてください。', 'error');
+        } finally {
+          _isHandlingAuth = false;
         }
       });
 
@@ -7861,11 +7871,11 @@
           if (!emps.length) return;
 
           showModal(
-            '⚡ AutoCalcからデータを受信',
+            '⚡ Calc AIからデータを受信',
             `<div style="text-align:center;padding:0.5rem 0">
         <div style="font-size:2rem;margin-bottom:0.5rem">📥</div>
         <p style="margin-bottom:0.75rem">
-          AutoCalcで計算した <b>${emps.length}名</b> のデータを<br>
+          Calc AIで計算した <b>${emps.length}名</b> のデータを<br>
           給与計算ページに取り込みますか？
         </p>
         <p style="font-size:0.75rem;color:var(--muted)">
@@ -7919,13 +7929,13 @@
           employees = newEmps;
           saveAndRender();
           showPage('payroll');
-          showToast(`AutoCalcから ${newEmps.length}名 を取り込みました ✅`, 'success');
+          showToast(`Calc AIから ${newEmps.length}名 を取り込みました ✅`, 'success');
         };
 
         if (employees.length > 0) {
           showModal(
             '既存データの確認',
-            `<p>現在 <b>${employees.length}名</b> のデータがあります。<br>AutoCalcのデータで上書きしますか？</p>`,
+            `<p>現在 <b>${employees.length}名</b> のデータがあります。<br>Calc AIのデータで上書きしますか？</p>`,
             '上書きして取り込む', 'btn-primary', importEmp
           );
         } else {
@@ -7937,7 +7947,7 @@
   </script>
   <script>
     /*
-     * AutoCalc v2.0 — Salario 給与自動計算
+     * Calc AI v2.0 — Salario 給与自動計算
      * 設計原則：
      *   - ファイル読込 → 自動マッピング → 編集可能テーブル表示（1ステップ）
      *   - AI指示入力（任意）→ 計算実行
@@ -7978,6 +7988,7 @@
       age: ['年齢', 'age', '生年'],
       dep: ['扶養', '扶養家族', '依存', 'dependents', '家族'],
       bank: ['銀行', 'bank', '口座', '振込'],
+      bonus: ['ボーナス', '賞与', 'bonus', '特別手当', '一時金'],
     };
 
     // ─────────────────────────────────────────
@@ -8026,32 +8037,27 @@
         return;
       }
 
-      const parseAndLoad = (rawHeaders, rawData) => {
-        if (rawData.length < 1) { showToast('データが空です', 'error'); return; }
-        acHeaders = rawHeaders.map(String);
+      // ─── AI列マッピング ───────────────────────────────────────────
+      // フォールバック用: 従来の正規表現マッピング
+      const legacyMapKey = (key, headers) => {
+        const candidates = AC_AUTO_MAP[key] || [];
+        for (const c of candidates) {
+          const i = headers.findIndex(h => String(h).toLowerCase().includes(c.toLowerCase()) || c.toLowerCase().includes(String(h).toLowerCase()));
+          if (i >= 0) return i;
+        }
+        return -1;
+      };
 
-        // 自動マッピング
-        const mapKey = key => {
-          const candidates = AC_AUTO_MAP[key] || [];
-          for (const c of candidates) {
-            const i = acHeaders.findIndex(h => String(h).toLowerCase().includes(c.toLowerCase()) || c.toLowerCase().includes(String(h).toLowerCase()));
-            if (i >= 0) return i;
-          }
-          return -1;
-        };
-        const colIdx = {};
-        Object.keys(AC_AUTO_MAP).forEach(k => { colIdx[k] = mapKey(k); });
-
-        // rawDataをオブジェクト配列に変換
-        acRows = rawData.filter(r => r.some(v => v !== '' && v !== null && v !== undefined))
+      // rawDataを従来方式でオブジェクト変換
+      const convertRowsLegacy = (headers, rawData, colIdx) => {
+        return rawData.filter(r => r.some(v => v !== '' && v !== null && v !== undefined))
           .map((r, ri) => {
             const get = key => {
               const i = colIdx[key];
               return (i >= 0 && i < r.length) ? r[i] : '';
             };
             return {
-              _ri: ri,
-              _raw: r,
+              _ri: ri, _raw: r,
               name: String(get('name') || '').trim(),
               dept: String(get('dept') || '').trim(),
               pos: String(get('pos') || '').trim(),
@@ -8060,20 +8066,107 @@
               age: Number(get('age')) || 35,
               dep: Number(get('dep')) || 0,
               bank: String(get('bank') || '').trim(),
+              bonus: Number(String(get('bonus') || '0').replace(/[¥,￥\s]/g, '')) || 0,
             };
           });
+      };
 
+      // AI解析結果をacRowsに変換
+      const convertRowsFromAI = (headers, rawData, mapping, normalizedRows) => {
+        const validRaw = rawData.filter(r => r.some(v => v !== '' && v !== null && v !== undefined));
+        return validRaw.map((r, ri) => {
+          // AI正規化データがある行はそれを使う
+          const norm = normalizedRows && normalizedRows[ri];
+          if (norm && norm.name) {
+            return {
+              _ri: ri, _raw: r,
+              name: String(norm.name || '').trim(),
+              dept: String(norm.dept || '').trim(),
+              pos: String(norm.pos || '').trim(),
+              base: Number(String(norm.base || '0').toString().replace(/[¥,￥\s]/g, '')) || 0,
+              perf: Number(norm.perf) || 1.0,
+              age: Number(norm.age) || 35,
+              dep: Number(norm.dep) || 0,
+              bank: String(norm.bank || '').trim(),
+              bonus: Number(norm.bonus) || 0,
+            };
+          }
+          // フォールバック: mappingのインデックス使用
+          const get = key => {
+            const i = mapping[key];
+            return (i != null && i >= 0 && i < r.length) ? r[i] : '';
+          };
+          return {
+            _ri: ri, _raw: r,
+            name: String(get('name') || '').trim(),
+            dept: String(get('dept') || '').trim(),
+            pos: String(get('pos') || '').trim(),
+            base: Number(String(get('base') || '0').replace(/[¥,￥\s]/g, '')) || 0,
+            perf: Number(get('perf')) || 1.0,
+            age: Number(get('age')) || 35,
+            dep: Number(get('dep')) || 0,
+            bank: String(get('bank') || '').trim(),
+            bonus: Number(String(get('bonus') || '0').replace(/[¥,￥\s]/g, '')) || 0,
+          };
+        });
+      };
+
+      const finalizeLoad = (rows, aiUsed) => {
+        acRows = rows;
         acRenderInputTable();
-        showToast(acRows.length + '名のデータを読み込みました ✅', 'success');
+        const tag = aiUsed ? ' 🤖 AI解析完了' : '';
+        showToast(acRows.length + '名のデータを読み込みました ✅' + tag, 'success');
         const goBtn = document.getElementById('acBtnToStep2');
         if (goBtn) goBtn.disabled = false;
         const subEl = document.getElementById('acDropSub');
         if (subEl) subEl.textContent = file.name + ' (' + acRows.length + '名)';
         const iconEl = document.getElementById('acDropIcon');
         if (iconEl) iconEl.textContent = '✅';
-        // ドロップゾーン成功パルス
         const dz = document.getElementById('acDropzone');
         if (dz) { dz.classList.add('success'); setTimeout(() => dz.classList.remove('success'), 1500); }
+      };
+
+      const parseAndLoad = async (rawHeaders, rawData) => {
+        if (rawData.length < 1) { showToast('データが空です', 'error'); return; }
+        acHeaders = rawHeaders.map(String);
+
+        // ドロップゾーンにローディング表示
+        const iconEl = document.getElementById('acDropIcon');
+        const subEl = document.getElementById('acDropSub');
+        if (iconEl) iconEl.textContent = '🤖';
+        if (subEl) subEl.textContent = 'AI が列を解析中...';
+
+        // AI APIを呼び出して列マッピング＋データ正規化
+        try {
+          const resp = await fetch('/api/ai-parse-excel', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              headers: acHeaders,
+              rows: rawData.slice(0, 20).filter(r => r.some(v => v !== '' && v !== null && v !== undefined)),
+            }),
+          });
+          if (resp.ok) {
+            const result = await resp.json();
+            if (result.mapping && result.mapping.name != null) {
+              // AI結果の正規化行数が少ない場合、全行をmappingで処理
+              const normRows = result.normalized_rows || [];
+              // 全行分の処理: AI正規化データ（先頭20行）＋残りはmappingで変換
+              const allValidRaw = rawData.filter(r => r.some(v => v !== '' && v !== null && v !== undefined));
+              const converted = convertRowsFromAI(acHeaders, allValidRaw, result.mapping, normRows);
+              finalizeLoad(converted, true);
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn('[CalcAI] AI列解析失敗、フォールバック:', e.message);
+        }
+
+        // フォールバック: 従来の正規表現マッピング
+        const colIdx = {};
+        Object.keys(AC_AUTO_MAP).forEach(k => { colIdx[k] = legacyMapKey(k, acHeaders); });
+        const rows = convertRowsLegacy(acHeaders, rawData, colIdx);
+        finalizeLoad(rows, false);
       };
 
       if (ext === 'csv') {
@@ -8081,7 +8174,6 @@
         reader.onload = e => {
           const text = e.target.result.replace(/^\uFEFF/, '');
           const allRows = text.split(/\r?\n/).map(r => {
-            // CSV quoting対応
             const result = [];
             let cur = '', inQ = false;
             for (let i = 0; i < r.length; i++) {
@@ -8127,6 +8219,7 @@
     <th>部署</th><th>役職</th>
     <th class="num">基本給 <span style="color:var(--accent)">*</span></th>
     <th class="num">業績係数</th>
+    <th class="num">ボーナス</th>
     <th style="width:32px"></th>
   </tr>`;
 
@@ -8152,6 +8245,10 @@
         onchange="acRowEdit(${ri},'perf',this.value)"
         onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
         placeholder="1.00"></td>
+      <td><input style="${numS}" type="number" step="1000" min="0" value="${row.bonus || ''}"
+        onchange="acRowEdit(${ri},'bonus',this.value)"
+        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
+        placeholder="0"></td>
       <td style="text-align:center">
         <button onclick="acDelRow(${ri})" title="削除"
           style="background:none;border:1px solid var(--border);border-radius:3px;
@@ -8183,7 +8280,7 @@
 
     function acRowEdit(ri, key, val) {
       if (ri < 0 || ri >= acRows.length) return;
-      if (key === 'base' || key === 'perf' || key === 'age' || key === 'dep') {
+      if (key === 'base' || key === 'perf' || key === 'age' || key === 'dep' || key === 'bonus') {
         acRows[ri][key] = Number(val) || (key === 'perf' ? 1.0 : 0);
       } else {
         acRows[ri][key] = String(val);
@@ -8198,7 +8295,7 @@
     }
 
     function acAddRow() {
-      acRows.push({ name: '', dept: '', pos: '', base: 0, perf: 1.0, age: 35, dep: 0, bank: '' });
+      acRows.push({ name: '', dept: '', pos: '', base: 0, perf: 1.0, age: 35, dep: 0, bank: '', bonus: 0 });
       acRenderInputTable();
       setTimeout(() => {
         const tbl = document.getElementById('acInputTable');
@@ -8283,6 +8380,9 @@
           } else if (rule.type === 'base_multiply') {
             row.base = Math.round(row.base * rule.value);
             empLogs.push(`基本給×${rule.value}（${rule.label}）`);
+          } else if (rule.type === 'base_add') {
+            row.base = Math.round(row.base + rule.value);
+            empLogs.push(`基本給+¥${rule.value.toLocaleString()}（${rule.label}）`);
           }
         }
         if (applied) aiAffected++;
@@ -8358,9 +8458,21 @@
       if (t.includes('|')) {
         return t.split('|').every(part => acMatchTarget(part.trim(), row));
       }
-      if (t.startsWith('dept:')) return row.dept && row.dept.includes(t.slice(5));
-      if (t.startsWith('name:')) return row.name === t.slice(5);
-      if (t.startsWith('pos:')) return row.pos && row.pos.includes(t.slice(4));
+      if (t.startsWith('dept:')) {
+        const deptName = t.slice(5).trim();
+        return row.dept && (row.dept === deptName || row.dept.includes(deptName) || deptName.includes(row.dept));
+      }
+      if (t.startsWith('name:')) {
+        const name = t.slice(5).trim();
+        if (!row.name) return false;
+        // 完全一致 → 部分一致 → 姓のみ一致（「田中」→「田中太郎」）
+        return row.name === name || row.name.includes(name) || name.includes(row.name)
+          || row.name.replace(/\s+/g,'').startsWith(name.replace(/\s+/g,''));
+      }
+      if (t.startsWith('pos:')) {
+        const posName = t.slice(4).trim();
+        return row.pos && (row.pos === posName || row.pos.includes(posName) || posName.includes(row.pos));
+      }
       return true;
     }
 
@@ -8520,24 +8632,266 @@
     // ─────────────────────────────────────────
     // STEP 4: 出力
     // ─────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────
+    // Excel スタイリング ヘルパー
+    // ─────────────────────────────────────────────────────────────
+    function xlsxApplyStyles(ws, styleMap) {
+      // xlsx.full.min.js はセルスタイルを直接サポートしないため
+      // !sheetData経由でスタイル注入を行う（SheetJS Community Edition対応）
+      Object.entries(styleMap).forEach(([addr, style]) => {
+        if (!ws[addr]) ws[addr] = { t: 's', v: '' };
+        ws[addr].s = style;
+      });
+    }
+
+    function xlsxCell(value, type, style) {
+      // type: 'n'=number, 's'=string, 'b'=boolean
+      const t = type || (typeof value === 'number' ? 'n' : 's');
+      return { t, v: value, s: style || {} };
+    }
+
+    // 共通スタイル定義
+    const XS = {
+      // タイトル行
+      title: {
+        font: { name: 'メイリオ', bold: true, sz: 14, color: { rgb: 'FFFFFF' } },
+        fill: { fgColor: { rgb: '1A56DB' }, patternType: 'solid' },
+        alignment: { vertical: 'center', horizontal: 'left', wrapText: false },
+      },
+      // サブタイトル・メタ情報
+      meta: {
+        font: { name: 'メイリオ', sz: 9, color: { rgb: '64748B' } },
+        fill: { fgColor: { rgb: 'EEF2F8' }, patternType: 'solid' },
+        alignment: { vertical: 'center', horizontal: 'left' },
+      },
+      metaVal: {
+        font: { name: 'Consolas', sz: 9, bold: true, color: { rgb: '1A56DB' } },
+        fill: { fgColor: { rgb: 'EEF2F8' }, patternType: 'solid' },
+        alignment: { vertical: 'center', horizontal: 'left' },
+      },
+      // ヘッダー
+      header: {
+        font: { name: 'メイリオ', bold: true, sz: 10, color: { rgb: 'FFFFFF' } },
+        fill: { fgColor: { rgb: '1E293B' }, patternType: 'solid' },
+        alignment: { vertical: 'center', horizontal: 'center', wrapText: false },
+        border: {
+          top: { style: 'thin', color: { rgb: '334155' } },
+          bottom: { style: 'medium', color: { rgb: '475569' } },
+          left: { style: 'thin', color: { rgb: '334155' } },
+          right: { style: 'thin', color: { rgb: '334155' } },
+        },
+      },
+      // データ行（偶数）
+      dataEven: {
+        font: { name: 'メイリオ', sz: 10 },
+        fill: { fgColor: { rgb: 'FFFFFF' }, patternType: 'solid' },
+        border: {
+          top: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          bottom: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          left: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          right: { style: 'thin', color: { rgb: 'E2E8F0' } },
+        },
+      },
+      // データ行（奇数）
+      dataOdd: {
+        font: { name: 'メイリオ', sz: 10 },
+        fill: { fgColor: { rgb: 'F7F9FC' }, patternType: 'solid' },
+        border: {
+          top: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          bottom: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          left: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          right: { style: 'thin', color: { rgb: 'E2E8F0' } },
+        },
+      },
+      // 数値セル（右寄せ）
+      numEven: {
+        font: { name: 'Consolas', sz: 10 },
+        fill: { fgColor: { rgb: 'FFFFFF' }, patternType: 'solid' },
+        numFmt: '#,##0',
+        alignment: { horizontal: 'right' },
+        border: {
+          top: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          bottom: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          left: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          right: { style: 'thin', color: { rgb: 'E2E8F0' } },
+        },
+      },
+      numOdd: {
+        font: { name: 'Consolas', sz: 10 },
+        fill: { fgColor: { rgb: 'F7F9FC' }, patternType: 'solid' },
+        numFmt: '#,##0',
+        alignment: { horizontal: 'right' },
+        border: {
+          top: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          bottom: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          left: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          right: { style: 'thin', color: { rgb: 'E2E8F0' } },
+        },
+      },
+      // 手取り列（緑系）
+      netEven: {
+        font: { name: 'Consolas', sz: 10, bold: true, color: { rgb: '0D7A3E' } },
+        fill: { fgColor: { rgb: 'F0FFF4' }, patternType: 'solid' },
+        numFmt: '#,##0',
+        alignment: { horizontal: 'right' },
+        border: {
+          top: { style: 'thin', color: { rgb: 'C6F6D5' } },
+          bottom: { style: 'thin', color: { rgb: 'C6F6D5' } },
+          left: { style: 'thin', color: { rgb: 'C6F6D5' } },
+          right: { style: 'medium', color: { rgb: '0D7A3E' } },
+        },
+      },
+      netOdd: {
+        font: { name: 'Consolas', sz: 10, bold: true, color: { rgb: '0D7A3E' } },
+        fill: { fgColor: { rgb: 'E6FFEE' }, patternType: 'solid' },
+        numFmt: '#,##0',
+        alignment: { horizontal: 'right' },
+        border: {
+          top: { style: 'thin', color: { rgb: 'C6F6D5' } },
+          bottom: { style: 'thin', color: { rgb: 'C6F6D5' } },
+          left: { style: 'thin', color: { rgb: 'C6F6D5' } },
+          right: { style: 'medium', color: { rgb: '0D7A3E' } },
+        },
+      },
+      // 合計行
+      total: {
+        font: { name: 'メイリオ', bold: true, sz: 10, color: { rgb: '1A1F2E' } },
+        fill: { fgColor: { rgb: 'EEF2F8' }, patternType: 'solid' },
+        border: {
+          top: { style: 'medium', color: { rgb: '1A56DB' } },
+          bottom: { style: 'medium', color: { rgb: '1A56DB' } },
+          left: { style: 'thin', color: { rgb: 'CBD5E1' } },
+          right: { style: 'thin', color: { rgb: 'CBD5E1' } },
+        },
+      },
+      totalNum: {
+        font: { name: 'Consolas', bold: true, sz: 10, color: { rgb: '1A1F2E' } },
+        fill: { fgColor: { rgb: 'EEF2F8' }, patternType: 'solid' },
+        numFmt: '#,##0',
+        alignment: { horizontal: 'right' },
+        border: {
+          top: { style: 'medium', color: { rgb: '1A56DB' } },
+          bottom: { style: 'medium', color: { rgb: '1A56DB' } },
+          left: { style: 'thin', color: { rgb: 'CBD5E1' } },
+          right: { style: 'thin', color: { rgb: 'CBD5E1' } },
+        },
+      },
+      totalNet: {
+        font: { name: 'Consolas', bold: true, sz: 11, color: { rgb: '0D7A3E' } },
+        fill: { fgColor: { rgb: 'DCFCE7' }, patternType: 'solid' },
+        numFmt: '#,##0',
+        alignment: { horizontal: 'right' },
+        border: {
+          top: { style: 'medium', color: { rgb: '0D7A3E' } },
+          bottom: { style: 'medium', color: { rgb: '0D7A3E' } },
+          left: { style: 'thin', color: { rgb: '86EFAC' } },
+          right: { style: 'medium', color: { rgb: '0D7A3E' } },
+        },
+      },
+      // 係数セル（強調）
+      perfNormal: {
+        font: { name: 'Consolas', sz: 10 },
+        fill: { fgColor: { rgb: 'FFFFFF' }, patternType: 'solid' },
+        numFmt: '0.00',
+        alignment: { horizontal: 'center' },
+        border: { top: { style: 'thin', color: { rgb: 'E2E8F0' } }, bottom: { style: 'thin', color: { rgb: 'E2E8F0' } }, left: { style: 'thin', color: { rgb: 'E2E8F0' } }, right: { style: 'thin', color: { rgb: 'E2E8F0' } } },
+      },
+      perfHighlight: {
+        font: { name: 'Consolas', sz: 10, bold: true, color: { rgb: 'B45309' } },
+        fill: { fgColor: { rgb: 'FFFBEB' }, patternType: 'solid' },
+        numFmt: '0.00',
+        alignment: { horizontal: 'center' },
+        border: { top: { style: 'thin', color: { rgb: 'FDE68A' } }, bottom: { style: 'thin', color: { rgb: 'FDE68A' } }, left: { style: 'thin', color: { rgb: 'FDE68A' } }, right: { style: 'thin', color: { rgb: 'FDE68A' } } },
+      },
+    };
+
+    // XLSX セルアドレス変換（列番号→アルファベット）
+    function colLetter(n) {
+      let s = '';
+      while (n >= 0) { s = String.fromCharCode(65 + (n % 26)) + s; n = Math.floor(n / 26) - 1; }
+      return s;
+    }
+
     function acExportExcel() {
       if (!acResults.length) { showToast('計算結果がありません', 'error'); return; }
       if (typeof XLSX === 'undefined') { showToast('ライブラリ読み込み中', 'error'); return; }
       const month = document.getElementById('acMonth')?.value || '';
       const tBG = acResults.reduce((a, e) => a + (e.bonusGross || 0), 0);
       const hasBonus = tBG > 0;
+      const tr = typeof taxRates !== 'undefined' ? taxRates : {};
 
+      // ── データ構築 ──────────────────────────────────────────────
       const headers = ['氏名', '部署', '役職', '基本給', '係数', '支給額', '社会保険', '所得税', '住民税', '手取り',
         ...(hasBonus ? ['ボーナス支給', 'ボーナス手取り', '合計支給', '合計手取り'] : [])];
+      const numCols = new Set([3, 5, 6, 7, 8, 9, ...(hasBonus ? [10, 11, 12, 13] : [])]);
+      const netCols = new Set([9, ...(hasBonus ? [11, 13] : [])]);
+      const perfCol = 4;
+      const nCols = headers.length;
 
-      const rows = acResults.map(e => {
-        const bG = e.bonusGross || 0, bN = e.bonusNet || 0;
-        return [e.name, e.dept || '', e.pos || '', e.base, e.perf,
-        e.gross, e.insurance, e.tax, e.municipal || 0, e.monthlyNet,
-        ...(hasBonus ? [bG, bN, e.gross + bG, e.monthlyNet + bN] : [])];
+      // ── シート作成 ──────────────────────────────────────────────
+      const wb = XLSX.utils.book_new();
+      const ws = {};
+
+      // タイトル行 (row 1) & メタ情報 (row 2)
+      const titleText = `Calc AI — 給与明細書　${month || ''}`;
+      ws['A1'] = { t: 's', v: titleText, s: XS.title };
+      // タイトル用セルを空白で埋める（マージ範囲）
+      for (let c = 1; c < Math.max(nCols, 8); c++) {
+        ws[colLetter(c) + '1'] = { t: 's', v: '', s: XS.title };
+      }
+
+      // メタ情報行
+      const metaItems = [
+        ['健康保険', ((tr.hRate || 0)) + '%'],
+        ['厚生年金', ((tr.pRate || 0)) + '%'],
+        ['住民税', ((tr.mRate || 0)) + '%'],
+        ['計算人数', acResults.length + '名'],
+      ];
+      metaItems.forEach(([k, v], mi) => {
+        const ca = colLetter(mi * 2), cb = colLetter(mi * 2 + 1);
+        ws[ca + '2'] = { t: 's', v: k, s: XS.meta };
+        ws[cb + '2'] = { t: 's', v: v, s: XS.metaVal };
+      });
+      for (let c = metaItems.length * 2; c < nCols; c++) {
+        ws[colLetter(c) + '2'] = { t: 's', v: '', s: XS.meta };
+      }
+
+      // ヘッダー行 (row 3)
+      headers.forEach((h, ci) => {
+        ws[colLetter(ci) + '3'] = { t: 's', v: h, s: XS.header };
       });
 
-      const totals = ['合計', '', '',
+      // データ行（row 4〜）
+      acResults.forEach((e, ri) => {
+        const isOdd = ri % 2 === 1;
+        const rowNum = 4 + ri;
+        const bG = e.bonusGross || 0, bN = e.bonusNet || 0;
+        const rowData = [
+          e.name, e.dept || '', e.pos || '', e.base, e.perf,
+          e.gross, e.insurance, e.tax, e.municipal || 0, e.monthlyNet,
+          ...(hasBonus ? [bG, bN, e.gross + bG, e.monthlyNet + bN] : [])
+        ];
+        rowData.forEach((val, ci) => {
+          const addr = colLetter(ci) + rowNum;
+          const isNum = numCols.has(ci);
+          const isNet = netCols.has(ci);
+          const isPerf = ci === perfCol;
+          let style;
+          if (isNet) style = isOdd ? XS.netOdd : XS.netEven;
+          else if (isPerf) style = (val !== 1.0) ? XS.perfHighlight : XS.perfNormal;
+          else if (isNum) style = isOdd ? XS.numOdd : XS.numEven;
+          else style = isOdd ? XS.dataOdd : XS.dataEven;
+          ws[addr] = { t: isNum ? 'n' : 's', v: val, s: style };
+        });
+      });
+
+      // 空行
+      const blankRow = 4 + acResults.length;
+
+      // 合計行
+      const totRow = blankRow + 1;
+      const totData = [
+        '合 計', '', '',
         acResults.reduce((a, e) => a + e.base, 0), '',
         acResults.reduce((a, e) => a + e.gross, 0),
         acResults.reduce((a, e) => a + e.insurance, 0),
@@ -8551,19 +8905,74 @@
           acResults.reduce((a, e) => a + e.monthlyNet + (e.bonusNet || 0), 0),
         ] : [])
       ];
+      totData.forEach((val, ci) => {
+        const addr = colLetter(ci) + totRow;
+        const isNum = numCols.has(ci) && typeof val === 'number';
+        const isNet = netCols.has(ci);
+        const style = isNet ? XS.totalNet : (isNum ? XS.totalNum : XS.total);
+        ws[addr] = { t: isNum ? 'n' : 's', v: val, s: style };
+      });
 
-      const tr = typeof taxRates !== 'undefined' ? taxRates : {};
-      const ws = XLSX.utils.aoa_to_sheet([
-        ['Salario 給与明細', month, '',
-          '健康保険率', (tr.hRate || 0) / 100,
-          '厚生年金率', (tr.pRate || 0) / 100,
-          '住民税率', (tr.mRate || 0) / 100],
-        [], headers, ...rows, [], totals
-      ]);
-      ws['!cols'] = [12, 10, 8, 12, 8, 14, 10, 10, 10, 14, 12, 12, 14, 14].map(w => ({ wch: w }));
-      const wb = XLSX.utils.book_new();
+      // シート範囲設定
+      ws['!ref'] = `A1:${colLetter(nCols - 1)}${totRow}`;
+
+      // 列幅
+      const colWidths = [14, 10, 8, 12, 6, 13, 11, 10, 10, 13,
+        ...(hasBonus ? [12, 12, 13, 13] : [])];
+      ws['!cols'] = colWidths.map(w => ({ wch: w }));
+
+      // 行高さ
+      ws['!rows'] = [
+        { hpx: 28 }, // title
+        { hpx: 20 }, // meta
+        { hpx: 22 }, // header
+        ...acResults.map(() => ({ hpx: 20 })),
+        { hpx: 8 },  // blank
+        { hpx: 22 }, // totals
+      ];
+
+      // マージ: タイトル行を全列にまたがせる
+      ws['!merges'] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: nCols - 1 } },
+      ];
+
       XLSX.utils.book_append_sheet(wb, ws, '給与明細');
-      XLSX.writeFile(wb, `Salario_給与明細_${month || 'output'}.xlsx`);
+
+      // ── サマリーシート ──────────────────────────────────────────
+      const ws2 = {};
+      const deptMap = {};
+      acResults.forEach(e => {
+        const d = e.dept || '未分類';
+        if (!deptMap[d]) deptMap[d] = { count: 0, gross: 0, net: 0, ins: 0, tax: 0 };
+        deptMap[d].count++;
+        deptMap[d].gross += e.gross;
+        deptMap[d].net += e.monthlyNet;
+        deptMap[d].ins += e.insurance;
+        deptMap[d].tax += e.tax + (e.municipal || 0);
+      });
+      ws2['A1'] = { t: 's', v: '部署別集計', s: XS.title };
+      for (let c = 1; c < 6; c++) ws2[colLetter(c) + '1'] = { t: 's', v: '', s: XS.title };
+      ['部署', '人数', '支給額合計', '控除合計', '手取り合計'].forEach((h, ci) => {
+        ws2[colLetter(ci) + '2'] = { t: 's', v: h, s: XS.header };
+      });
+      Object.entries(deptMap).forEach(([dept, d], ri) => {
+        const row = 3 + ri;
+        const isOdd = ri % 2 === 1;
+        const ds = isOdd ? XS.dataOdd : XS.dataEven;
+        const ns = isOdd ? XS.numOdd : XS.numEven;
+        ws2['A' + row] = { t: 's', v: dept, s: ds };
+        ws2['B' + row] = { t: 'n', v: d.count, s: ns };
+        ws2['C' + row] = { t: 'n', v: d.gross, s: ns };
+        ws2['D' + row] = { t: 'n', v: d.ins + d.tax, s: ns };
+        ws2['E' + row] = { t: 'n', v: d.net, s: XS.netEven };
+      });
+      ws2['!ref'] = `A1:E${2 + Object.keys(deptMap).length}`;
+      ws2['!cols'] = [14, 8, 14, 12, 14].map(w => ({ wch: w }));
+      ws2['!rows'] = [{ hpx: 28 }, { hpx: 22 }, ...Object.keys(deptMap).map(() => ({ hpx: 20 }))];
+      ws2['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 4 } }];
+      XLSX.utils.book_append_sheet(wb, ws2, '部署別集計');
+
+      XLSX.writeFile(wb, `CalcAI_給与明細_${month || 'output'}.xlsx`, { cellStyles: true });
       showToast('給与明細Excelを出力しました ✅', 'success');
     }
 
@@ -8571,20 +8980,49 @@
       if (!acResults.length) { showToast('計算結果がありません', 'error'); return; }
       if (typeof XLSX === 'undefined') { showToast('ライブラリ読み込み中', 'error'); return; }
       const month = document.getElementById('acMonth')?.value || '';
-      const ws = XLSX.utils.aoa_to_sheet([
-        ['氏名', '部署', '支給額', '社会保険', '所得税', '住民税', '手取り'],
-        ...acResults.map(e => [e.name, e.dept || '', e.gross, e.insurance, e.tax, e.municipal || 0, e.monthlyNet]),
-        ['合計', '',
-          acResults.reduce((a, e) => a + e.gross, 0),
-          acResults.reduce((a, e) => a + e.insurance, 0),
-          acResults.reduce((a, e) => a + e.tax, 0),
-          acResults.reduce((a, e) => a + (e.municipal || 0), 0),
-          acResults.reduce((a, e) => a + e.monthlyNet, 0)]
-      ]);
-      ws['!cols'] = [14, 10, 12, 12, 10, 10, 12].map(w => ({ wch: w }));
       const wb = XLSX.utils.book_new();
+      const ws = {};
+
+      // タイトル
+      ws['A1'] = { t: 's', v: `Calc AI — 給与台帳　${month || ''}`, s: XS.title };
+      for (let c = 1; c < 7; c++) ws[colLetter(c) + '1'] = { t: 's', v: '', s: XS.title };
+
+      // ヘッダー
+      ['氏名', '部署', '役職', '支給額', '控除合計', '手取り'].forEach((h, ci) => {
+        ws[colLetter(ci) + '2'] = { t: 's', v: h, s: XS.header };
+      });
+
+      // データ
+      acResults.forEach((e, ri) => {
+        const row = 3 + ri;
+        const isOdd = ri % 2 === 1;
+        const ds = isOdd ? XS.dataOdd : XS.dataEven;
+        const ns = isOdd ? XS.numOdd : XS.numEven;
+        const deductions = e.insurance + e.tax + (e.municipal || 0);
+        ws['A' + row] = { t: 's', v: e.name, s: ds };
+        ws['B' + row] = { t: 's', v: e.dept || '', s: ds };
+        ws['C' + row] = { t: 's', v: e.pos || '', s: ds };
+        ws['D' + row] = { t: 'n', v: e.gross, s: ns };
+        ws['E' + row] = { t: 'n', v: deductions, s: ns };
+        ws['F' + row] = { t: 'n', v: e.monthlyNet, s: XS.netEven };
+      });
+
+      // 合計行
+      const totRow = 3 + acResults.length;
+      ws['A' + totRow] = { t: 's', v: '合 計', s: XS.total };
+      ws['B' + totRow] = { t: 's', v: '', s: XS.total };
+      ws['C' + totRow] = { t: 's', v: acResults.length + '名', s: XS.total };
+      ws['D' + totRow] = { t: 'n', v: acResults.reduce((a, e) => a + e.gross, 0), s: XS.totalNum };
+      ws['E' + totRow] = { t: 'n', v: acResults.reduce((a, e) => a + e.insurance + e.tax + (e.municipal || 0), 0), s: XS.totalNum };
+      ws['F' + totRow] = { t: 'n', v: acResults.reduce((a, e) => a + e.monthlyNet, 0), s: XS.totalNet };
+
+      ws['!ref'] = `A1:F${totRow}`;
+      ws['!cols'] = [14, 10, 8, 13, 12, 13].map(w => ({ wch: w }));
+      ws['!rows'] = [{ hpx: 28 }, { hpx: 22 }, ...acResults.map(() => ({ hpx: 20 })), { hpx: 22 }];
+      ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }];
       XLSX.utils.book_append_sheet(wb, ws, '給与台帳');
-      XLSX.writeFile(wb, `Salario_給与台帳_${month || 'output'}.xlsx`);
+
+      XLSX.writeFile(wb, `CalcAI_給与台帳_${month || 'output'}.xlsx`, { cellStyles: true });
       showToast('給与台帳を出力しました', 'success');
     }
 
@@ -8607,12 +9045,16 @@
     // ─────────────────────────────────────────
     async function acCallAI(instruction) {
       const ctrl = new AbortController();
-      const tid = setTimeout(() => ctrl.abort(), 20000);
+      const tid = setTimeout(() => ctrl.abort(), 25000);
       try {
+        // 従業員データをコンテキストとして送信（AIが部署名・役職名・個人名を正確に解釈できる）
+        const empData = acRows.filter(r => r.name && r.base > 0).map(r => ({
+          name: r.name, dept: r.dept || '', pos: r.pos || '', base: r.base, perf: r.perf || 1.0
+        }));
         const resp = await fetch('/api/ai', {
           method: 'POST', signal: ctrl.signal,
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ instruction }),
+          body: JSON.stringify({ instruction, employees: empData }),
         });
         clearTimeout(tid);
         if (!resp.ok) {
