@@ -4705,12 +4705,19 @@
       }
       function renderOnboardStep() {
         const s = ONBOARD_STEPS[_onboardStep];
-        $('onboardEmoji').textContent = s.emoji;
-        $('onboardTitle').textContent = s.title;
-        $('onboardDesc').textContent = s.desc;
-        $('onboardNext').textContent = _onboardStep === ONBOARD_STEPS.length - 1 ? '始める 🎉' : '次へ →';
-        const dots = $('onboardDots');
-        dots.innerHTML = ONBOARD_STEPS.map((_, i) =>
+        const emojiEl = $('onboardEmoji');
+        const titleEl = $('onboardTitle');
+        const descEl = $('onboardDesc');
+        const nextEl = $('onboardNext');
+        const dotsEl = $('onboardDots');
+        
+        if (!emojiEl || !titleEl || !descEl || !nextEl || !dotsEl) return;  // 要素がない場合は中止
+        
+        emojiEl.textContent = s.emoji;
+        titleEl.textContent = s.title;
+        descEl.textContent = s.desc;
+        nextEl.textContent = _onboardStep === ONBOARD_STEPS.length - 1 ? '始める 🎉' : '次へ →';
+        dotsEl.innerHTML = ONBOARD_STEPS.map((_, i) =>
           `<div class="onboard-dot ${i < _onboardStep ? 'done' : ''} ${i === _onboardStep ? 'active' : ''}"></div>`
         ).join('');
       }
@@ -5201,7 +5208,9 @@
       }
 
       function buildPeriodSelector() {
-        const sel = $('periodSelect'), now = new Date();
+        const sel = $('periodSelect');
+        if (!sel) return;  // 要素がない場合は処理を中止
+        const now = new Date();
         sel.innerHTML = '';
         for (let i = -3; i <= 3; i++) {
           const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
@@ -5215,6 +5224,7 @@
       }
       function populateDeptSelect() {
         const sel = $('deptSelect');
+        if (!sel) return;  // 要素がない場合は処理を中止
         sel.innerHTML = '<option value="">— 未設定 —</option>';
         (currentCompany.depts || []).forEach(d => { const o = document.createElement('option'); o.value = o.textContent = d; sel.appendChild(o); });
       }
@@ -6166,7 +6176,9 @@
       let attPeriod = '', attEmpId = null;
 
       function buildAttPeriodSelector() {
-        const sel = $('attPeriodSelect'), now = new Date();
+        const sel = $('attPeriodSelect');
+        if (!sel) return;  // 要素がない場合は処理を中止
+        const now = new Date();
         sel.innerHTML = '';
         for (let i = -2; i <= 1; i++) {
           const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
@@ -6637,7 +6649,9 @@
       let transferData = [];
 
       function buildTransferPeriodSelector() {
-        const sel = $('transferPeriodSel'), now = new Date();
+        const sel = $('transferPeriodSel');
+        if (!sel) return;  // 要素がない場合は処理を中止
+        const now = new Date();
         sel.innerHTML = '';
         for (let i = -2; i <= 1; i++) {
           const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
@@ -6683,17 +6697,20 @@
 
       async function renderTransferList() {
         const wrap = $('transferList');
-        if (!currentCompany) return;
+        if (!wrap || !currentCompany) return;  // 要素がない場合は処理を中止
         const { data } = await sb.from('bank_transfers')
           .select('*').eq('company_id', currentCompany.id).eq('period', transferPeriod);
         transferData = (data || []).map(r => ({ ...r, selected: r.status !== 'completed' }));
         if (!transferData.length) {
           wrap.innerHTML = '<p style="font-size:0.8rem;color:var(--muted)">「振込データ作成」ボタンで確定済み給与から自動生成します</p>';
-          $('transferSummary').textContent = ''; return;
+          const summaryEl = $('transferSummary');
+          if (summaryEl) summaryEl.textContent = ''; 
+          return;
         }
         const total = transferData.filter(t => t.selected).reduce((s, t) => s + t.amount, 0);
         const cnt = transferData.filter(t => t.selected).length;
-        $('transferSummary').textContent = `合計 ${fmtY(total)} / ${cnt}件`;
+        const summaryEl = $('transferSummary');
+        if (summaryEl) summaryEl.textContent = `合計 ${fmtY(total)} / ${cnt}件`;
         const rows = transferData.map((t, i) => {
           const statusCls = `badge-${t.status || 'pending'}`;
           const hasBankInfo = t.account_no && t.account_no !== '';
