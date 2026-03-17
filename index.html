@@ -4503,12 +4503,15 @@
 
       function showModal(title, body, confirmLabel, confirmClass, onConfirm) {
         // ヘッダーを構築（閉じるボタン付き）
-        $('modalTitle').innerHTML = `
+        const titleEl = $('modalTitle');
+        const bodyEl = $('modalBody');
+        if (!titleEl || !bodyEl) return;  // 要素がない場合は処理を中止
+        titleEl.innerHTML = `
     <div class="modal-header">
       <span>${title}</span>
       <button class="modal-close" id="modalCloseBtn" aria-label="閉じる">✕</button>
     </div>`;
-        $('modalBody').innerHTML = body;
+        bodyEl.innerHTML = body;
         const confirmBtn = $('modalConfirm');
         confirmBtn.textContent = confirmLabel || '実行';
         confirmBtn.className = 'btn ' + (confirmClass || 'btn-danger');
@@ -5310,18 +5313,24 @@
           { key: 'mRate', label: '住民税率', unit: '%', desc: '標準税率（均等割別）' },
         ];
         const upd = taxRates.lastUpdated ? new Date(taxRates.lastUpdated).toLocaleDateString('ja-JP') : '未取得';
-        $('taxRateGrid').innerHTML = items.map(it => `
+        const gridEl = $('taxRateGrid');
+        const inputsEl = $('taxRateInputs');
+        if (gridEl) {
+          gridEl.innerHTML = items.map(it => `
     <div class="tax-rate-card">
       <div class="tax-rate-label">${it.label}</div>
       <div class="tax-rate-val">${taxRates[it.key]}${it.unit}</div>
       <div class="tax-rate-updated">${it.desc}</div>
       <div class="tax-rate-updated">更新: ${upd}</div>
     </div>`).join('') + (taxRates.lastNote ? `<div class="tax-rate-card" style="grid-column:1/-1"><div class="tax-rate-label">適用情報</div><div style="font-size:0.8rem">${taxRates.lastNote}</div></div>` : '');
-        $('taxRateInputs').innerHTML = items.map(it => `
+        }
+        if (inputsEl) {
+          inputsEl.innerHTML = items.map(it => `
     <div class="form-group">
       <label>${it.label}（%）</label>
       <input type="number" id="tr_${it.key}" value="${taxRates[it.key]}" step="0.01" min="0" max="100">
     </div>`).join('');
+        }
       }
 
       // テーブルソート状態
@@ -6355,6 +6364,7 @@
 
       function buildYearendYearSelector() {
         const sel = $('yearendYearSel');
+        if (!sel) return;  // 要素がない場合は処理を中止
         const cur = new Date().getFullYear();
         sel.innerHTML = '';
         for (let y = cur; y >= cur - 3; y--) {
@@ -6369,7 +6379,7 @@
 
       async function renderYearendList() {
         const wrap = $('yearendList');
-        if (!currentCompany) { return; }
+        if (!wrap || !currentCompany) { return; }  // 要素がない場合は処理を中止
         wrap.innerHTML = '<p style="font-size:0.8rem;color:var(--muted)">読み込み中...</p>';
         // yearend_adjustmentsテーブルから取得（なければ給与データから自動生成）
         const { data: yeData } = await sb.from('yearend_adjustments')
@@ -7408,28 +7418,33 @@
           return `<span class="diff-badge ${cls}">${sym}${Math.abs(p)}%</span>`;
         }
 
-        $('dashStats').innerHTML = `
+        const dashStatsEl = $('dashStats');
+        if (dashStatsEl) {
+          dashStatsEl.innerHTML = `
     <div class="stat-card"><div class="stat-label">従業員数</div><div class="stat-value blue">${employees.length}名</div><div class="stat-sub">${currentPeriod}</div></div>
     <div class="stat-card variant-blue"><div class="stat-label">支給額合計</div><div class="stat-value">${fmtY(tG)} ${diffBadge(tG, prevG)}</div></div>
     <div class="stat-card variant-green"><div class="stat-label">手取り合計</div><div class="stat-value green">${fmtY(tN)} ${diffBadge(tN, prevN)}</div></div>
     <div class="stat-card"><div class="stat-label">社会保険合計</div><div class="stat-value accent">${fmtY(tI)}</div></div>
     <div class="stat-card"><div class="stat-label">税金合計</div><div class="stat-value accent">${fmtY(tT)}</div></div>`;
+        }
 
         const budget = currentCompany.budget || 0;
-        if (budget > 0) {
+        const dashBudgetEl = $('dashBudget');
+        if (budget > 0 && dashBudgetEl) {
           const pct = Math.min(tG / budget * 100, 100), cls = pct >= 95 ? 'over' : pct >= 80 ? 'warn' : 'ok';
-          $('dashBudget').innerHTML = `
+          dashBudgetEl.innerHTML = `
       <div style="font-size:0.75rem;margin-bottom:0.65rem">月次人件費予算：<b>${fmtY(budget)}</b></div>
       <div style="font-size:0.72rem;display:flex;justify-content:space-between;margin-bottom:0.3rem">
         <span>支給額合計</span><span style="font-family:var(--font-mono)">${fmtY(tG)}（${Math.round(pct)}%）</span>
       </div>
       <div class="budget-progress"><div class="budget-bar-fill ${cls}" style="width:${pct}%"></div></div>
       ${pct >= 95 ? '<div style="font-size:0.7rem;color:var(--accent);margin-top:0.5rem">⚠ 予算超過の恐れがあります</div>' : ''}`;
-        } else { $('dashBudget').innerHTML = '<p style="font-size:0.78rem;color:var(--muted)">会社設定から予算を設定してください</p>'; }
+        } else if (dashBudgetEl) { dashBudgetEl.innerHTML = '<p style="font-size:0.78rem;color:var(--muted)">会社設定から予算を設定してください</p>'; }
 
         const wallEmps = employees.filter(e => e.dep > 0 || e.spDed > 0);
-        if (wallEmps.length > 0) {
-          $('dashWall').innerHTML = wallEmps.map(e => {
+        const dashWallEl = $('dashWall');
+        if (wallEmps.length > 0 && dashWallEl) {
+          dashWallEl.innerHTML = wallEmps.map(e => {
             const ae = (e.gross || 0) * 12, pct = Math.min(ae / 1030000 * 100, 100), cls = ae >= 1030000 ? 'over' : pct >= 80 ? 'warn' : 'ok';
             return `<div style="margin-bottom:0.75rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border)">
         <div style="font-size:0.78rem;font-weight:700;margin-bottom:0.2rem">${esc(e.name)}</div>
