@@ -4789,7 +4789,7 @@
       }
 
       function calc(base, perf, mag, hRate, pRate, eRate, mRate, rm,
-        age, deps, spDed, disDed, alTotal = 0, exDed = 0, bAdd = 0, bSet = null) {
+        age, deps, spDed, disDed, alTotal = 0) {
         age = age || 35; deps = deps || 0; spDed = Number(spDed) || 0; disDed = Number(disDed) || 0;
 
         const b = Math.round(base) + Math.round(alTotal);
@@ -4825,60 +4825,6 @@
 
         const bI = applyRound(bG * insRate, rm);
         const bAnnualTax = calcIncomeTaxAnnual(Math.max(0, (bG - bI) * 12 - totalDed));
-        const bT = applyRound(bAnnualTax * 1.021 / 12, rm);
-        const bM = applyRound((bG - bI) * (mRate / 100) / 12, rm);
-        const bonusNet = bG > 0 ? (bG - bI - bT - bM) : 0;
-
-        return {
-          gross, insurance, tax, municipal, monthlyNet,
-          bonusGross: bG, bonusIns: bI, bonusTax: bT, bonusMun: bM, bonusNet,
-          pensionExempt: !aP, healthExempt: !aH,
-        };
-      }
-        // ── 支給額 ──
-        const b = Math.round(base) + Math.round(alTotal);
-        const gross = applyRound(b * perf, rm);
-
-        // ── 社会保険（年齢別免除） ──
-        const aH = age < 75; // 75歳未満：健保
-        const aP = age < 70; // 70歳未満：厚年
-        const insRate = (aH ? hRate / 100 : 0) + (aP ? pRate / 100 : 0) + eRate / 100;
-        const insurance = applyRound(gross * insRate, rm);
-
-        // ── 課税標準（月次） ──
-        const taxableMo = gross - insurance;
-        const annualG = taxableMo * 12;
-
-        // ── 給与所得控除（年額） ──
-        const salDed = calcSalaryDeduction(annualG);
-
-        // ── 各種控除合計（年額） ──
-        const basicDed = 480000;
-        const depDed = 380000 * deps;
-        const totalDed = salDed + basicDed + depDed + spDed + disDed;
-
-        // ── 所得税（年税額→月割） ──
-        const annualTaxable = Math.max(0, annualG - totalDed);
-        const annualTax = calcIncomeTaxAnnual(annualTaxable);
-        const tax = applyRound(annualTax * 1.021 / 12, rm);
-
-        // ── 住民税（月次・前年所得ベース簡易） ──
-        const munTaxable = Math.max(0, annualG - totalDed - 430000); 
-        const munAnnual = applyRound(munTaxable * (mRate / 100), rm) + 5000;
-        const municipal = applyRound(munAnnual / 12, rm);
-
-        // ※ 手取りから個別の天引き(控除)をマイナスする
-        const monthlyNet = taxableMo - tax - municipal - exDed;
-
-        // ── ボーナス（月割係数法 または 直接指定） ──
-        // bSet(固定額)があれば優先、なければ 基本給×mag(倍率) ＋ bAdd(特別加算)
-        let bG = 0;
-        if (bSet !== null) bG = bSet;
-        else if (mag > 0 || bAdd > 0) bG = applyRound(Math.round(base) * mag, rm) + bAdd;
-
-        const bI = applyRound(bG * insRate, rm);
-        const bAnnualTax = calcIncomeTaxAnnual(Math.max(0, (bG - bI) * 12 - totalDed));
-        const bT = applyRound(bAnnualTax * 1.021 / 12, rm);
         const bM = applyRound((bG - bI) * (mRate / 100) / 12, rm);
         const bonusNet = bG > 0 ? (bG - bI - bT - bM) : 0;
 
@@ -8904,9 +8850,6 @@
         const row = acRows[i];
         let perf = row.perf || 1.0;
         let baseVal = row.base || 0;
-        let exDed = row.exDed || 0;
-        let bSet = null;
-        let bAdd = 0;
 
         // ルール適用
         for (const rule of rules) {
@@ -8918,12 +8861,10 @@
             baseVal += rule.value;
           } else if (rule.type === 'base_multiply') {
             baseVal *= rule.value;
-          } else if (rule.type === 'bonus_multiply') {
-            bSet = (baseVal || 0) * rule.value;
           } else if (rule.type === 'deduction_add') {
-            exDed += rule.value;
+            // 控除は現在サポート外
           } else if (rule.type === 'allowance_add') {
-            bAdd += rule.value;
+            // 手当追加は現在サポート外
           }
         }
 
@@ -8940,7 +8881,7 @@
           baseVal, perf, mag,
           tr.hRate, tr.pRate, tr.eRate, tr.mRate,
           'round', row.age || 35, row.dep || 0,
-          0, 0, row.extraOverride || 0, bSet, bAdd, exDed
+          0, 0, row.extraOverride || 0
         );
 
         acResults.push({
