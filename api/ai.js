@@ -14,18 +14,24 @@ module.exports = async function handler(req, res) {
   if (!body?.instruction) return res.status(400).json({ error: 'instruction が必要です' });
   if (body.instruction.length > 3000) return res.status(400).json({ error: '指示文が長すぎます（3000文字以内）' });
 
-  const prompt = `あなたは日本の給与計算ルールパーサーです。
-以下の指示をJSON配列に変換してください。
+  const prompt = `あなたは日本の高度な給与計算ルールパーサーです。
+以下の自然言語による指示を解釈し、指定されたJSON配列に変換してください。
+文脈から柔軟に意図を読み取り、適切なルールタイプに割り当ててください。
 
 指示: ${body.instruction}
 
 ## ルールタイプ（type）
-- perf_multiply   : 業績係数を掛け算   value=倍率（例: 1.2）
-- perf_set        : 業績係数を固定値   value=係数値（例: 1.0）
-- perf_min        : 業績係数の最低保証 value=最低係数（例: 1.0）※係数がvalue未満の人だけ引き上げ
-- allowance_add   : 手当を加算         value=金額・円（例: 5000）
-- allowance_set   : 手当を固定額に設定 value=金額・円（例: 30000）
-- base_multiply   : 基本給を倍率変更   value=倍率（例: 1.05）
+- base_add        : 基本給を加算（例: 全員10000円ベースアップ） value=金額・円
+- base_multiply   : 基本給を倍率変更 value=倍率（例: 1.05）
+- perf_multiply   : 業績係数を掛け算 value=倍率（例: 1.2）
+- perf_set        : 業績係数を固定値 value=係数値（例: 1.0）
+- perf_min        : 業績係数の最低保証 value=最低係数（例: 1.0）
+- allowance_add   : 支給手当を加算 value=金額・円（例: 5000）
+- allowance_set   : 支給手当を固定額に設定 value=金額・円
+- deduction_add   : 天引き（控除）を追加 value=金額・円（例: 親睦会費や罰金など）
+- bonus_multiply  : ボーナスをNヶ月分に変更 value=倍率（例: 3ヶ月分なら 3.0）
+- bonus_add       : ボーナス支給額に特別加算 value=金額・円（例: 特別賞与100000）
+- bonus_set       : ボーナス支給額を固定値に上書き value=金額・円
 
 ## target（対象）
 - "all"             : 全従業員
@@ -43,9 +49,9 @@ module.exports = async function handler(req, res) {
 
 例:
 [
-  {"type":"perf_multiply","target":"dept:営業部","value":1.2,"label":"営業部×1.2倍"},
-  {"type":"perf_min","target":"pos:部長","value":1.0,"label":"部長以上は係数1.0以上を保証"},
-  {"type":"allowance_add","target":"all","value":5000,"label":"全員に交通費5000円追加"}
+  {"type":"bonus_multiply","target":"dept:営業部","value":3.0,"label":"営業部のボーナスを3ヶ月分に"},
+  {"type":"base_add","target":"all","value":10000,"label":"全員に一律10000円ベースアップ"},
+  {"type":"deduction_add","target":"all","value":1000,"label":"親睦会費として全員から1000円天引き"}
 ]`;
 
   const controller = new AbortController();
@@ -90,7 +96,7 @@ module.exports = async function handler(req, res) {
       try { rules = JSON.parse(m[0]); } catch { return res.status(500).json({ error: 'JSONパースエラー' }); }
     }
 
-    const VALID_TYPES = ['perf_multiply', 'perf_set', 'perf_min', 'allowance_add', 'allowance_set', 'base_multiply'];
+    const VALID_TYPES = ['base_add', 'base_multiply', 'perf_multiply', 'perf_set', 'perf_min', 'allowance_add', 'allowance_set', 'deduction_add', 'bonus_multiply', 'bonus_add', 'bonus_set'];
     const validated = rules
       .filter(r => r && typeof r === 'object' && VALID_TYPES.includes(r.type) && typeof r.target === 'string' && typeof r.value === 'number' && Number.isFinite(r.value))
       .map(r => ({ type: r.type, target: r.target, value: r.value, label: typeof r.label === 'string' ? r.label : `${r.type}(${r.target})` }));
