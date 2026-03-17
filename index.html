@@ -4792,6 +4792,49 @@
         age, deps, spDed, disDed, alTotal = 0, exDed = 0, bAdd = 0, bSet = null) {
         age = age || 35; deps = deps || 0; spDed = Number(spDed) || 0; disDed = Number(disDed) || 0;
 
+        const b = Math.round(base) + Math.round(alTotal);
+        const gross = applyRound(b * perf, rm);
+
+        const aH = age < 75; const aP = age < 70;
+        const insRate = (aH ? hRate / 100 : 0) + (aP ? pRate / 100 : 0) + eRate / 100;
+        const insurance = applyRound(gross * insRate, rm);
+
+        const taxableMo = gross - insurance;
+        const annualG = taxableMo * 12;
+
+        const salDed = calcSalaryDeduction(annualG);
+        const basicDed = 480000;
+        const depDed = 380000 * deps;
+        const totalDed = salDed + basicDed + depDed + spDed + disDed;
+
+        const annualTaxable = Math.max(0, annualG - totalDed);
+        const annualTax = calcIncomeTaxAnnual(annualTaxable);
+        const tax = applyRound(annualTax * 1.021 / 12, rm);
+
+        const munTaxable = Math.max(0, annualG - totalDed - 430000); 
+        const munAnnual = applyRound(munTaxable * (mRate / 100), rm) + 5000;
+        const municipal = applyRound(munAnnual / 12, rm);
+
+        // 手取りから個別の天引き(控除)をマイナス
+        const monthlyNet = taxableMo - tax - municipal - exDed;
+
+        // ボーナス（月割係数法 または 直接指定）
+        let bG = 0;
+        if (bSet !== null) bG = bSet;
+        else if (mag > 0 || bAdd > 0) bG = applyRound(Math.round(base) * mag, rm) + bAdd;
+
+        const bI = applyRound(bG * insRate, rm);
+        const bAnnualTax = calcIncomeTaxAnnual(Math.max(0, (bG - bI) * 12 - totalDed));
+        const bT = applyRound(bAnnualTax * 1.021 / 12, rm);
+        const bM = applyRound((bG - bI) * (mRate / 100) / 12, rm);
+        const bonusNet = bG > 0 ? (bG - bI - bT - bM) : 0;
+
+        return {
+          gross, insurance, tax, municipal, monthlyNet,
+          bonusGross: bG, bonusIns: bI, bonusTax: bT, bonusMun: bM, bonusNet,
+          pensionExempt: !aP, healthExempt: !aH,
+        };
+      }
         // ── 支給額 ──
         const b = Math.round(base) + Math.round(alTotal);
         const gross = applyRound(b * perf, rm);
@@ -5950,6 +5993,7 @@
         showToast('テンプレートをダウンロードしました', 'success');
       }
 
+      window.downloadImportTemplate = downloadImportTemplate;
       /* ══ CSV / Excel インポート ══ */
       function handleImportFile(file) {
         if (!file) return;
