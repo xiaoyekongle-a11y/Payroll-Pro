@@ -4891,7 +4891,7 @@
         };
       }
 
-    function fmtY(v) { return '¥' + Math.round(v || 0).toLocaleString('ja-JP'); }
+      function fmtY(v) { return '¥' + Math.round(v || 0).toLocaleString('ja-JP'); }
 
       /* ── State ── */
       let currentUser = null, currentCompany = null, employees = [], lockedPeriods = new Set();
@@ -9018,7 +9018,13 @@
           `${acResults.length}名 ／ 支給額合計 ${fmtY(tG)}${tBG > 0 ? ' ／ ボーナス ' + fmtY(tBG) : ''} ／ 手取り合計 ${fmtY(tN)}`;
       });
       document.getElementById('acBtnRestart')?.addEventListener('click', acReset);
-      document.getElementById('acBtnTemplate')?.addEventListener('click', downloadImportTemplate);
+      document.getElementById('acBtnTemplate')?.addEventListener('click', () => {
+        if (typeof window.downloadImportTemplate === 'function') {
+          window.downloadImportTemplate();
+        } else {
+          showToast('テンプレートダウンロード機能が読み込まれていません', 'error');
+        }
+      });
 
       // Salario給与計算へ反映
       document.getElementById('acBtnSendToSalario')?.addEventListener('click', () => {
