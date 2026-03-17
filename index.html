@@ -5992,8 +5992,8 @@
         XLSX.writeFile(wb, 'salario_import_template.xlsx');
         showToast('テンプレートをダウンロードしました', 'success');
       }
-
-      window.downloadImportTemplate = downloadImportTemplate;
+    window.downloadImportTemplate = downloadImportTemplate;
+      
       /* ══ CSV / Excel インポート ══ */
       function handleImportFile(file) {
         if (!file) return;
@@ -6961,20 +6961,7 @@
       $('attPeriodSelect').addEventListener('change', e => { attPeriod = e.target.value; loadAttRecords(); });
       $('attEmpSelect').addEventListener('change', e => { attEmpId = e.target.value || null; loadAttRecords(); });
 
-      // ══ 年末調整 ══
-      $('btnYearendPDF').addEventListener('click', () => {
-        if (!yearendEditEmpId) { showToast('従業員を選択してください', 'error'); return; }
-        genWithholdingPDF(yearendEditEmpId);
-      });
-      $('btnYearendCSV').addEventListener('click', exportYearendCSV);
-      $('btnYearendConfirm').addEventListener('click', confirmAllYearend);
-
-      // ══ 社保届出（Sprint 9） ══
-      $('btnShahouCheck').addEventListener('click', checkShahouChanges);
-      $('btnSanteiGen').addEventListener('click', generateSanteiKisho);
-      $('btnGetsugakuPDF').addEventListener('click', generateGetsugakuPDF);
-      $('shahouPeriodSel').addEventListener('change', checkShahouChanges);
-
+     
       // ══ ダッシュボード強化（Sprint 10） ══
       $('btnChartModeToggle').addEventListener('click', () => {
         trendChartMode = trendChartMode === 'yoy' ? 'normal' : 'yoy';
@@ -6986,16 +6973,7 @@
         renderDrilldownChart(e.target.value);
       });
 
-      // ══ 振込管理 ══
-      $('btnTransferLoad').addEventListener('click', () => {
-        showModal('振込データ作成', `<b>${transferPeriod}</b>の確定済み給与から振込データを作成します。`,
-          '作成する', 'btn-blue', loadTransferData);
-      });
-      $('btnTransferFB').addEventListener('click', generateFBFile);
-      $('btnTransferMarkSent').addEventListener('click', markTransferSent);
-      $('transferPeriodSel').addEventListener('change', e => { transferPeriod = e.target.value; renderTransferList(); });
 
-      $('btnFetchTaxRates').addEventListener('click', fetchLatestTaxRates);
       $('btnSaveTaxRates').addEventListener('click', () => {
         ['hRate', 'pRate', 'eRate', 'mRate'].forEach(k => { const el = $('tr_' + k); if (el) taxRates[k] = Number(el.value); });
         applyTaxRatesToForm(); saveTaxRates();
@@ -8230,164 +8208,25 @@
     // ─────────────────────────────────────────
     // STEP 2: AI指示 → 計算実行
     // ─────────────────────────────────────────
-    async function acRunCalc() {
-      const btn = document.getElementById('acBtnCalc');
-      if (btn) { btn.disabled = true; btn.textContent = '計算中...'; }
-
-      const instruction = (document.getElementById('acAiInstruction')?.value || '').trim();
-      const bonusMethod = document.getElementById('acBonusMethod')?.value || 'none';
-      const bonusParam = Number(document.getElementById('acBonusParam')?.value) || 2.0;
-
-      // AI指示解析
-      let aiRules = [], aiLogs = [];
-      if (instruction) {
-        try {
-          aiRules = await acCallAI(instruction);
-          aiLogs = aiRules.map(r => `[AI] ${r.label}`);
-          showToast(`AIが ${aiRules.length} 件のルールを解析しました`, 'success');
-        } catch (e) {
-          console.warn('[AC] AI失敗→フォールバック:', e.message);
-          const fb = acParseManual(instruction);
-          aiRules = fb.rules; aiLogs = fb.logs;
-          if (aiRules.length > 0)
-            showToast('パターンマッチで ' + aiRules.length + ' 件検出', '');
-          else
-            showToast('指示を解釈できませんでした。そのまま計算します', 'error');
-        }
-      }
-
-      // 有効行チェック
-      const validRows = acRows.filter(r => r.name && r.base > 0);
-      if (validRows.length === 0) {
-        showToast('氏名・基本給が入力されている行がありません', 'error');
-        if (btn) { btn.disabled = false; btn.textContent = '⚡ 給与計算を実行する'; }
-        return;
-      }
-
-      // 進捗
-      const bar = document.getElementById('acProgressBar');
-      const barWrap = document.getElementById('acProgressWrap');
-      if (barWrap) barWrap.style.display = 'block';
-      if (bar) bar.style.width = '0%';
-
-      const tr = typeof taxRates !== 'undefined'
-        ? taxRates : { hRate: 5, pRate: 9, eRate: 0.6, mRate: 10 };
-
-      acResults = [];
-      let aiAffected = 0;
-
-      for (let i = 0; i < validRows.length; i++) {
-        const row = validRows[i];
-        let base = row.base;
-        let perf = row.perf || 1.0;
-        let extra = 0;
-        let exDed = 0;
-        let bAdd = 0;
-        let bSet = null;
-        let bMag = bonusMethod === 'multiplier' ? bonusParam : (bonusMethod === 'fixed_pool' ? perf * bonusParam : 0);
-
-        let empLogs = [], applied = false, perfOverridden = false;
-
-        // AIルール適用
-        for (const rule of aiRules) {
-          if (!acMatchTarget(rule.target, row)) continue;
-          applied = true;
-          
-          if (rule.type === 'base_add') {
-            base += rule.value;
-            empLogs.push(`基本給+¥${rule.value.toLocaleString()}（${rule.label}）`);
-          } else if (rule.type === 'base_multiply') {
-            base = Math.round(base * rule.value);
-            empLogs.push(`基本給×${rule.value}（${rule.label}）`);
-          } else if (rule.type === 'perf_multiply') {
-            perf *= rule.value; perfOverridden = true;
-            empLogs.push(`係数×${rule.value}（${rule.label}）`);
-          } else if (rule.type === 'perf_set') {
-            perf = rule.value; perfOverridden = true;
-            empLogs.push(`係数=${rule.value}固定（${rule.label}）`);
-          } else if (rule.type === 'perf_min') {
-            perf = Math.max(perf, rule.value); perfOverridden = true;
-            empLogs.push(`係数最低${rule.value}保証（${rule.label}）`);
-          } else if (rule.type === 'allowance_add') {
-            extra += rule.value;
-            empLogs.push(`手当+¥${rule.value.toLocaleString()}（${rule.label}）`);
-          } else if (rule.type === 'allowance_set') {
-            extra = rule.value;
-            empLogs.push(`手当${rule.value}円固定（${rule.label}）`);
-          } else if (rule.type === 'deduction_add') {
-            exDed += rule.value;
-            empLogs.push(`控除天引 ¥${rule.value.toLocaleString()}（${rule.label}）`);
-          } else if (rule.type === 'bonus_multiply') {
-            bMag = rule.value;
-            empLogs.push(`ﾎﾞｰﾅｽ${rule.value}ヶ月分（${rule.label}）`);
-          } else if (rule.type === 'bonus_add') {
-            bAdd += rule.value;
-            empLogs.push(`ﾎﾞｰﾅｽ+¥${rule.value.toLocaleString()}（${rule.label}）`);
-          } else if (rule.type === 'bonus_set') {
-            bSet = rule.value;
-            empLogs.push(`ﾎﾞｰﾅｽ¥${rule.value.toLocaleString()}固定（${rule.label}）`);
-          }
-        }
-        if (applied) aiAffected++;
-        if (!perfOverridden) perf = Math.max(0, perf);
-
-        const r = calc(base, perf, bMag,
-          tr.hRate, tr.pRate, tr.eRate, tr.mRate, 'round',
-          row.age, row.dep, 0, 0, extra, exDed, bAdd, bSet);
-
-        acResults.push({
-          ...r, ...row, base, perf, mag: bMag,
-          extraOverride: 0,
-          aiApplied: applied, aiLogs: empLogs,
-        });
-
-        if (bar) bar.style.width = Math.round((i + 1) / validRows.length * 100) + '%';
-        if (i % 10 === 0) await acSleep(0);
-      }
-
-      if (barWrap) barWrap.style.display = 'none';
-
-      acLastAiLogs = aiLogs;
-      acLastAiN = aiAffected;
-
-      acRenderResultTable();
-
-      // AI解説を取得
-      (async () => {
-        const explainWrap = document.getElementById('acExplainWrap');
-        const explainText = document.getElementById('acExplainText');
-        if (!explainWrap || !explainText) return;
-        try {
-          const tG = acResults.reduce((a, e) => a + e.gross, 0);
-          const tN = acResults.reduce((a, e) => a + e.monthlyNet, 0);
-          const tBG = acResults.reduce((a, e) => a + (e.bonusGross || 0), 0);
-          const aiN = acResults.filter(e => e.aiApplied).length;
-          const resp = await fetch('/api/ai-explain', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              summary: {
-                emp_count: acResults.length,
-                total_gross: tG,
-                total_net: tN,
-                total_bonus: tBG,
-                ai_affected: aiN,
-                instruction: document.getElementById('acAiInstruction')?.value || '',
-              }
-            }),
-          });
-          const data = await resp.json();
-          if (data.explanation) {
-            explainText.textContent = data.explanation;
-            explainWrap.style.display = 'block';
-          }
-        } catch (e) { console.warn('[AC] explain failed:', e.message); }
-      })();
-
-      acGoStep(3);
-      if (btn) { btn.disabled = false; btn.textContent = '⚡ 給与計算を実行する'; }
-      showToast(acResults.length + '名の計算が完了しました ✅', 'success');
-    }
+　　function acParseManual(instruction) {
+      const rules = [];
+      instruction.split('\n').forEach(line => {
+        const l = line.trim(); if (!l) return;
+        const mAll = l.match(/(?:全員|全社員|みんな).*?(\d+\.?\d*)\s*倍/);
+        if (mAll) { rules.push({ type: 'perf_multiply', target: 'all', value: Number(mAll[1]), label: '全員×' + mAll[1] + '倍' }); return; }
+        const mBaseUp = l.match(/(?:基本給|ベース).*?(\d{3,8})\s*円.*?(?:アップ|上げる|加算)/);
+        if (mBaseUp) { rules.push({ type: 'base_add', target: 'all', value: Number(mBaseUp[1]), label: '基本給+' + mBaseUp[1] + '円' }); return; }
+        const mBonus = l.match(/ボーナス.*?(\d+\.?\d*)\s*ヶ?月分/);
+        if (mBonus) { rules.push({ type: 'bonus_multiply', target: 'all', value: Number(mBonus[1]), label: 'ボーナス' + mBonus[1] + 'ヶ月分' }); return; }
+        const mDed = l.match(/(\d{3,8})\s*円.*?(?:引く|天引|控除)/);
+        if (mDed) { rules.push({ type: 'deduction_add', target: 'all', value: Number(mDed[1]), label: '控除+' + mDed[1] + '円' }); return; }
+        const mDept = l.match(/([^\s]+[部課室グループ]).*?(\d+\.?\d*)\s*倍/);
+        if (mDept) { rules.push({ type: 'perf_multiply', target: 'dept:' + mDept[1], value: Number(mDept[2]), label: mDept[1] + '×' + mDept[2] + '倍' }); return; }
+        const mAdd = l.match(/(?:全員|全社員).*?(\d{3,8})\s*円/);
+        if (mAdd) { rules.push({ type: 'allowance_add', target: 'all', value: Number(mAdd[1]), label: '全員手当+' + mAdd[1] + '円' }); return; }
+      });
+      return { rules, logs: rules.length > 0 ? ['（パターンマッチで ' + rules.length + ' 件解析）'] : [] };
+    }　
     function acMatchTarget(target, row) {
       if (!target || target === 'all') return true;
       const t = String(target);
