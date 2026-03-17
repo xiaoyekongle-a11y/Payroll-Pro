@@ -4890,7 +4890,8 @@
           pensionExempt: !aP, healthExempt: !aH,
         };
       }
-      function fmtY(v) { return '¥' + Math.round(v || 0).toLocaleString('ja-JP'); }
+
+    function fmtY(v) { return '¥' + Math.round(v || 0).toLocaleString('ja-JP'); }
 
       /* ── State ── */
       let currentUser = null, currentCompany = null, employees = [], lockedPeriods = new Set();
@@ -8205,28 +8206,6 @@
       }, 50);
     }
 
-    // ─────────────────────────────────────────
-    // STEP 2: AI指示 → 計算実行
-    // ─────────────────────────────────────────
-　　function acParseManual(instruction) {
-      const rules = [];
-      instruction.split('\n').forEach(line => {
-        const l = line.trim(); if (!l) return;
-        const mAll = l.match(/(?:全員|全社員|みんな).*?(\d+\.?\d*)\s*倍/);
-        if (mAll) { rules.push({ type: 'perf_multiply', target: 'all', value: Number(mAll[1]), label: '全員×' + mAll[1] + '倍' }); return; }
-        const mBaseUp = l.match(/(?:基本給|ベース).*?(\d{3,8})\s*円.*?(?:アップ|上げる|加算)/);
-        if (mBaseUp) { rules.push({ type: 'base_add', target: 'all', value: Number(mBaseUp[1]), label: '基本給+' + mBaseUp[1] + '円' }); return; }
-        const mBonus = l.match(/ボーナス.*?(\d+\.?\d*)\s*ヶ?月分/);
-        if (mBonus) { rules.push({ type: 'bonus_multiply', target: 'all', value: Number(mBonus[1]), label: 'ボーナス' + mBonus[1] + 'ヶ月分' }); return; }
-        const mDed = l.match(/(\d{3,8})\s*円.*?(?:引く|天引|控除)/);
-        if (mDed) { rules.push({ type: 'deduction_add', target: 'all', value: Number(mDed[1]), label: '控除+' + mDed[1] + '円' }); return; }
-        const mDept = l.match(/([^\s]+[部課室グループ]).*?(\d+\.?\d*)\s*倍/);
-        if (mDept) { rules.push({ type: 'perf_multiply', target: 'dept:' + mDept[1], value: Number(mDept[2]), label: mDept[1] + '×' + mDept[2] + '倍' }); return; }
-        const mAdd = l.match(/(?:全員|全社員).*?(\d{3,8})\s*円/);
-        if (mAdd) { rules.push({ type: 'allowance_add', target: 'all', value: Number(mAdd[1]), label: '全員手当+' + mAdd[1] + '円' }); return; }
-      });
-      return { rules, logs: rules.length > 0 ? ['（パターンマッチで ' + rules.length + ' 件解析）'] : [] };
-    }　
     function acMatchTarget(target, row) {
       if (!target || target === 'all') return true;
       const t = String(target);
@@ -8881,6 +8860,105 @@
         if (mAdd) { rules.push({ type: 'allowance_add', target: 'all', value: Number(mAdd[1]), label: '全員手当+' + mAdd[1] + '円' }); return; }
       });
       return { rules, logs: rules.length > 0 ? ['（パターンマッチで ' + rules.length + ' 件解析）'] : [] };
+    }
+
+    // ─────────────────────────────────────────
+    // STEP 3→4: 計算実行（AI調整 or 直接実行）
+    // ─────────────────────────────────────────
+    async function acRunCalc() {
+      if (!acRows.length) { showToast('従業員データがありません', 'error'); return; }
+      
+      const instruction = document.getElementById('acAiInstruction')?.value?.trim() || '';
+      const bonusMethod = document.getElementById('acBonusMethod')?.value || 'none';
+      const bonusParam = Number(document.getElementById('acBonusParam')?.value) || 2.0;
+      const tr = typeof taxRates !== 'undefined'
+        ? taxRates : { hRate: 5, pRate: 9, eRate: 0.6, mRate: 10 };
+
+      acResults = [];
+      acLastAiLogs = [];
+      acLastAiN = 0;
+
+      let rules = [];
+      let logs = [];
+
+      // AI指示がある場合
+      if (instruction) {
+        try {
+          const data = await acCallAI(instruction);
+          rules = data.rules || [];
+          logs = data.logs || [];
+          acLastAiLogs = logs;
+          acLastAiN = rules.filter(r => r.type === 'perf_multiply' && r.value !== 1.0).length;
+        } catch (e) {
+          showToast('AI処理エラー: ' + e.message, 'error');
+          return;
+        }
+      } else {
+        // AI指示がない場合は直接計算
+        const result = acParseManual('');
+        logs = result.logs;
+      }
+
+      // 各従業員を計算
+      for (let i = 0; i < acRows.length; i++) {
+        const row = acRows[i];
+        let perf = row.perf || 1.0;
+        let baseVal = row.base || 0;
+        let exDed = row.exDed || 0;
+        let bSet = null;
+        let bAdd = 0;
+
+        // ルール適用
+        for (const rule of rules) {
+          if (!acMatchTarget(rule.target, row)) continue;
+
+          if (rule.type === 'perf_multiply') {
+            perf *= rule.value;
+          } else if (rule.type === 'base_add') {
+            baseVal += rule.value;
+          } else if (rule.type === 'base_multiply') {
+            baseVal *= rule.value;
+          } else if (rule.type === 'bonus_multiply') {
+            bSet = (baseVal || 0) * rule.value;
+          } else if (rule.type === 'deduction_add') {
+            exDed += rule.value;
+          } else if (rule.type === 'allowance_add') {
+            bAdd += rule.value;
+          }
+        }
+
+        // ボーナス計算
+        let mag = 0;
+        if (bonusMethod === 'multiplier') {
+          mag = bonusParam;
+        } else if (bonusMethod === 'fixed_pool') {
+          mag = (perf * bonusParam) / baseVal;
+        }
+
+        // 給与計算
+        const calcResult = calc(
+          baseVal, perf, mag,
+          tr.hRate, tr.pRate, tr.eRate, tr.mRate,
+          'round', row.age || 35, row.dep || 0,
+          0, 0, row.extraOverride || 0, bSet, bAdd, exDed
+        );
+
+        acResults.push({
+          name: row.name || '（未入力）',
+          dept: row.dept || '',
+          pos: row.pos || '',
+          base: baseVal,
+          perf,
+          age: row.age || 35,
+          dep: row.dep || 0,
+          bank: row.bank || '',
+          aiLogs: logs,
+          ...calcResult
+        });
+      }
+
+      acGoStep(3);
+      acRenderResultTable();
     }
 
     // ─────────────────────────────────────────
