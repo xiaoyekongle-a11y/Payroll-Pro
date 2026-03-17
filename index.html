@@ -4305,41 +4305,25 @@
                   style="width:100%;padding:0.55rem 0.75rem;border:1px solid var(--border);border-radius:var(--r);font-family:var(--font-body);font-size:0.85rem;background:var(--surface);color:var(--ink);resize:vertical;margin-bottom:0.65rem;line-height:1.6"
                   placeholder="例：&#10;営業部の係数を1.2倍にする&#10;全員に5000円の手当を追加&#10;田中さんの係数を1.5に固定する&#10;管理職の最低係数を1.0に保証する"></textarea>
 
-                <!-- AI指示プリセット（カテゴリ分け） -->
+               <!-- AI指示プリセット（カテゴリ分け） -->
                 <div style="margin-bottom:0.85rem">
                   <div class="ac-preset-group">
-                    <div class="ac-preset-label">🎯 係数系</div>
+                    <div class="ac-preset-label">🎯 係数・手当・控除</div>
                     <div class="ac-preset-pills">
-                      <button class="btn btn-sm btn-secondary ac-sample" data-text="給与を全員2倍にする"
-                        data-tip="全員の業績係数を2倍">全員2倍</button>
-                      <button class="btn btn-sm btn-secondary ac-sample" data-text="営業部の係数を1.2倍にする"
-                        data-tip="営業部のみ係数+20%">営業部+20%</button>
-                      <button class="btn btn-sm btn-secondary ac-sample" data-text="部長以上は係数1.3、それ以外は1.0にする"
-                        data-tip="役職別に係数を分ける">役職別係数</button>
-                      <button class="btn btn-sm btn-secondary ac-sample" data-text="係数が1.0以下の人を全員1.0に引き上げる"
-                        data-tip="最低係数を保証">最低係数保証</button>
-                      <button class="btn btn-sm btn-secondary ac-sample" data-text="開発部は一律係数1.15、営業部は1.2にする"
-                        data-tip="複数部署それぞれ指定">部署別係数</button>
+                      <button class="btn btn-sm btn-secondary ac-sample" data-text="給与を全員2倍にする" data-tip="全員の業績係数を2倍">全員2倍</button>
+                      <button class="btn btn-sm btn-secondary ac-sample" data-text="営業部の係数を1.2倍にする" data-tip="営業部のみ係数+20%">営業部+20%</button>
+                      <button class="btn btn-sm btn-secondary ac-sample" data-text="係数が1.0以下の人を全員1.0に引き上げる" data-tip="最低係数を保証">最低係数保証</button>
+                      <button class="btn btn-sm btn-secondary ac-sample" data-text="全員に5000円の交通費を追加" data-tip="全員に手当加算">手当+5000円</button>
+                      <button class="btn btn-sm btn-secondary ac-sample" data-text="全員から親睦会費として1000円を天引きする" data-tip="手取りからマイナス">親睦会費 天引き</button>
                     </div>
                   </div>
                   <div class="ac-preset-group">
-                    <div class="ac-preset-label">💰 手当系</div>
+                    <div class="ac-preset-label">💴 基本給・ボーナス系</div>
                     <div class="ac-preset-pills">
-                      <button class="btn btn-sm btn-secondary ac-sample" data-text="全員に5000円の交通費を追加"
-                        data-tip="全店员に手当加算">手当+5000円</button>
-                      <button class="btn btn-sm btn-secondary ac-sample" data-text="開発部に残業手当10000円を追加"
-                        data-tip="特定部署のみ">開発部手当</button>
-                      <button class="btn btn-sm btn-secondary ac-sample" data-text="管理職の手当を30000円に設定"
-                        data-tip="手当を固定額に上書き">管理職手当固定</button>
-                    </div>
-                  </div>
-                  <div class="ac-preset-group">
-                    <div class="ac-preset-label">💴 基本給系</div>
-                    <div class="ac-preset-pills">
-                      <button class="btn btn-sm btn-secondary ac-sample" data-text="全員の基本給を1.05倍にする"
-                        data-tip="ベースアップ5%">基本給+5%</button>
-                      <button class="btn btn-sm btn-secondary ac-sample" data-text="田中さんの係数を1.5に固定する"
-                        data-tip="個人指定も可能">個人係数固定</button>
+                      <button class="btn btn-sm btn-secondary ac-sample" data-text="全員の基本給を一律1万円アップする" data-tip="ベースアップ">基本給+1万円</button>
+                      <button class="btn btn-sm btn-secondary ac-sample" data-text="全員の基本給を1.05倍にする" data-tip="ベースアップ5%">基本給+5%</button>
+                      <button class="btn btn-sm btn-secondary ac-sample" data-text="営業部のボーナスを3ヶ月分にする" data-tip="特定部署の賞与倍率">ボーナス3ヶ月分</button>
+                      <button class="btn btn-sm btn-secondary ac-sample" data-text="田中さんに特別賞与として10万円を追加" data-tip="個人に加算">特別賞与 10万円</button>
                     </div>
                   </div>
                 </div>
@@ -4904,7 +4888,7 @@
       }
 
       function calc(base, perf, mag, hRate, pRate, eRate, mRate, rm,
-        age, deps, spDed, disDed, alTotal = 0) {
+        age, deps, spDed, disDed, alTotal = 0, exDed = 0, bAdd = 0, bSet = null) {
         age = age || 35; deps = deps || 0; spDed = Number(spDed) || 0; disDed = Number(disDed) || 0;
 
         // ── 支給額 ──
@@ -4925,43 +4909,38 @@
         const salDed = calcSalaryDeduction(annualG);
 
         // ── 各種控除合計（年額） ──
-        // 基礎控除：48万（令和2年〜/所得2400万以下は満額）
         const basicDed = 480000;
-        // 扶養控除：一般扶養38万×人数
         const depDed = 380000 * deps;
-        // 配偶者控除・障害者控除
         const totalDed = salDed + basicDed + depDed + spDed + disDed;
 
         // ── 所得税（年税額→月割） ──
         const annualTaxable = Math.max(0, annualG - totalDed);
         const annualTax = calcIncomeTaxAnnual(annualTaxable);
-        // 復興特別所得税 2.1%上乗せ（令和19年まで）
         const tax = applyRound(annualTax * 1.021 / 12, rm);
 
         // ── 住民税（月次・前年所得ベース簡易） ──
-        // 住民税所得割：課税所得×10%（標準税率）
-        // 均等割：5,000円/年（市区町村3,500+都道府県1,500）
-        const munTaxable = Math.max(0, annualG - totalDed - 430000); // 住民税基礎控除43万
+        const munTaxable = Math.max(0, annualG - totalDed - 430000); 
         const munAnnual = applyRound(munTaxable * (mRate / 100), rm) + 5000;
         const municipal = applyRound(munAnnual / 12, rm);
 
-        const monthlyNet = taxableMo - tax - municipal;
+        // ※ 手取りから個別の天引き(控除)をマイナスする
+        const monthlyNet = taxableMo - tax - municipal - exDed;
 
-        // ── ボーナス（前月給与方式・月割係数法） ──
-        const bG = applyRound(Math.round(base) * mag, rm);
+        // ── ボーナス（月割係数法 または 直接指定） ──
+        // bSet(固定額)があれば優先、なければ 基本給×mag(倍率) ＋ bAdd(特別加算)
+        let bG = 0;
+        if (bSet !== null) bG = bSet;
+        else if (mag > 0 || bAdd > 0) bG = applyRound(Math.round(base) * mag, rm) + bAdd;
+
         const bI = applyRound(bG * insRate, rm);
-        // ボーナス所得税：前月給与から税率を引く（簡易）
-        const bAnnualTax = calcIncomeTaxAnnual(
-          Math.max(0, (bG - bI) * 12 - totalDed)
-        );
+        const bAnnualTax = calcIncomeTaxAnnual(Math.max(0, (bG - bI) * 12 - totalDed));
         const bT = applyRound(bAnnualTax * 1.021 / 12, rm);
         const bM = applyRound((bG - bI) * (mRate / 100) / 12, rm);
-        const bonusNet = bG - bI - bT - bM;
+        const bonusNet = bG > 0 ? (bG - bI - bT - bM) : 0;
 
         return {
           gross, insurance, tax, municipal, monthlyNet,
           bonusGross: bG, bonusIns: bI, bonusTax: bT, bonusMun: bM, bonusNet,
-          // デバッグ用
           _annualTaxable: annualTaxable, _annualTax: annualTax,
           _salDed: salDed, _totalDed: totalDed,
           pensionExempt: !aP, healthExempt: !aH,
@@ -8354,51 +8333,65 @@
 
       for (let i = 0; i < validRows.length; i++) {
         const row = validRows[i];
+        let base = row.base;
         let perf = row.perf || 1.0;
         let extra = 0;
+        let exDed = 0;
+        let bAdd = 0;
+        let bSet = null;
+        let bMag = bonusMethod === 'multiplier' ? bonusParam : (bonusMethod === 'fixed_pool' ? perf * bonusParam : 0);
+
         let empLogs = [], applied = false, perfOverridden = false;
 
         // AIルール適用
         for (const rule of aiRules) {
           if (!acMatchTarget(rule.target, row)) continue;
           applied = true;
-          if (rule.type === 'perf_multiply') {
+          
+          if (rule.type === 'base_add') {
+            base += rule.value;
+            empLogs.push(`基本給+¥${rule.value.toLocaleString()}（${rule.label}）`);
+          } else if (rule.type === 'base_multiply') {
+            base = Math.round(base * rule.value);
+            empLogs.push(`基本給×${rule.value}（${rule.label}）`);
+          } else if (rule.type === 'perf_multiply') {
             perf *= rule.value; perfOverridden = true;
             empLogs.push(`係数×${rule.value}（${rule.label}）`);
           } else if (rule.type === 'perf_set') {
             perf = rule.value; perfOverridden = true;
             empLogs.push(`係数=${rule.value}固定（${rule.label}）`);
-          } else if (rule.type === 'allowance_add') {
-            extra += rule.value;
-            empLogs.push(`手当+¥${rule.value.toLocaleString()}（${rule.label}）`);
           } else if (rule.type === 'perf_min') {
             perf = Math.max(perf, rule.value); perfOverridden = true;
             empLogs.push(`係数最低${rule.value}保証（${rule.label}）`);
+          } else if (rule.type === 'allowance_add') {
+            extra += rule.value;
+            empLogs.push(`手当+¥${rule.value.toLocaleString()}（${rule.label}）`);
           } else if (rule.type === 'allowance_set') {
             extra = rule.value;
             empLogs.push(`手当${rule.value}円固定（${rule.label}）`);
-          } else if (rule.type === 'base_multiply') {
-            row.base = Math.round(row.base * rule.value);
-            empLogs.push(`基本給×${rule.value}（${rule.label}）`);
-          } else if (rule.type === 'base_add') {
-            row.base = Math.round(row.base + rule.value);
-            empLogs.push(`基本給+¥${rule.value.toLocaleString()}（${rule.label}）`);
+          } else if (rule.type === 'deduction_add') {
+            exDed += rule.value;
+            empLogs.push(`控除天引 ¥${rule.value.toLocaleString()}（${rule.label}）`);
+          } else if (rule.type === 'bonus_multiply') {
+            bMag = rule.value;
+            empLogs.push(`ﾎﾞｰﾅｽ${rule.value}ヶ月分（${rule.label}）`);
+          } else if (rule.type === 'bonus_add') {
+            bAdd += rule.value;
+            empLogs.push(`ﾎﾞｰﾅｽ+¥${rule.value.toLocaleString()}（${rule.label}）`);
+          } else if (rule.type === 'bonus_set') {
+            bSet = rule.value;
+            empLogs.push(`ﾎﾞｰﾅｽ¥${rule.value.toLocaleString()}固定（${rule.label}）`);
           }
         }
         if (applied) aiAffected++;
         if (!perfOverridden) perf = Math.max(0, perf);
 
-        // ボーナス倍率
-        const mag = bonusMethod === 'multiplier' ? bonusParam
-          : bonusMethod === 'fixed_pool' ? perf * bonusParam
-            : 0;
-
-        const r = calc(row.base, perf, mag,
+        const r = calc(base, perf, bMag,
           tr.hRate, tr.pRate, tr.eRate, tr.mRate, 'round',
-          row.age, row.dep, 0, 0, extra);
+          row.age, row.dep, 0, 0, extra, exDed, bAdd, bSet);
 
         acResults.push({
-          ...r, ...row, perf, mag,
+          ...r, ...row, base, perf, mag: bMag,
           extraOverride: 0,
           aiApplied: applied, aiLogs: empLogs,
         });
@@ -8414,7 +8407,7 @@
 
       acRenderResultTable();
 
-      // Task 8: AI解説を非同期で取得・表示（結果表示をブロックしない）
+      // AI解説を取得
       (async () => {
         const explainWrap = document.getElementById('acExplainWrap');
         const explainText = document.getElementById('acExplainText');
@@ -8450,7 +8443,6 @@
       if (btn) { btn.disabled = false; btn.textContent = '⚡ 給与計算を実行する'; }
       showToast(acResults.length + '名の計算が完了しました ✅', 'success');
     }
-
     function acMatchTarget(target, row) {
       if (!target || target === 'all') return true;
       const t = String(target);
@@ -9076,37 +9068,33 @@
       instruction.split('\n').forEach(line => {
         const l = line.trim(); if (!l) return;
 
-        // ① 全員への倍率
+        // 全員倍率
         const mAll = l.match(/(?:全員|全社員|全スタッフ|みんな).*?(\d+\.?\d*)\s*倍/);
         if (mAll) { rules.push({ type: 'perf_multiply', target: 'all', value: Number(mAll[1]), label: '全員×' + mAll[1] + '倍' }); return; }
 
-        // ② 基本給・給与を倍率変更（全員）
+        // 基本給アップ（加算）
+        const mBaseUp = l.match(/(?:基本給|ベース).*?(\d{3,8})\s*円.*?(?:アップ|上げる|加算)/);
+        if (mBaseUp) { rules.push({ type: 'base_add', target: 'all', value: Number(mBaseUp[1]), label: '基本給+' + mBaseUp[1] + '円' }); return; }
+
+        // 基本給倍率
         const mBase = l.match(/(?:給与|給料|基本給).*?(?:全員|全社員)?.*?(\d+\.?\d*)\s*倍/);
         if (mBase) { rules.push({ type: 'base_multiply', target: 'all', value: Number(mBase[1]), label: '全員基本給×' + mBase[1] + '倍' }); return; }
 
-        // ③ 部署への倍率
+        // ボーナスヶ月分
+        const mBonus = l.match(/ボーナス.*?(\d+\.?\d*)\s*ヶ?月分/);
+        if (mBonus) { rules.push({ type: 'bonus_multiply', target: 'all', value: Number(mBonus[1]), label: 'ボーナス' + mBonus[1] + 'ヶ月分' }); return; }
+
+        // 控除（引く・天引き）
+        const mDed = l.match(/(\d{3,8})\s*円.*?(?:引く|天引|控除)/);
+        if (mDed) { rules.push({ type: 'deduction_add', target: 'all', value: Number(mDed[1]), label: '控除+' + mDed[1] + '円' }); return; }
+
+        // 部署倍率
         const mDept = l.match(/([^\s]+[部課室グループ]).*?(\d+\.?\d*)\s*倍/);
         if (mDept) { rules.push({ type: 'perf_multiply', target: 'dept:' + mDept[1], value: Number(mDept[2]), label: mDept[1] + '×' + mDept[2] + '倍' }); return; }
 
-        // ④ 役職への倍率
-        const mPos = l.match(/([^\s]+(?:長|役|員|部長|課長|主任|マネージャー|リーダー)).*?(\d+\.?\d*)\s*倍/);
-        if (mPos) { rules.push({ type: 'perf_multiply', target: 'pos:' + mPos[1], value: Number(mPos[2]), label: mPos[1] + '×' + mPos[2] + '倍' }); return; }
-
-        // ⑤ 全員への手当追加
+        // 手当追加
         const mAdd = l.match(/(?:全員|全社員).*?(\d{3,8})\s*円/);
         if (mAdd) { rules.push({ type: 'allowance_add', target: 'all', value: Number(mAdd[1]), label: '全員手当+' + mAdd[1] + '円' }); return; }
-
-        // ⑥ 部署への手当追加
-        const mDeptAdd = l.match(/([^\s]+[部課室グループ]).*?(\d{3,8})\s*円/);
-        if (mDeptAdd) { rules.push({ type: 'allowance_add', target: 'dept:' + mDeptAdd[1], value: Number(mDeptAdd[2]), label: mDeptAdd[1] + '手当+' + mDeptAdd[2] + '円' }); return; }
-
-        // ⑦ 係数を固定値に
-        const mSet = l.match(/(?:係数|全員)\s*(\d+\.?\d*)\s*(?:固定|に設定|にする)/);
-        if (mSet) { rules.push({ type: 'perf_set', target: 'all', value: Number(mSet[1]), label: '係数' + mSet[1] + '固定' }); return; }
-
-        // ⑧ 最低係数保証
-        const mMin = l.match(/(?:最低|以上|以下.*引き上げ|保証).*?(\d+\.?\d*)/);
-        if (mMin) { rules.push({ type: 'perf_min', target: 'all', value: Number(mMin[1]), label: '係数最低' + mMin[1] + '保証' }); return; }
       });
       return { rules, logs: rules.length > 0 ? ['（パターンマッチで ' + rules.length + ' 件解析）'] : [] };
     }
