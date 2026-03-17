@@ -3644,6 +3644,9 @@
       <div class="nav-tab owner-only" data-page="settings">🏢 設定</div>
       <!-- 詳細機能（設定画面から有効化） -->
       <div class="nav-tab advanced-nav" data-page="attendance" style="display:none">🕐 勤怠</div>
+      <div class="nav-tab advanced-nav" data-page="yearend" style="display:none">📋 年末調整</div>
+      <div class="nav-tab owner-only advanced-nav" data-page="transfer" style="display:none">🏦 振込</div>
+      <div class="nav-tab owner-only advanced-nav" data-page="shahou" style="display:none">🏛 社保</div>
       <div class="nav-tab advanced-nav" data-page="taxrates" style="display:none">⚙ 税率</div>
       <div class="nav-tab owner-only advanced-nav" data-page="users" style="display:none">👤 ユーザー</div>
     </nav>
@@ -3740,6 +3743,24 @@
                 onclick="showPage('attendance')">
                 <span style="font-size:1.3rem">🕐</span>
                 <span style="font-size:0.72rem;font-weight:700">勤怠管理</span>
+              </button>
+              <button class="btn btn-secondary"
+                style="flex-direction:column;gap:0.3rem;padding:0.85rem;height:auto;align-items:center"
+                onclick="showPage('yearend')">
+                <span style="font-size:1.3rem">📋</span>
+                <span style="font-size:0.72rem;font-weight:700">年末調整</span>
+              </button>
+              <button class="btn btn-secondary owner-only"
+                style="flex-direction:column;gap:0.3rem;padding:0.85rem;height:auto;align-items:center"
+                onclick="showPage('transfer')">
+                <span style="font-size:1.3rem">💳</span>
+                <span style="font-size:0.72rem;font-weight:700">振込管理</span>
+              </button>
+              <button class="btn btn-secondary owner-only"
+                style="flex-direction:column;gap:0.3rem;padding:0.85rem;height:auto;align-items:center"
+                onclick="showPage('shahou')">
+                <span style="font-size:1.3rem">🏥</span>
+                <span style="font-size:0.72rem;font-weight:700">社保届出</span>
               </button>
               <button class="btn btn-secondary"
                 style="flex-direction:column;gap:0.3rem;padding:0.85rem;height:auto;align-items:center"
@@ -3956,6 +3977,7 @@
           <div class="panel-body">
             <div id="taxUpdateStatus"></div>
             <div style="display:flex;gap:0.5rem;margin-bottom:1.25rem;flex-wrap:wrap">
+              <button class="btn btn-sm btn-blue" id="btnFetchTaxRates">🔄 最新レートを自動取得</button>
               <button class="btn btn-sm btn-secondary" id="btnSaveTaxRates">💾 現在の値を保存</button>
             </div>
             <div class="tax-rate-grid" id="taxRateGrid"></div>
@@ -4071,6 +4093,85 @@
           </div>
         </div>
       </div>
+      <!-- ══ 年末調整ページ ══ -->
+      <div class="page" id="pageYearend">
+        <div class="period-bar">
+          <div class="period-bar-left">
+            <label class="period-label">対象年度</label>
+            <select id="yearendYearSel"
+              style="padding:0.4rem 0.65rem;border:1.5px solid var(--border);border-radius:var(--radius);font-family:var(--font-mono);font-size:0.82rem"></select>
+          </div>
+          <div style="flex:1"></div>
+          <div class="btn-cluster">
+            <span class="cluster-label">出力</span>
+            <button class="btn btn-sm btn-danger" id="btnYearendPDF">🖨 源泉徴収票PDF</button>
+            <button class="btn btn-sm btn-secondary" id="btnYearendCSV">📄 CSV出力</button>
+            <button class="btn btn-sm btn-green owner-only" id="btnYearendConfirm">✅ 一括確定</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start">
+          <div class="panel">
+            <div class="panel-header">👥 従業員別年末調整一覧</div>
+            <div class="panel-body" style="padding:0">
+              <div id="yearendList" style="padding:0.75rem">
+                <p style="font-size:0.8rem;color:var(--muted)">読み込み中...</p>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header">✏️ 控除情報入力 <span id="yearendEditName"
+                style="font-size:0.72rem;color:var(--muted);margin-left:0.5rem"></span></div>
+            <div class="panel-body">
+              <div id="yearendFormWrap">
+                <p style="font-size:0.8rem;color:var(--muted)">左の一覧から従業員を選択してください</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- ══ 振込管理ページ ══ -->
+      <div class="page" id="pageTransfer">
+        <div class="period-bar">
+          <div class="period-bar-left">
+            <label class="period-label">対象年月</label>
+            <select id="transferPeriodSel"
+              style="padding:0.4rem 0.65rem;border:1.5px solid var(--border);border-radius:var(--radius);font-family:var(--font-mono);font-size:0.82rem"></select>
+          </div>
+          <div style="flex:1"></div>
+          <div class="btn-cluster">
+            <span class="cluster-label">振込操作</span>
+            <button class="btn btn-sm btn-blue" id="btnTransferLoad">🔄 振込データ作成</button>
+            <button class="btn btn-sm btn-secondary" id="btnTransferFB">📥 FBファイル生成</button>
+            <button class="btn btn-sm btn-green" id="btnTransferMarkSent">✅ 振込済みにマーク</button>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">💳 振込データ一覧 <span id="transferSummary"
+              style="font-size:0.72rem;color:var(--muted);margin-left:0.5rem"></span></div>
+          <div class="panel-body" style="padding:0">
+            <div id="transferList" style="padding:0.75rem">
+              <p style="font-size:0.8rem;color:var(--muted)">「振込データ作成」ボタンで確定済み給与から自動生成します</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- ══ 社保届出ページ（Sprint 9） ══ -->
+      <div class="page" id="pageShahou">
+        <div class="period-bar">
+          <div class="period-bar-left">
+            <label class="period-label">基準年月</label>
+            <select id="shahouPeriodSel"
+              style="padding:0.4rem 0.65rem;border:1.5px solid var(--border);border-radius:var(--radius);font-family:var(--font-mono);font-size:0.82rem"></select>
+          </div>
+          <div style="flex:1"></div>
+          <div class="btn-cluster">
+            <span class="cluster-label">届出生成</span>
+            <button class="btn btn-sm btn-blue" id="btnShahouCheck">🔍 月額変更チェック</button>
+            <button class="btn btn-sm btn-secondary" id="btnSanteiGen">📄 算定基礎届</button>
+            <button class="btn btn-sm btn-secondary" id="btnGetsugakuPDF">🖨 月額変更届PDF</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
           <!-- 月額変更対象者 -->
           <div class="panel">
             <div class="panel-header">📊 月額変更届 対象者チェック</div>
@@ -4204,25 +4305,41 @@
                   style="width:100%;padding:0.55rem 0.75rem;border:1px solid var(--border);border-radius:var(--r);font-family:var(--font-body);font-size:0.85rem;background:var(--surface);color:var(--ink);resize:vertical;margin-bottom:0.65rem;line-height:1.6"
                   placeholder="例：&#10;営業部の係数を1.2倍にする&#10;全員に5000円の手当を追加&#10;田中さんの係数を1.5に固定する&#10;管理職の最低係数を1.0に保証する"></textarea>
 
-               <!-- AI指示プリセット（カテゴリ分け） -->
+                <!-- AI指示プリセット（カテゴリ分け） -->
                 <div style="margin-bottom:0.85rem">
                   <div class="ac-preset-group">
-                    <div class="ac-preset-label">🎯 係数・手当・控除</div>
+                    <div class="ac-preset-label">🎯 係数系</div>
                     <div class="ac-preset-pills">
-                      <button class="btn btn-sm btn-secondary ac-sample" data-text="給与を全員2倍にする" data-tip="全員の業績係数を2倍">全員2倍</button>
-                      <button class="btn btn-sm btn-secondary ac-sample" data-text="営業部の係数を1.2倍にする" data-tip="営業部のみ係数+20%">営業部+20%</button>
-                      <button class="btn btn-sm btn-secondary ac-sample" data-text="係数が1.0以下の人を全員1.0に引き上げる" data-tip="最低係数を保証">最低係数保証</button>
-                      <button class="btn btn-sm btn-secondary ac-sample" data-text="全員に5000円の交通費を追加" data-tip="全員に手当加算">手当+5000円</button>
-                      <button class="btn btn-sm btn-secondary ac-sample" data-text="全員から親睦会費として1000円を天引きする" data-tip="手取りからマイナス">親睦会費 天引き</button>
+                      <button class="btn btn-sm btn-secondary ac-sample" data-text="給与を全員2倍にする"
+                        data-tip="全員の業績係数を2倍">全員2倍</button>
+                      <button class="btn btn-sm btn-secondary ac-sample" data-text="営業部の係数を1.2倍にする"
+                        data-tip="営業部のみ係数+20%">営業部+20%</button>
+                      <button class="btn btn-sm btn-secondary ac-sample" data-text="部長以上は係数1.3、それ以外は1.0にする"
+                        data-tip="役職別に係数を分ける">役職別係数</button>
+                      <button class="btn btn-sm btn-secondary ac-sample" data-text="係数が1.0以下の人を全員1.0に引き上げる"
+                        data-tip="最低係数を保証">最低係数保証</button>
+                      <button class="btn btn-sm btn-secondary ac-sample" data-text="開発部は一律係数1.15、営業部は1.2にする"
+                        data-tip="複数部署それぞれ指定">部署別係数</button>
                     </div>
                   </div>
                   <div class="ac-preset-group">
-                    <div class="ac-preset-label">💴 基本給・ボーナス系</div>
+                    <div class="ac-preset-label">💰 手当系</div>
                     <div class="ac-preset-pills">
-                      <button class="btn btn-sm btn-secondary ac-sample" data-text="全員の基本給を一律1万円アップする" data-tip="ベースアップ">基本給+1万円</button>
-                      <button class="btn btn-sm btn-secondary ac-sample" data-text="全員の基本給を1.05倍にする" data-tip="ベースアップ5%">基本給+5%</button>
-                      <button class="btn btn-sm btn-secondary ac-sample" data-text="営業部のボーナスを3ヶ月分にする" data-tip="特定部署の賞与倍率">ボーナス3ヶ月分</button>
-                      <button class="btn btn-sm btn-secondary ac-sample" data-text="田中さんに特別賞与として10万円を追加" data-tip="個人に加算">特別賞与 10万円</button>
+                      <button class="btn btn-sm btn-secondary ac-sample" data-text="全員に5000円の交通費を追加"
+                        data-tip="全店员に手当加算">手当+5000円</button>
+                      <button class="btn btn-sm btn-secondary ac-sample" data-text="開発部に残業手当10000円を追加"
+                        data-tip="特定部署のみ">開発部手当</button>
+                      <button class="btn btn-sm btn-secondary ac-sample" data-text="管理職の手当を30000円に設定"
+                        data-tip="手当を固定額に上書き">管理職手当固定</button>
+                    </div>
+                  </div>
+                  <div class="ac-preset-group">
+                    <div class="ac-preset-label">💴 基本給系</div>
+                    <div class="ac-preset-pills">
+                      <button class="btn btn-sm btn-secondary ac-sample" data-text="全員の基本給を1.05倍にする"
+                        data-tip="ベースアップ5%">基本給+5%</button>
+                      <button class="btn btn-sm btn-secondary ac-sample" data-text="田中さんの係数を1.5に固定する"
+                        data-tip="個人指定も可能">個人係数固定</button>
                     </div>
                   </div>
                 </div>
@@ -4503,15 +4620,12 @@
 
       function showModal(title, body, confirmLabel, confirmClass, onConfirm) {
         // ヘッダーを構築（閉じるボタン付き）
-        const titleEl = $('modalTitle');
-        const bodyEl = $('modalBody');
-        if (!titleEl || !bodyEl) return;  // 要素がない場合は処理を中止
-        titleEl.innerHTML = `
+        $('modalTitle').innerHTML = `
     <div class="modal-header">
       <span>${title}</span>
       <button class="modal-close" id="modalCloseBtn" aria-label="閉じる">✕</button>
     </div>`;
-        bodyEl.innerHTML = body;
+        $('modalBody').innerHTML = body;
         const confirmBtn = $('modalConfirm');
         confirmBtn.textContent = confirmLabel || '実行';
         confirmBtn.className = 'btn ' + (confirmClass || 'btn-danger');
@@ -4705,19 +4819,12 @@
       }
       function renderOnboardStep() {
         const s = ONBOARD_STEPS[_onboardStep];
-        const emojiEl = $('onboardEmoji');
-        const titleEl = $('onboardTitle');
-        const descEl = $('onboardDesc');
-        const nextEl = $('onboardNext');
-        const dotsEl = $('onboardDots');
-        
-        if (!emojiEl || !titleEl || !descEl || !nextEl || !dotsEl) return;  // 要素がない場合は中止
-        
-        emojiEl.textContent = s.emoji;
-        titleEl.textContent = s.title;
-        descEl.textContent = s.desc;
-        nextEl.textContent = _onboardStep === ONBOARD_STEPS.length - 1 ? '始める 🎉' : '次へ →';
-        dotsEl.innerHTML = ONBOARD_STEPS.map((_, i) =>
+        $('onboardEmoji').textContent = s.emoji;
+        $('onboardTitle').textContent = s.title;
+        $('onboardDesc').textContent = s.desc;
+        $('onboardNext').textContent = _onboardStep === ONBOARD_STEPS.length - 1 ? '始める 🎉' : '次へ →';
+        const dots = $('onboardDots');
+        dots.innerHTML = ONBOARD_STEPS.map((_, i) =>
           `<div class="onboard-dot ${i < _onboardStep ? 'done' : ''} ${i === _onboardStep ? 'active' : ''}"></div>`
         ).join('');
       }
@@ -4743,13 +4850,11 @@
       });
       $('footerTerms')?.addEventListener('click', (e) => {
         e.preventDefault();
-        showModal('利用規約と免責事項', `<div style="font-size:0.78rem;line-height:1.8;color:var(--muted)">
-          <p style="margin-bottom:0.5rem">本サービス（Salario/Calc AI）は、事業者の給与計算業務を補助するための「計算・記録ツール」です。</p>
-          <p style="margin-bottom:0.5rem;color:var(--red);font-weight:bold;">1. 免責事項（非保証）</p>
-          <p style="margin-bottom:0.5rem">本サービスによる計算結果（AIによる自動計算を含む）、各種税率、保険料率等の正確性・適法性について、運営者は一切の保証を行いません。ご利用者は、必ずご自身の責任において関係法令（労働基準法、税法等）を確認し、必要に応じて社会保険労務士や税理士等の専門家にご相談の上、最終的な給与額を決定してください。</p>
-          <p style="margin-bottom:0.5rem;color:var(--red);font-weight:bold;">2. 損害賠償の制限</p>
-          <p>本サービスの利用、計算の誤り、データの消失等によって生じたいかなる損害（従業員とのトラブル、税務署・年金事務所からのペナルティ等を含む）についても、運営者は一切の責任を負いません。</p>
-        </div>`, '同意して閉じる', 'btn-secondary', () => {});
+        showModal('利用規約', '<p style="font-size:0.78rem;line-height:1.8;color:var(--muted)">Salarioの利用に際しては、本規約に同意いただいたものとみなします。給与計算結果はあくまで参考値であり、正確性については利用者ご自身の責任にてご確認ください。</p>', '閉じる', 'btn-secondary', () => {});
+      });
+      $('footerPrivacy')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        showModal('プライバシーポリシー', '<p style="font-size:0.78rem;line-height:1.8;color:var(--muted)">Salarioは、お客様の個人情報・給与データを厳重に管理し、第三者へ提供することはありません。データはSupabaseのセキュアなインフラ上に暗号化して保存されます。</p>', '閉じる', 'btn-secondary', () => {});
       });
 
       /* ── Calc engine ── */
@@ -4802,51 +4907,66 @@
         age, deps, spDed, disDed, alTotal = 0) {
         age = age || 35; deps = deps || 0; spDed = Number(spDed) || 0; disDed = Number(disDed) || 0;
 
+        // ── 支給額 ──
         const b = Math.round(base) + Math.round(alTotal);
         const gross = applyRound(b * perf, rm);
 
-        const aH = age < 75; const aP = age < 70;
+        // ── 社会保険（年齢別免除） ──
+        const aH = age < 75; // 75歳未満：健保
+        const aP = age < 70; // 70歳未満：厚年
         const insRate = (aH ? hRate / 100 : 0) + (aP ? pRate / 100 : 0) + eRate / 100;
         const insurance = applyRound(gross * insRate, rm);
 
+        // ── 課税標準（月次） ──
         const taxableMo = gross - insurance;
         const annualG = taxableMo * 12;
 
+        // ── 給与所得控除（年額） ──
         const salDed = calcSalaryDeduction(annualG);
+
+        // ── 各種控除合計（年額） ──
+        // 基礎控除：48万（令和2年〜/所得2400万以下は満額）
         const basicDed = 480000;
+        // 扶養控除：一般扶養38万×人数
         const depDed = 380000 * deps;
+        // 配偶者控除・障害者控除
         const totalDed = salDed + basicDed + depDed + spDed + disDed;
 
+        // ── 所得税（年税額→月割） ──
         const annualTaxable = Math.max(0, annualG - totalDed);
         const annualTax = calcIncomeTaxAnnual(annualTaxable);
+        // 復興特別所得税 2.1%上乗せ（令和19年まで）
         const tax = applyRound(annualTax * 1.021 / 12, rm);
 
-        const munTaxable = Math.max(0, annualG - totalDed - 430000); 
+        // ── 住民税（月次・前年所得ベース簡易） ──
+        // 住民税所得割：課税所得×10%（標準税率）
+        // 均等割：5,000円/年（市区町村3,500+都道府県1,500）
+        const munTaxable = Math.max(0, annualG - totalDed - 430000); // 住民税基礎控除43万
         const munAnnual = applyRound(munTaxable * (mRate / 100), rm) + 5000;
         const municipal = applyRound(munAnnual / 12, rm);
 
-        // 手取り（追加控除なし）
         const monthlyNet = taxableMo - tax - municipal;
 
-        // ボーナス（月割係数法）
-        let bG = 0;
-        if (mag > 0) bG = applyRound(Math.round(base) * mag, rm);
-
+        // ── ボーナス（前月給与方式・月割係数法） ──
+        const bG = applyRound(Math.round(base) * mag, rm);
         const bI = applyRound(bG * insRate, rm);
-        const bAnnualTax = calcIncomeTaxAnnual(Math.max(0, (bG - bI) * 12 - totalDed));
+        // ボーナス所得税：前月給与から税率を引く（簡易）
+        const bAnnualTax = calcIncomeTaxAnnual(
+          Math.max(0, (bG - bI) * 12 - totalDed)
+        );
         const bT = applyRound(bAnnualTax * 1.021 / 12, rm);
         const bM = applyRound((bG - bI) * (mRate / 100) / 12, rm);
-        const bonusNet = bG > 0 ? (bG - bI - bT - bM) : 0;
+        const bonusNet = bG - bI - bT - bM;
 
         return {
           gross, insurance, tax, municipal, monthlyNet,
           bonusGross: bG, bonusIns: bI, bonusTax: bT, bonusMun: bM, bonusNet,
+          // デバッグ用
           _annualTaxable: annualTaxable, _annualTax: annualTax,
           _salDed: salDed, _totalDed: totalDed,
           pensionExempt: !aP, healthExempt: !aH,
         };
       }
-
       function fmtY(v) { return '¥' + Math.round(v || 0).toLocaleString('ja-JP'); }
 
       /* ── State ── */
@@ -5208,9 +5328,7 @@
       }
 
       function buildPeriodSelector() {
-        const sel = $('periodSelect');
-        if (!sel) return;  // 要素がない場合は処理を中止
-        const now = new Date();
+        const sel = $('periodSelect'), now = new Date();
         sel.innerHTML = '';
         for (let i = -3; i <= 3; i++) {
           const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
@@ -5224,7 +5342,6 @@
       }
       function populateDeptSelect() {
         const sel = $('deptSelect');
-        if (!sel) return;  // 要素がない場合は処理を中止
         sel.innerHTML = '<option value="">— 未設定 —</option>';
         (currentCompany.depts || []).forEach(d => { const o = document.createElement('option'); o.value = o.textContent = d; sel.appendChild(o); });
       }
@@ -5323,24 +5440,18 @@
           { key: 'mRate', label: '住民税率', unit: '%', desc: '標準税率（均等割別）' },
         ];
         const upd = taxRates.lastUpdated ? new Date(taxRates.lastUpdated).toLocaleDateString('ja-JP') : '未取得';
-        const gridEl = $('taxRateGrid');
-        const inputsEl = $('taxRateInputs');
-        if (gridEl) {
-          gridEl.innerHTML = items.map(it => `
+        $('taxRateGrid').innerHTML = items.map(it => `
     <div class="tax-rate-card">
       <div class="tax-rate-label">${it.label}</div>
       <div class="tax-rate-val">${taxRates[it.key]}${it.unit}</div>
       <div class="tax-rate-updated">${it.desc}</div>
       <div class="tax-rate-updated">更新: ${upd}</div>
     </div>`).join('') + (taxRates.lastNote ? `<div class="tax-rate-card" style="grid-column:1/-1"><div class="tax-rate-label">適用情報</div><div style="font-size:0.8rem">${taxRates.lastNote}</div></div>` : '');
-        }
-        if (inputsEl) {
-          inputsEl.innerHTML = items.map(it => `
+        $('taxRateInputs').innerHTML = items.map(it => `
     <div class="form-group">
       <label>${it.label}（%）</label>
       <input type="number" id="tr_${it.key}" value="${taxRates[it.key]}" step="0.01" min="0" max="100">
     </div>`).join('');
-        }
       }
 
       // テーブルソート状態
@@ -5958,8 +6069,7 @@
         XLSX.writeFile(wb, 'salario_import_template.xlsx');
         showToast('テンプレートをダウンロードしました', 'success');
       }
-    window.downloadImportTemplate = downloadImportTemplate;
-      
+
       /* ══ CSV / Excel インポート ══ */
       function handleImportFile(file) {
         if (!file) return;
@@ -6176,9 +6286,7 @@
       let attPeriod = '', attEmpId = null;
 
       function buildAttPeriodSelector() {
-        const sel = $('attPeriodSelect');
-        if (!sel) return;  // 要素がない場合は処理を中止
-        const now = new Date();
+        const sel = $('attPeriodSelect'), now = new Date();
         sel.innerHTML = '';
         for (let i = -2; i <= 1; i++) {
           const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
@@ -6376,7 +6484,6 @@
 
       function buildYearendYearSelector() {
         const sel = $('yearendYearSel');
-        if (!sel) return;  // 要素がない場合は処理を中止
         const cur = new Date().getFullYear();
         sel.innerHTML = '';
         for (let y = cur; y >= cur - 3; y--) {
@@ -6391,7 +6498,7 @@
 
       async function renderYearendList() {
         const wrap = $('yearendList');
-        if (!wrap || !currentCompany) { return; }  // 要素がない場合は処理を中止
+        if (!currentCompany) { return; }
         wrap.innerHTML = '<p style="font-size:0.8rem;color:var(--muted)">読み込み中...</p>';
         // yearend_adjustmentsテーブルから取得（なければ給与データから自動生成）
         const { data: yeData } = await sb.from('yearend_adjustments')
@@ -6649,9 +6756,7 @@
       let transferData = [];
 
       function buildTransferPeriodSelector() {
-        const sel = $('transferPeriodSel');
-        if (!sel) return;  // 要素がない場合は処理を中止
-        const now = new Date();
+        const sel = $('transferPeriodSel'), now = new Date();
         sel.innerHTML = '';
         for (let i = -2; i <= 1; i++) {
           const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
@@ -6697,20 +6802,17 @@
 
       async function renderTransferList() {
         const wrap = $('transferList');
-        if (!wrap || !currentCompany) return;  // 要素がない場合は処理を中止
+        if (!currentCompany) return;
         const { data } = await sb.from('bank_transfers')
           .select('*').eq('company_id', currentCompany.id).eq('period', transferPeriod);
         transferData = (data || []).map(r => ({ ...r, selected: r.status !== 'completed' }));
         if (!transferData.length) {
           wrap.innerHTML = '<p style="font-size:0.8rem;color:var(--muted)">「振込データ作成」ボタンで確定済み給与から自動生成します</p>';
-          const summaryEl = $('transferSummary');
-          if (summaryEl) summaryEl.textContent = ''; 
-          return;
+          $('transferSummary').textContent = ''; return;
         }
         const total = transferData.filter(t => t.selected).reduce((s, t) => s + t.amount, 0);
         const cnt = transferData.filter(t => t.selected).length;
-        const summaryEl = $('transferSummary');
-        if (summaryEl) summaryEl.textContent = `合計 ${fmtY(total)} / ${cnt}件`;
+        $('transferSummary').textContent = `合計 ${fmtY(total)} / ${cnt}件`;
         const rows = transferData.map((t, i) => {
           const statusCls = `badge-${t.status || 'pending'}`;
           const hasBankInfo = t.account_no && t.account_no !== '';
@@ -6935,7 +7037,20 @@
       $('attPeriodSelect').addEventListener('change', e => { attPeriod = e.target.value; loadAttRecords(); });
       $('attEmpSelect').addEventListener('change', e => { attEmpId = e.target.value || null; loadAttRecords(); });
 
-     
+      // ══ 年末調整 ══
+      $('btnYearendPDF').addEventListener('click', () => {
+        if (!yearendEditEmpId) { showToast('従業員を選択してください', 'error'); return; }
+        genWithholdingPDF(yearendEditEmpId);
+      });
+      $('btnYearendCSV').addEventListener('click', exportYearendCSV);
+      $('btnYearendConfirm').addEventListener('click', confirmAllYearend);
+
+      // ══ 社保届出（Sprint 9） ══
+      $('btnShahouCheck').addEventListener('click', checkShahouChanges);
+      $('btnSanteiGen').addEventListener('click', generateSanteiKisho);
+      $('btnGetsugakuPDF').addEventListener('click', generateGetsugakuPDF);
+      $('shahouPeriodSel').addEventListener('change', checkShahouChanges);
+
       // ══ ダッシュボード強化（Sprint 10） ══
       $('btnChartModeToggle').addEventListener('click', () => {
         trendChartMode = trendChartMode === 'yoy' ? 'normal' : 'yoy';
@@ -6947,7 +7062,16 @@
         renderDrilldownChart(e.target.value);
       });
 
+      // ══ 振込管理 ══
+      $('btnTransferLoad').addEventListener('click', () => {
+        showModal('振込データ作成', `<b>${transferPeriod}</b>の確定済み給与から振込データを作成します。`,
+          '作成する', 'btn-blue', loadTransferData);
+      });
+      $('btnTransferFB').addEventListener('click', generateFBFile);
+      $('btnTransferMarkSent').addEventListener('click', markTransferSent);
+      $('transferPeriodSel').addEventListener('change', e => { transferPeriod = e.target.value; renderTransferList(); });
 
+      $('btnFetchTaxRates').addEventListener('click', fetchLatestTaxRates);
       $('btnSaveTaxRates').addEventListener('click', () => {
         ['hRate', 'pRate', 'eRate', 'mRate'].forEach(k => { const el = $('tr_' + k); if (el) taxRates[k] = Number(el.value); });
         applyTaxRatesToForm(); saveTaxRates();
@@ -7435,33 +7559,28 @@
           return `<span class="diff-badge ${cls}">${sym}${Math.abs(p)}%</span>`;
         }
 
-        const dashStatsEl = $('dashStats');
-        if (dashStatsEl) {
-          dashStatsEl.innerHTML = `
+        $('dashStats').innerHTML = `
     <div class="stat-card"><div class="stat-label">従業員数</div><div class="stat-value blue">${employees.length}名</div><div class="stat-sub">${currentPeriod}</div></div>
     <div class="stat-card variant-blue"><div class="stat-label">支給額合計</div><div class="stat-value">${fmtY(tG)} ${diffBadge(tG, prevG)}</div></div>
     <div class="stat-card variant-green"><div class="stat-label">手取り合計</div><div class="stat-value green">${fmtY(tN)} ${diffBadge(tN, prevN)}</div></div>
     <div class="stat-card"><div class="stat-label">社会保険合計</div><div class="stat-value accent">${fmtY(tI)}</div></div>
     <div class="stat-card"><div class="stat-label">税金合計</div><div class="stat-value accent">${fmtY(tT)}</div></div>`;
-        }
 
         const budget = currentCompany.budget || 0;
-        const dashBudgetEl = $('dashBudget');
-        if (budget > 0 && dashBudgetEl) {
+        if (budget > 0) {
           const pct = Math.min(tG / budget * 100, 100), cls = pct >= 95 ? 'over' : pct >= 80 ? 'warn' : 'ok';
-          dashBudgetEl.innerHTML = `
+          $('dashBudget').innerHTML = `
       <div style="font-size:0.75rem;margin-bottom:0.65rem">月次人件費予算：<b>${fmtY(budget)}</b></div>
       <div style="font-size:0.72rem;display:flex;justify-content:space-between;margin-bottom:0.3rem">
         <span>支給額合計</span><span style="font-family:var(--font-mono)">${fmtY(tG)}（${Math.round(pct)}%）</span>
       </div>
       <div class="budget-progress"><div class="budget-bar-fill ${cls}" style="width:${pct}%"></div></div>
       ${pct >= 95 ? '<div style="font-size:0.7rem;color:var(--accent);margin-top:0.5rem">⚠ 予算超過の恐れがあります</div>' : ''}`;
-        } else if (dashBudgetEl) { dashBudgetEl.innerHTML = '<p style="font-size:0.78rem;color:var(--muted)">会社設定から予算を設定してください</p>'; }
+        } else { $('dashBudget').innerHTML = '<p style="font-size:0.78rem;color:var(--muted)">会社設定から予算を設定してください</p>'; }
 
         const wallEmps = employees.filter(e => e.dep > 0 || e.spDed > 0);
-        const dashWallEl = $('dashWall');
-        if (wallEmps.length > 0 && dashWallEl) {
-          dashWallEl.innerHTML = wallEmps.map(e => {
+        if (wallEmps.length > 0) {
+          $('dashWall').innerHTML = wallEmps.map(e => {
             const ae = (e.gross || 0) * 12, pct = Math.min(ae / 1030000 * 100, 100), cls = ae >= 1030000 ? 'over' : pct >= 80 ? 'warn' : 'ok';
             return `<div style="margin-bottom:0.75rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border)">
         <div style="font-size:0.78rem;font-weight:700;margin-bottom:0.2rem">${esc(e.name)}</div>
@@ -8184,6 +8303,154 @@
       }, 50);
     }
 
+    // ─────────────────────────────────────────
+    // STEP 2: AI指示 → 計算実行
+    // ─────────────────────────────────────────
+    async function acRunCalc() {
+      const btn = document.getElementById('acBtnCalc');
+      if (btn) { btn.disabled = true; btn.textContent = '計算中...'; }
+
+      const instruction = (document.getElementById('acAiInstruction')?.value || '').trim();
+      const bonusMethod = document.getElementById('acBonusMethod')?.value || 'none';
+      const bonusParam = Number(document.getElementById('acBonusParam')?.value) || 2.0;
+
+      // AI指示解析
+      let aiRules = [], aiLogs = [];
+      if (instruction) {
+        try {
+          aiRules = await acCallAI(instruction);
+          aiLogs = aiRules.map(r => `[AI] ${r.label}`);
+          showToast(`AIが ${aiRules.length} 件のルールを解析しました`, 'success');
+        } catch (e) {
+          console.warn('[AC] AI失敗→フォールバック:', e.message);
+          const fb = acParseManual(instruction);
+          aiRules = fb.rules; aiLogs = fb.logs;
+          if (aiRules.length > 0)
+            showToast('パターンマッチで ' + aiRules.length + ' 件検出', '');
+          else
+            showToast('指示を解釈できませんでした。そのまま計算します', 'error');
+        }
+      }
+
+      // 有効行チェック
+      const validRows = acRows.filter(r => r.name && r.base > 0);
+      if (validRows.length === 0) {
+        showToast('氏名・基本給が入力されている行がありません', 'error');
+        if (btn) { btn.disabled = false; btn.textContent = '⚡ 給与計算を実行する'; }
+        return;
+      }
+
+      // 進捗
+      const bar = document.getElementById('acProgressBar');
+      const barWrap = document.getElementById('acProgressWrap');
+      if (barWrap) barWrap.style.display = 'block';
+      if (bar) bar.style.width = '0%';
+
+      const tr = typeof taxRates !== 'undefined'
+        ? taxRates : { hRate: 5, pRate: 9, eRate: 0.6, mRate: 10 };
+
+      acResults = [];
+      let aiAffected = 0;
+
+      for (let i = 0; i < validRows.length; i++) {
+        const row = validRows[i];
+        let perf = row.perf || 1.0;
+        let extra = 0;
+        let empLogs = [], applied = false, perfOverridden = false;
+
+        // AIルール適用
+        for (const rule of aiRules) {
+          if (!acMatchTarget(rule.target, row)) continue;
+          applied = true;
+          if (rule.type === 'perf_multiply') {
+            perf *= rule.value; perfOverridden = true;
+            empLogs.push(`係数×${rule.value}（${rule.label}）`);
+          } else if (rule.type === 'perf_set') {
+            perf = rule.value; perfOverridden = true;
+            empLogs.push(`係数=${rule.value}固定（${rule.label}）`);
+          } else if (rule.type === 'allowance_add') {
+            extra += rule.value;
+            empLogs.push(`手当+¥${rule.value.toLocaleString()}（${rule.label}）`);
+          } else if (rule.type === 'perf_min') {
+            perf = Math.max(perf, rule.value); perfOverridden = true;
+            empLogs.push(`係数最低${rule.value}保証（${rule.label}）`);
+          } else if (rule.type === 'allowance_set') {
+            extra = rule.value;
+            empLogs.push(`手当${rule.value}円固定（${rule.label}）`);
+          } else if (rule.type === 'base_multiply') {
+            row.base = Math.round(row.base * rule.value);
+            empLogs.push(`基本給×${rule.value}（${rule.label}）`);
+          } else if (rule.type === 'base_add') {
+            row.base = Math.round(row.base + rule.value);
+            empLogs.push(`基本給+¥${rule.value.toLocaleString()}（${rule.label}）`);
+          }
+        }
+        if (applied) aiAffected++;
+        if (!perfOverridden) perf = Math.max(0, perf);
+
+        // ボーナス倍率
+        const mag = bonusMethod === 'multiplier' ? bonusParam
+          : bonusMethod === 'fixed_pool' ? perf * bonusParam
+            : 0;
+
+        const r = calc(row.base, perf, mag,
+          tr.hRate, tr.pRate, tr.eRate, tr.mRate, 'round',
+          row.age, row.dep, 0, 0, extra);
+
+        acResults.push({
+          ...r, ...row, perf, mag,
+          extraOverride: 0,
+          aiApplied: applied, aiLogs: empLogs,
+        });
+
+        if (bar) bar.style.width = Math.round((i + 1) / validRows.length * 100) + '%';
+        if (i % 10 === 0) await acSleep(0);
+      }
+
+      if (barWrap) barWrap.style.display = 'none';
+
+      acLastAiLogs = aiLogs;
+      acLastAiN = aiAffected;
+
+      acRenderResultTable();
+
+      // Task 8: AI解説を非同期で取得・表示（結果表示をブロックしない）
+      (async () => {
+        const explainWrap = document.getElementById('acExplainWrap');
+        const explainText = document.getElementById('acExplainText');
+        if (!explainWrap || !explainText) return;
+        try {
+          const tG = acResults.reduce((a, e) => a + e.gross, 0);
+          const tN = acResults.reduce((a, e) => a + e.monthlyNet, 0);
+          const tBG = acResults.reduce((a, e) => a + (e.bonusGross || 0), 0);
+          const aiN = acResults.filter(e => e.aiApplied).length;
+          const resp = await fetch('/api/ai-explain', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              summary: {
+                emp_count: acResults.length,
+                total_gross: tG,
+                total_net: tN,
+                total_bonus: tBG,
+                ai_affected: aiN,
+                instruction: document.getElementById('acAiInstruction')?.value || '',
+              }
+            }),
+          });
+          const data = await resp.json();
+          if (data.explanation) {
+            explainText.textContent = data.explanation;
+            explainWrap.style.display = 'block';
+          }
+        } catch (e) { console.warn('[AC] explain failed:', e.message); }
+      })();
+
+      acGoStep(3);
+      if (btn) { btn.disabled = false; btn.textContent = '⚡ 給与計算を実行する'; }
+      showToast(acResults.length + '名の計算が完了しました ✅', 'success');
+    }
+
     function acMatchTarget(target, row) {
       if (!target || target === 'all') return true;
       const t = String(target);
@@ -8809,129 +9076,39 @@
       instruction.split('\n').forEach(line => {
         const l = line.trim(); if (!l) return;
 
-        // 全員倍率
+        // ① 全員への倍率
         const mAll = l.match(/(?:全員|全社員|全スタッフ|みんな).*?(\d+\.?\d*)\s*倍/);
         if (mAll) { rules.push({ type: 'perf_multiply', target: 'all', value: Number(mAll[1]), label: '全員×' + mAll[1] + '倍' }); return; }
 
-        // 基本給アップ（加算）
-        const mBaseUp = l.match(/(?:基本給|ベース).*?(\d{3,8})\s*円.*?(?:アップ|上げる|加算)/);
-        if (mBaseUp) { rules.push({ type: 'base_add', target: 'all', value: Number(mBaseUp[1]), label: '基本給+' + mBaseUp[1] + '円' }); return; }
-
-        // 基本給倍率
+        // ② 基本給・給与を倍率変更（全員）
         const mBase = l.match(/(?:給与|給料|基本給).*?(?:全員|全社員)?.*?(\d+\.?\d*)\s*倍/);
         if (mBase) { rules.push({ type: 'base_multiply', target: 'all', value: Number(mBase[1]), label: '全員基本給×' + mBase[1] + '倍' }); return; }
 
-        // ボーナスヶ月分
-        const mBonus = l.match(/ボーナス.*?(\d+\.?\d*)\s*ヶ?月分/);
-        if (mBonus) { rules.push({ type: 'bonus_multiply', target: 'all', value: Number(mBonus[1]), label: 'ボーナス' + mBonus[1] + 'ヶ月分' }); return; }
-
-        // 控除（引く・天引き）
-        const mDed = l.match(/(\d{3,8})\s*円.*?(?:引く|天引|控除)/);
-        if (mDed) { rules.push({ type: 'deduction_add', target: 'all', value: Number(mDed[1]), label: '控除+' + mDed[1] + '円' }); return; }
-
-        // 部署倍率
+        // ③ 部署への倍率
         const mDept = l.match(/([^\s]+[部課室グループ]).*?(\d+\.?\d*)\s*倍/);
         if (mDept) { rules.push({ type: 'perf_multiply', target: 'dept:' + mDept[1], value: Number(mDept[2]), label: mDept[1] + '×' + mDept[2] + '倍' }); return; }
 
-        // 手当追加
+        // ④ 役職への倍率
+        const mPos = l.match(/([^\s]+(?:長|役|員|部長|課長|主任|マネージャー|リーダー)).*?(\d+\.?\d*)\s*倍/);
+        if (mPos) { rules.push({ type: 'perf_multiply', target: 'pos:' + mPos[1], value: Number(mPos[2]), label: mPos[1] + '×' + mPos[2] + '倍' }); return; }
+
+        // ⑤ 全員への手当追加
         const mAdd = l.match(/(?:全員|全社員).*?(\d{3,8})\s*円/);
         if (mAdd) { rules.push({ type: 'allowance_add', target: 'all', value: Number(mAdd[1]), label: '全員手当+' + mAdd[1] + '円' }); return; }
+
+        // ⑥ 部署への手当追加
+        const mDeptAdd = l.match(/([^\s]+[部課室グループ]).*?(\d{3,8})\s*円/);
+        if (mDeptAdd) { rules.push({ type: 'allowance_add', target: 'dept:' + mDeptAdd[1], value: Number(mDeptAdd[2]), label: mDeptAdd[1] + '手当+' + mDeptAdd[2] + '円' }); return; }
+
+        // ⑦ 係数を固定値に
+        const mSet = l.match(/(?:係数|全員)\s*(\d+\.?\d*)\s*(?:固定|に設定|にする)/);
+        if (mSet) { rules.push({ type: 'perf_set', target: 'all', value: Number(mSet[1]), label: '係数' + mSet[1] + '固定' }); return; }
+
+        // ⑧ 最低係数保証
+        const mMin = l.match(/(?:最低|以上|以下.*引き上げ|保証).*?(\d+\.?\d*)/);
+        if (mMin) { rules.push({ type: 'perf_min', target: 'all', value: Number(mMin[1]), label: '係数最低' + mMin[1] + '保証' }); return; }
       });
       return { rules, logs: rules.length > 0 ? ['（パターンマッチで ' + rules.length + ' 件解析）'] : [] };
-    }
-
-    // ─────────────────────────────────────────
-    // STEP 3→4: 計算実行（AI調整 or 直接実行）
-    // ─────────────────────────────────────────
-    async function acRunCalc() {
-      if (!acRows.length) { showToast('従業員データがありません', 'error'); return; }
-      
-      const instruction = document.getElementById('acAiInstruction')?.value?.trim() || '';
-      const bonusMethod = document.getElementById('acBonusMethod')?.value || 'none';
-      const bonusParam = Number(document.getElementById('acBonusParam')?.value) || 2.0;
-      const tr = typeof taxRates !== 'undefined'
-        ? taxRates : { hRate: 5, pRate: 9, eRate: 0.6, mRate: 10 };
-
-      acResults = [];
-      acLastAiLogs = [];
-      acLastAiN = 0;
-
-      let rules = [];
-      let logs = [];
-
-      // AI指示がある場合
-      if (instruction) {
-        try {
-          const data = await acCallAI(instruction);
-          rules = data.rules || [];
-          logs = data.logs || [];
-          acLastAiLogs = logs;
-          acLastAiN = rules.filter(r => r.type === 'perf_multiply' && r.value !== 1.0).length;
-        } catch (e) {
-          showToast('AI処理エラー: ' + e.message, 'error');
-          return;
-        }
-      } else {
-        // AI指示がない場合は直接計算
-        const result = acParseManual('');
-        logs = result.logs;
-      }
-
-      // 各従業員を計算
-      for (let i = 0; i < acRows.length; i++) {
-        const row = acRows[i];
-        let perf = row.perf || 1.0;
-        let baseVal = row.base || 0;
-
-        // ルール適用
-        for (const rule of rules) {
-          if (!acMatchTarget(rule.target, row)) continue;
-
-          if (rule.type === 'perf_multiply') {
-            perf *= rule.value;
-          } else if (rule.type === 'base_add') {
-            baseVal += rule.value;
-          } else if (rule.type === 'base_multiply') {
-            baseVal *= rule.value;
-          } else if (rule.type === 'deduction_add') {
-            // 控除は現在サポート外
-          } else if (rule.type === 'allowance_add') {
-            // 手当追加は現在サポート外
-          }
-        }
-
-        // ボーナス計算
-        let mag = 0;
-        if (bonusMethod === 'multiplier') {
-          mag = bonusParam;
-        } else if (bonusMethod === 'fixed_pool') {
-          mag = (perf * bonusParam) / baseVal;
-        }
-
-        // 給与計算
-        const calcResult = calc(
-          baseVal, perf, mag,
-          tr.hRate, tr.pRate, tr.eRate, tr.mRate,
-          'round', row.age || 35, row.dep || 0,
-          0, 0, row.extraOverride || 0
-        );
-
-        acResults.push({
-          name: row.name || '（未入力）',
-          dept: row.dept || '',
-          pos: row.pos || '',
-          base: baseVal,
-          perf,
-          age: row.age || 35,
-          dep: row.dep || 0,
-          bank: row.bank || '',
-          aiLogs: logs,
-          ...calcResult
-        });
-      }
-
-      acGoStep(3);
-      acRenderResultTable();
     }
 
     // ─────────────────────────────────────────
@@ -8991,13 +9168,7 @@
           `${acResults.length}名 ／ 支給額合計 ${fmtY(tG)}${tBG > 0 ? ' ／ ボーナス ' + fmtY(tBG) : ''} ／ 手取り合計 ${fmtY(tN)}`;
       });
       document.getElementById('acBtnRestart')?.addEventListener('click', acReset);
-      document.getElementById('acBtnTemplate')?.addEventListener('click', () => {
-        if (typeof window.downloadImportTemplate === 'function') {
-          window.downloadImportTemplate();
-        } else {
-          showToast('テンプレートダウンロード機能が読み込まれていません', 'error');
-        }
-      });
+      document.getElementById('acBtnTemplate')?.addEventListener('click', downloadImportTemplate);
 
       // Salario給与計算へ反映
       document.getElementById('acBtnSendToSalario')?.addEventListener('click', () => {
