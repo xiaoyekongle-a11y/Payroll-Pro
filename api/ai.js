@@ -96,9 +96,8 @@ JSON配列のみ返す。説明なし。`;
 };
 ```
 
-### ステップ4: GitHub で保存
+### ステップ4: GitHubで保存
 ```
-下の「Commit changes」をクリック
-→ メッセージ：「Update ai.js with Anthropic API」
-→ 「Commit directly to main branch」を選択
-→ 「Commit changes」をクリック
+Commit changes
+→ メッセージ：「Fix ai.js - remove invalid text」
+→ Commit directly to main branch
