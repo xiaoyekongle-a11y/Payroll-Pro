@@ -4825,16 +4825,16 @@
         const munAnnual = applyRound(munTaxable * (mRate / 100), rm) + 5000;
         const municipal = applyRound(munAnnual / 12, rm);
 
-        // 手取りから個別の天引き(控除)をマイナス
-        const monthlyNet = taxableMo - tax - municipal - exDed;
+        // 手取り（追加控除なし）
+        const monthlyNet = taxableMo - tax - municipal;
 
-        // ボーナス（月割係数法 または 直接指定）
+        // ボーナス（月割係数法）
         let bG = 0;
-        if (bSet !== null) bG = bSet;
-        else if (mag > 0 || bAdd > 0) bG = applyRound(Math.round(base) * mag, rm) + bAdd;
+        if (mag > 0) bG = applyRound(Math.round(base) * mag, rm);
 
         const bI = applyRound(bG * insRate, rm);
         const bAnnualTax = calcIncomeTaxAnnual(Math.max(0, (bG - bI) * 12 - totalDed));
+        const bT = applyRound(bAnnualTax * 1.021 / 12, rm);
         const bM = applyRound((bG - bI) * (mRate / 100) / 12, rm);
         const bonusNet = bG > 0 ? (bG - bI - bT - bM) : 0;
 
