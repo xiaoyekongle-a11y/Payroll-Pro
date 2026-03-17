@@ -66,3 +66,12 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: e.message });
   }
 };
+```
+
+---
+
+## ✅ 重要なポイント
+```
+❌ コードだけをコピー
+❌ 説明文は入れない
+❌ 最後の行まで確認
