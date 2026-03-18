@@ -8412,7 +8412,10 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ rows: topRows })
           });
-          if (!res.ok) throw new Error(`API Error ${res.status}`);
+          if (!res.ok) {
+            const errBody = await res.json().catch(() => ({}));
+            throw new Error(errBody.error || `API Error ${res.status}`);
+          }
           const aiMap = await res.json();
 
           if (aiMap && typeof aiMap.headerRowIndex === 'number' && aiMap.columns) {
