@@ -1,4 +1,3 @@
-cat > api/ai.js << 'EOF'
 module.exports = async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -17,10 +16,7 @@ module.exports = async function handler(req, res) {
   const prompt = `Parse payroll rule: ${body.instruction}
 
 Return ONLY JSON array:
-[{"type":"perf_multiply","target":"dept:sales","value":1.2,"label":"Sales x1.2"}]
-
-Valid types: perf_multiply, perf_set, perf_min, allowance_add, allowance_set, base_multiply
-Valid targets: "all", "dept:name", "pos:name", "name:name"`;
+[{"type":"perf_multiply","target":"dept:sales","value":1.2,"label":"Sales x1.2"}]`;
 
   try {
     const response = await fetch(
@@ -47,4 +43,3 @@ Valid targets: "all", "dept:name", "pos:name", "name:name"`;
     return res.status(500).json({ error: e.message });
   }
 };
-EOF
