@@ -8036,6 +8036,15 @@
         return;
       }
 
+      const findHeaderRow = (rows) => {
+        const keywords = ['氏名', '名前', '従業員', '部署', '基本給', '月給', '役職'];
+        for (let i = 0; i < Math.min(rows.length, 20); i++) {
+          const rowStr = rows[i].map(String).join('').toLowerCase();
+          if (keywords.some(k => rowStr.includes(k))) return i;
+        }
+        return 0;
+      };
+
       const parseAndLoad = (rawHeaders, rawData) => {
         if (rawData.length < 1) { showToast('データが空です', 'error'); return; }
         acHeaders = rawHeaders.map(String);
@@ -8104,7 +8113,8 @@
             return result;
           }).filter(r => r.some(v => v !== ''));
           if (allRows.length < 2) { showToast('データが空です', 'error'); return; }
-          parseAndLoad(allRows[0], allRows.slice(1));
+          const hIdx = findHeaderRow(allRows);
+          parseAndLoad(allRows[hIdx], allRows.slice(hIdx + 1));
         };
         reader.readAsText(file, 'UTF-8');
       } else {
@@ -8115,7 +8125,8 @@
           const ws = wb.Sheets[wb.SheetNames[0]];
           const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
           if (data.length < 2) { showToast('データが空です', 'error'); return; }
-          parseAndLoad(data[0], data.slice(1));
+          const hIdx = findHeaderRow(data);
+          parseAndLoad(data[hIdx], data.slice(hIdx + 1));
         };
         reader.readAsArrayBuffer(file);
       }
