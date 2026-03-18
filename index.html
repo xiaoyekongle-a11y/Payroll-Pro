@@ -8457,7 +8457,7 @@
               dept: String(get('dept') || '').trim(),
               pos: String(get('pos') || '').trim(),
               base: Number(String(get('base') || '0').replace(/[¥,￥\s]/g, '')) || 0,
-              perf: Number(get('perf')) || 1.0,
+              perf: (Number(get('perf')) && Number(get('perf')) <= 5.0) ? Number(get('perf')) : 1.0,
               age: Number(get('age')) || 35,
               dep: Number(get('dep')) || 0,
               bank: String(get('bank') || '').trim(),
@@ -8663,6 +8663,7 @@
 
       for (let i = 0; i < validRows.length; i++) {
         const row = validRows[i];
+        let calcBase = row.base;
         let perf = row.perf || 1.0;
         let extra = 0;
         let empLogs = [], applied = false, perfOverridden = false;
@@ -8687,10 +8688,10 @@
             extra = rule.value;
             empLogs.push(`手当${rule.value}円固定（${rule.label}）`);
           } else if (rule.type === 'base_multiply') {
-            row.base = Math.round(row.base * rule.value);
+            calcBase = Math.round(calcBase * rule.value);
             empLogs.push(`基本給×${rule.value}（${rule.label}）`);
           } else if (rule.type === 'base_add') {
-            row.base = Math.round(row.base + rule.value);
+            calcBase = Math.round(calcBase + rule.value);
             empLogs.push(`基本給+¥${rule.value.toLocaleString()}（${rule.label}）`);
           }
         }
@@ -8702,12 +8703,12 @@
           : bonusMethod === 'fixed_pool' ? perf * bonusParam
             : 0;
 
-        const r = calc(row.base, perf, mag,
+        const r = calc(calcBase, perf, mag,
           tr.hRate, tr.pRate, tr.eRate, tr.mRate, 'round',
           row.age, row.dep, 0, 0, extra);
 
         acResults.push({
-          ...r, ...row, perf, mag,
+          ...r, ...row, base: calcBase, perf, mag,
           extraOverride: 0,
           aiApplied: applied, aiLogs: empLogs,
         });
