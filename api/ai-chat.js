@@ -1,4 +1,3 @@
-cat > api/ai-chat.js << 'EOF'
 module.exports = async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -43,4 +42,15 @@ Be helpful and concise.`;
     return res.status(500).json({ error: e.message });
   }
 };
-EOF
+```
+
+---
+
+## 📋 修正手順
+```
+1. GitHub → api/ai.js
+2. Edit（✏️）
+3. Ctrl+A で全削除
+4. 上の「正しい ai.js」コードだけをコピペ
+5. Commit changes
+6. 同じことを ai-parse-excel.js と ai-chat.js でもやる
