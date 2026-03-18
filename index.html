@@ -9127,7 +9127,7 @@
           e.preventDefault(); dz.classList.remove('drag');
           const f = e.dataTransfer.files[0]; if (f) acHandleFile(f);
         });
-        dz.addEventListener('click', () => fi.click());
+        // fi handles clicks natively since it covers the entire dz
         fi.addEventListener('change', e => {
           const f = e.target.files[0]; if (f) acHandleFile(f); e.target.value = '';
         });
