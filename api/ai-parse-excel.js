@@ -1,41 +1,35 @@
 module.exports = async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   let body = req.body;
   if (typeof body === 'string') {
-    try { body = JSON.parse(body); } catch { return res.status(400).json({ error: 'JSON error' }); }
+    try {
+      body = JSON.parse(body);
+    } catch {
+      return res.status(400).json({ error: 'Invalid JSON' });
+    }
   }
-  if (!body?.headers || !body?.rows) return res.status(400).json({ error: 'headers and rows required' });
+
+  if (!body?.headers || !body?.rows) {
+    return res.status(400).json({ error: 'headers and rows required' });
+  }
 
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: 'API key not set' });
+  if (!apiKey) {
+    return res.status(500).json({ error: 'GOOGLE_GEMINI_API_KEY not set' });
+  }
 
   const { headers, rows } = body;
-  const sample = rows.slice(0, 3);
+  const sample = rows.slice(0, 5);
 
-  const prompt = `Excel column mapping task.
-
-Headers: ${JSON.stringify(headers)}
-Sample rows: ${JSON.stringify(sample)}
-
-Return ONLY JSON:
-{
-  "mapping": {
-    "name": <column_index or null>,
-    "dept": <column_index or null>,
-    "pos": <column_index or null>,
-    "base": <column_index or null>,
-    "perf": <column_index or null>,
-    "age": <column_index or null>,
-    "dep": <column_index or null>,
-    "bank": <column_index or null>,
-    "bonus": <column_index or null>
-  },
-  "normalized_rows": []
-}`;
+  const prompt = `Map Excel columns to fields. Headers: ${JSON.stringify(headers)} Sample: ${JSON.stringify(sample)}
+Return: {"mapping":{"name":0,"dept":1,"pos":2,"base":3,"perf":null,"age":null,"dep":null,"bank":null,"bonus":null},"normalized_rows":[]}`;
 
   try {
     const response = await fetch(
@@ -45,12 +39,14 @@ Return ONLY JSON:
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: 2048 },
-        }),
+          generationConfig: { temperature: 0.3, maxOutputTokens: 2048 }
+        })
       }
     );
 
-    if (!response.ok) return res.status(502).json({ error: 'API error' });
+    if (!response.ok) {
+      return res.status(502).json({ error: 'API error' });
+    }
 
     const data = await response.json();
     const text = (data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
@@ -58,7 +54,7 @@ Return ONLY JSON:
     const result = JSON.parse(json);
 
     return res.status(200).json(result);
-  } catch (e) {
-    return res.status(500).json({ error: e.message });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
   }
 };
