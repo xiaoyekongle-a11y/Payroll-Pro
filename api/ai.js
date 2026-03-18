@@ -1,4 +1,4 @@
-cat > ai.js << 'EOF'
+cat > api/ai.js << 'EOF'
 module.exports = async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -11,33 +11,34 @@ module.exports = async function handler(req, res) {
   }
   if (!body?.instruction) return res.status(400).json({ error: 'instruction required' });
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'API key not set' });
 
   const prompt = `Parse payroll rule: ${body.instruction}
 
-Return JSON array only:
-[{"type":"perf_multiply","target":"dept:sales","value":1.2,"label":"Sales x1.2"}]`;
+Return ONLY JSON array:
+[{"type":"perf_multiply","target":"dept:sales","value":1.2,"label":"Sales x1.2"}]
+
+Valid types: perf_multiply, perf_set, perf_min, allowance_add, allowance_set, base_multiply
+Valid targets: "all", "dept:name", "pos:name", "name:name"`;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-opus-4-6',
-        max_tokens: 512,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.2, maxOutputTokens: 512 },
+        }),
+      }
+    );
 
     if (!response.ok) return res.status(502).json({ error: 'API error' });
 
     const data = await response.json();
-    const text = (data?.content?.[0]?.text || '').trim();
+    const text = (data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
     const json = text.replace(/```json?|```/g, '').trim();
     const rules = JSON.parse(json);
 
