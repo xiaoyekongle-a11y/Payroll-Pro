@@ -56,6 +56,9 @@ target一覧:
 例3: "田中さんの係数を1.5に固定して、全員に交通費3000円追加"
 → [{"type":"perf_set","target":"name:田中","value":1.5,"label":"田中の係数1.5固定"},{"type":"allowance_add","target":"all","value":3000,"label":"全員に交通費3000円"}]
 
+例4: "開発部の基本給を+20%して、営業部を-10%する"
+→ [{"type":"base_multiply","target":"dept:開発部","value":1.2,"label":"開発部基本給+20%"},{"type":"base_multiply","target":"dept:営業部","value":0.9,"label":"営業部基本給-10%"}]
+
 JSON配列:`;
 
   const controller = new AbortController();
