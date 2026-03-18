@@ -1,4 +1,3 @@
-cat > api/ai-parse-excel.js << 'EOF'
 module.exports = async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -35,9 +34,7 @@ Return ONLY JSON:
     "bank": <column_index or null>,
     "bonus": <column_index or null>
   },
-  "normalized_rows": [
-    {"name": "value", "dept": null, "pos": null, "base": 300000, "perf": 1.0, "age": 35, "dep": 2, "bank": null, "bonus": 500000}
-  ]
+  "normalized_rows": []
 }`;
 
   try {
@@ -65,4 +62,3 @@ Return ONLY JSON:
     return res.status(500).json({ error: e.message });
   }
 };
-EOF
