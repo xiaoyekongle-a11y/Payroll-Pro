@@ -5344,7 +5344,9 @@
       let _justJoined = false;
 
       async function loadCompanyList(uid) {
+        console.log('[LCL] start uid:', uid);
         let members = await dbGetAll('company_users', { user_id: uid });
+        console.log('[LCL] members:', members.length);
 
         // 招待参加直後のみ最大3回リトライ（RLS反映遅延対策・通常ログインには影響しない）
         if (!members.length && _justJoined) {
@@ -5371,9 +5373,11 @@
         const cids = members.map(m => m.company_id);
         let companiesRaw = [];
         try {
+          console.log('[LCL] fetching companies for cids:', cids);
           const { data, error } = await sb.from('companies').select('*').in('id', cids);
           if (error) throw error;
           companiesRaw = data || [];
+          console.log('[LCL] companies fetched:', companiesRaw.length);
         } catch (e) { console.warn('[PA] companies fetch', e.message); }
         const companyMap = Object.fromEntries(companiesRaw.map(c => [c.id, c]));
         const companies = members.map(m => { const c = companyMap[m.company_id]; return c ? { ...c, role: m.role } : null; }).filter(Boolean);
