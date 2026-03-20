@@ -4782,8 +4782,15 @@
       /* ── Supabase helpers（リトライ付き） ── */
       async function _retry(fn, retries = 3) {
         for (let i = 0; i < retries; i++) {
-          try { return await fn(); }
+          try {
+            // 15秒タイムアウト付きでクエリを実行
+            return await Promise.race([
+              fn(),
+              new Promise((_, reject) => setTimeout(() => reject(new Error('DB timeout')), 15000))
+            ]);
+          }
           catch (e) {
+            console.warn('[PA] _retry attempt', i + 1, e.message);
             if (i === retries - 1) throw e;
             await new Promise(r => setTimeout(r, 500 * Math.pow(2, i)));
           }
@@ -5345,8 +5352,6 @@
 
       async function loadCompanyList(uid) {
         console.log('[LCL] start uid:', uid);
-        const { data: { session: curSess } } = await sb.auth.getSession();
-        console.log('[LCL] current session valid:', !!curSess);
         let members = await dbGetAll('company_users', { user_id: uid });
         console.log('[LCL] members:', members.length);
 
