@@ -706,7 +706,7 @@
       background: var(--surface-3)
     }
 
-    /* CalcAIタブは強調 */
+    /* 自動計算タブは強調 */
     .nav-tab[data-page="calcai"] {
       color: var(--accent);
       font-weight: 800
@@ -1956,7 +1956,7 @@
       background: linear-gradient(90deg, var(--accent), #2563eb)
     }
 
-    /* ═══════════ CALCAI STEP BAR ═══════════ */
+    /* ═══════════ 自動計算 STEP BAR ═══════════ */
     .ac-step {
       display: flex;
       align-items: center;
@@ -2070,7 +2070,7 @@
       }
     }
 
-    /* AIチャット回答フェードイン */
+    /* 回答フェードイン */
     #acChatAnswer,
     #acExplainWrap {
       animation: acFadeSlide 0.3s ease;
@@ -2088,7 +2088,7 @@
       }
     }
 
-    /* CalcAI パネル切替アニメーション */
+    /* 自動計算 パネル切替アニメーション */
     #acPanel1,
     #acPanel2,
     #acPanel3,
@@ -2132,7 +2132,7 @@
     }
 
 
-    /* ═══════════ AI調整行ハイライト ═══════════ */
+    /* ═══════════ 調整行ハイライト ═══════════ */
     tr.ac-ai-row td {
       background: rgba(26, 86, 219, 0.04) !important
     }
@@ -2274,7 +2274,7 @@
       transform: scale(1.15) rotate(-5deg)
     }
 
-    /* ═══════════ AI指示プリセット カテゴリ ═══════════ */
+    /* ═══════════ 指示プリセット カテゴリ ═══════════ */
     .ac-preset-group {
       margin-bottom: 0.65rem;
     }
@@ -2331,7 +2331,7 @@
       }
     }
 
-    /* ═══════════ AI解説パネル 強化 ═══════════ */
+    /* ═══════════ 計算サマリーパネル ═══════════ */
     #acExplainWrap {
       background: linear-gradient(135deg,
           rgba(26, 86, 219, 0.04),
@@ -2928,7 +2928,7 @@
       font-size: 0.7rem
     }
 
-    /* ═══════════ CALCAI ═══════════ */
+    /* ═══════════ 自動計算 ═══════════ */
     .ac-step {
       display: flex;
       flex-direction: column;
@@ -3612,7 +3612,7 @@
         gap: 0.5rem;
       }
 
-      /* CalcAI STEP2 grid */
+      /* 自動計算 STEP2 grid */
       #acPanel2>div {
         grid-template-columns: 1fr !important;
       }
@@ -3826,7 +3826,7 @@
     </header>
 
     <nav class="nav-tabs">
-      <div class="nav-tab" data-page="calcai">⚡ CalcAI</div>
+      <div class="nav-tab" data-page="calcai">⚡ 自動計算</div>
       <div class="nav-tab active" data-page="dashboard">📊 ダッシュボード</div>
       <div class="nav-tab" data-page="history">📂 履歴</div>
       <div class="nav-tab" data-page="payroll">📝 給与計算</div>
@@ -4364,15 +4364,15 @@
 
 
       <!-- ══════════════════════════════════════════════════════
-       CalcAI — Excel→AI→Excel 給与自動計算
+       自動計算 — Excel→計算→Excel 給与一括処理
   ══════════════════════════════════════════════════════ -->
       <div class="page" id="pageCalcai">
 
         <!-- ヘッダー -->
         <div style="margin-bottom:0.85rem">
           <div style="font-family:var(--font-display);font-size:1.05rem;font-weight:900;color:var(--accent)">
-            ⚡ CalcAI — AI給与自動計算 <span class="help-icon"
-              onclick="showToast('Excelで名簿をアップロード → AIに自然言語で指示 → 自動計算 → Excel出力。4ステップで完結します。','')">？</span>
+            ⚡ 自動計算 — 給与一括計算 <span class="help-icon"
+              onclick="showToast('Excelで名簿をアップロード → 指示を入力 → 自動計算 → Excel出力。4ステップで完結します。','')">？</span>
           </div>
           <div style="font-size:0.75rem;color:var(--muted);margin-top:0.15rem">
             名簿Excelをアップロードして自然言語で指示するだけで給与計算→Excel出力まで完結
@@ -4389,7 +4389,7 @@
           <div class="ac-step-connector"></div>
           <div class="ac-step" id="acStepDot2">
             <div class="ac-step-num">2</div>
-            <div class="ac-step-label">AI指示・計算</div>
+            <div class="ac-step-label">指示・計算</div>
           </div>
           <div class="ac-step-connector"></div>
           <div class="ac-step" id="acStepDot3">
@@ -4449,19 +4449,19 @@
               </div>
               <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.85rem">
                 <button class="btn btn-sm btn-secondary" id="acBtnTemplate">📋 テンプレDL</button>
-                <button class="btn btn-primary" id="acBtnToStep2" disabled>次へ：AI指示・計算 →</button>
+                <button class="btn btn-primary" id="acBtnToStep2" disabled>次へ：指示・計算 →</button>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- STEP 2: AI指示 + 計算実行 -->
+        <!-- STEP 2: 指示 + 計算実行 -->
         <div id="acPanel2" style="display:none">
           <div style="display:grid;grid-template-columns:1fr 300px;gap:1rem;align-items:start">
 
             <!-- 左: 指示入力 + 計算 -->
             <div class="panel">
-              <div class="panel-header">🤖 STEP 2 — AIへの指示と計算実行</div>
+              <div class="panel-header">📝 STEP 2 — 計算指示と実行</div>
               <div class="panel-body">
                 <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.75rem">
                   自然言語で給与ルールを指示してください。何も書かなければ名簿の値をそのまま計算します。
@@ -4470,7 +4470,7 @@
                   style="width:100%;padding:0.55rem 0.75rem;border:1px solid var(--border);border-radius:var(--r);font-family:var(--font-body);font-size:0.85rem;background:var(--surface);color:var(--ink);resize:vertical;margin-bottom:0.65rem;line-height:1.6"
                   placeholder="例：&#10;営業部の係数を1.2倍にする&#10;全員に5000円の手当を追加&#10;田中さんの係数を1.5に固定する&#10;管理職の最低係数を1.0に保証する"></textarea>
 
-                <!-- AI指示プリセット（カテゴリ分け） -->
+                <!-- 指示プリセット（カテゴリ分け） -->
                 <div style="margin-bottom:0.85rem">
                   <div class="ac-preset-group">
                     <div class="ac-preset-label">🎯 係数系</div>
@@ -4520,7 +4520,7 @@
                   </div>
                 </div>
 
-                <!-- AI ログ -->
+                <!-- ログ -->
                 <div id="acAiLog"
                   style="display:none;font-size:0.75rem;color:var(--muted);padding:0.5rem 0.75rem;background:var(--surface-2);border-radius:var(--r);border:1px solid var(--border);margin-bottom:0.75rem;line-height:1.8">
                 </div>
@@ -4542,15 +4542,15 @@
           <div class="panel">
             <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center">
               <span>✅ STEP 3 — 計算結果の確認・編集</span>
-              <button class="btn btn-sm btn-secondary" id="acBtnBackTo2">← AI指示を修正</button>
+              <button class="btn btn-sm btn-secondary" id="acBtnBackTo2">← 指示を修正</button>
             </div>
             <div class="panel-body" style="padding:0">
-              <!-- AI説明サマリー（強化機能） -->
+              <!-- 計算サマリー -->
               <div id="acExplainWrap"
                 style="display:none;padding:0.75rem 1rem;background:linear-gradient(135deg,var(--surface-2),var(--surface));border-bottom:1px solid var(--border)">
                 <div
                   style="font-size:0.68rem;font-weight:700;color:var(--accent);margin-bottom:0.3rem;text-transform:uppercase;letter-spacing:0.06em">
-                  🤖 AI解説</div>
+                  📊 計算サマリー</div>
                 <div id="acExplainText" style="font-size:0.8rem;line-height:1.7;color:var(--ink)"></div>
               </div>
               <div id="acResultSummary" style="padding:0.75rem 1rem;border-bottom:1px solid var(--border)"></div>
@@ -4927,11 +4927,11 @@
       /* ── オンボーディングツアー ── */
       const ONBOARD_STEPS = [
         { emoji: '👋', title: 'Salarioへようこそ！', desc: '月額3,000円で使える給与計算SaaSです。\nこのガイドで主な機能を紹介します。' },
-        { emoji: '⚡', title: 'CalcAI — AI給与計算', desc: 'Excelをアップロードし、自然言語で指示するだけで\n給与計算 → Excel出力まで完結します。' },
+        { emoji: '⚡', title: '自動計算 — 給与一括計算', desc: 'Excelをアップロードし、指示を入力するだけで\n給与計算 → Excel出力まで完結します。' },
         { emoji: '📊', title: 'ダッシュボード', desc: '人件費推移・部署別コスト・扶養の壁アラートなど\n経営に必要な指標を一目で確認できます。' },
         { emoji: '📝', title: '給与計算', desc: '個別の従業員登録・計算・PDF明細発行が可能。\n前月データのコピーやCSV/Excelインポートにも対応。' },
         { emoji: '🏢', title: 'その他の機能', desc: '勤怠管理・年末調整・社保届出など\n給与業務をまるごとカバーします。' },
-        { emoji: '🚀', title: '準備完了！', desc: 'さっそくCalcAIから始めてみましょう。\nヘッダーの🔔で操作ログ、?キーでショートカット一覧を確認できます。' },
+        { emoji: '🚀', title: '準備完了！', desc: 'さっそく自動計算から始めてみましょう。\nヘッダーの🔔で操作ログ、?キーでショートカット一覧を確認できます。' },
       ];
       let _onboardStep = 0;
       function showOnboarding() {
@@ -7787,11 +7787,11 @@
           if (!emps.length) return;
 
           showModal(
-            '⚡ CalcAIからデータを受信',
+            '⚡ 自動計算からデータを受信',
             `<div style="text-align:center;padding:0.5rem 0">
         <div style="font-size:2rem;margin-bottom:0.5rem">📥</div>
         <p style="margin-bottom:0.75rem">
-          CalcAIで計算した <b>${emps.length}名</b> のデータを<br>
+          自動計算した <b>${emps.length}名</b> のデータを<br>
           給与計算ページに取り込みますか？
         </p>
         <p style="font-size:0.75rem;color:var(--muted)">
@@ -7845,13 +7845,13 @@
           employees = newEmps;
           saveAndRender();
           showPage('payroll');
-          showToast(`CalcAIから ${newEmps.length}名 を取り込みました ✅`, 'success');
+          showToast(`自動計算から ${newEmps.length}名 を取り込みました ✅`, 'success');
         };
 
         if (employees.length > 0) {
           showModal(
             '既存データの確認',
-            `<p>現在 <b>${employees.length}名</b> のデータがあります。<br>CalcAIのデータで上書きしますか？</p>`,
+            `<p>現在 <b>${employees.length}名</b> のデータがあります。<br>自動計算のデータで上書きしますか？</p>`,
             '上書きして取り込む', 'btn-primary', importEmp
           );
         } else {
@@ -7863,10 +7863,10 @@
   </script>
   <script>
     /*
-     * CalcAI v2.0 — Salario 給与自動計算
+     * 自動計算 v2.0 — Salario 給与一括計算
      * 設計原則：
      *   - ファイル読込 → 自動マッピング → 編集可能テーブル表示（1ステップ）
-     *   - AI指示入力（任意）→ 計算実行
+     *   - 指示入力（任意）→ 計算実行
      *   - 結果確認・個別修正 → Excel出力
      */
 
@@ -7954,7 +7954,7 @@
 
         const topRows = rawData.slice(0, 15);
         const subEl = document.getElementById('acDropSub');
-        if (subEl) subEl.textContent = 'AIがExcel形式を解析中...';
+        if (subEl) subEl.textContent = 'Excel形式を解析中...';
 
         let hIdx = 0;
         let colIdx = {};
@@ -8166,7 +8166,7 @@
     }
 
     // ─────────────────────────────────────────
-    // STEP 2: AI指示 → 計算実行
+    // STEP 2: 指示 → 計算実行
     // ─────────────────────────────────────────
     async function acRunCalc() {
       const btn = document.getElementById('acBtnCalc');
@@ -8176,13 +8176,13 @@
       const bonusMethod = document.getElementById('acBonusMethod')?.value || 'none';
       const bonusParam = Number(document.getElementById('acBonusParam')?.value) || 2.0;
 
-      // AI指示解析
+      // 指示解析
       let aiRules = [], aiLogs = [];
       if (instruction) {
         try {
           aiRules = await acCallAI(instruction);
           aiLogs = aiRules.map(r => `[AI] ${r.label}`);
-          showToast(`AIが ${aiRules.length} 件のルールを解析しました`, 'success');
+          showToast(`${aiRules.length} 件のルールを解析しました`, 'success');
         } catch (e) {
           console.warn('[AC] AI失敗→フォールバック:', e.message);
           const fb = acParseManual(instruction);
@@ -8221,7 +8221,7 @@
         let extra = 0;
         let empLogs = [], applied = false, perfOverridden = false;
 
-        // AIルール適用
+        // ルール適用
         for (const rule of aiRules) {
           if (!acMatchTarget(rule.target, row)) continue;
           applied = true;
@@ -8277,7 +8277,7 @@
 
       acRenderResultTable();
 
-      // Task 8: AI解説を非同期で取得・表示（結果表示をブロックしない）
+      // Task 8: 計算サマリーを非同期で取得・表示
       (async () => {
         const explainWrap = document.getElementById('acExplainWrap');
         const explainText = document.getElementById('acExplainText');
@@ -8420,7 +8420,7 @@
         <th class="num">月給支給額</th>
         <th class="num">月給手取り</th>
         ${bonusH}
-        <th>AI調整</th>
+        <th>ルール調整</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
@@ -8487,7 +8487,7 @@
         <div class="stat-value green">${fmtY(tBN)}</div></div>` : ''}
       ${acLastAiN > 0 ? `
       <div class="stat-card" style="border-top:3px solid var(--amber)">
-        <div class="stat-label">AI調整</div>
+        <div class="stat-label">ルール調整</div>
         <div class="stat-value" style="color:var(--amber)">${acLastAiN}名</div></div>` : ''}
     </div>`;
     }
