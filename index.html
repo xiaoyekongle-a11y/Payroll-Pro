@@ -4284,6 +4284,9 @@
       </div>
       <!-- ══ 年末調整ページ ══ -->
       <div class="page" id="pageYearend">
+        <div style="background:var(--amber-bg);border:1px solid rgba(180,83,9,0.25);border-radius:var(--r);padding:0.6rem 1rem;margin-bottom:1rem;font-size:0.75rem;color:var(--amber);line-height:1.6">
+          ⚠️ <strong>参考計算ツールです。</strong> ここで表示される数値は概算です。年末調整の最終確認・申告は必ず税理士等の有資格者または税務署にご確認ください。本ツールの計算結果を法定調書として使用しないでください。
+        </div>
         <div class="period-bar">
           <div class="period-bar-left">
             <label class="period-label">対象年度</label>
@@ -4293,9 +4296,9 @@
           <div style="flex:1"></div>
           <div class="btn-cluster">
             <span class="cluster-label">出力</span>
-            <button class="btn btn-sm btn-danger" id="btnYearendPDF">🖨 源泉徴収票PDF</button>
+            
             <button class="btn btn-sm btn-secondary" id="btnYearendCSV">📄 CSV出力</button>
-            <button class="btn btn-sm btn-green owner-only" id="btnYearendConfirm">✅ 一括確定</button>
+            
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start">
@@ -4321,6 +4324,9 @@
 
       <!-- ══ 社保届出ページ（Sprint 9） ══ -->
       <div class="page" id="pageShahou">
+        <div style="background:var(--amber-bg);border:1px solid rgba(180,83,9,0.25);border-radius:var(--r);padding:0.6rem 1rem;margin-bottom:1rem;font-size:0.75rem;color:var(--amber);line-height:1.6">
+          ⚠️ <strong>参考情報です。</strong> 月額変更・算定基礎の判定は参考値です。社会保険手続きの最終判断は社会保険労務士または年金事務所にご確認ください。
+        </div>
         <div class="period-bar">
           <div class="period-bar-left">
             <label class="period-label">基準年月</label>
@@ -4332,7 +4338,7 @@
             <span class="cluster-label">届出生成</span>
             <button class="btn btn-sm btn-blue" id="btnShahouCheck">🔍 月額変更チェック</button>
             <button class="btn btn-sm btn-secondary" id="btnSanteiGen">📄 算定基礎届</button>
-            <button class="btn btn-sm btn-secondary" id="btnGetsugakuPDF">🖨 月額変更届PDF</button>
+            
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
@@ -6686,7 +6692,7 @@
     <div class="btn-group" style="flex-wrap:wrap">
       ${dis ? '' : `<button class="btn btn-secondary" onclick="calcYearend('${empId}')">🧮 計算</button>`}
       ${dis ? '' : `<button class="btn btn-primary" onclick="saveYearend('${empId}')">💾 保存</button>`}
-      <button class="btn btn-danger btn-sm" onclick="genWithholdingPDF('${empId}')">🖨 源泉徴収票</button>
+      
     </div>`;
         // ローン残高入力で控除額を自動計算
         const loanBal = $('ye_loan_bal');
@@ -6804,55 +6810,6 @@
         showToast('年末調整データを保存しました ✅', 'success');
         renderYearendList();
       }
-
-      async function confirmAllYearend() {
-        if (currentCompany.role !== 'owner') { showToast('owner権限が必要です', 'error'); return; }
-        showModal('年末調整一括確定', `${yearendYear}年分の年末調整をすべて確定しますか？この操作は取り消せません。`, '確定する', 'btn-green', async () => {
-          const ids = Object.keys(yearendRecords);
-          if (!ids.length) { showToast('確定するデータがありません', 'error'); return; }
-          for (const eid of ids) {
-            await sb.from('yearend_adjustments').update({ status: 'confirmed', confirmed_at: new Date().toISOString() })
-              .eq('company_id', currentCompany.id).eq('employee_id', eid).eq('year', yearendYear);
-          }
-          showToast('年末調整を一括確定しました', 'success');
-          renderYearendList();
-        });
-      }
-
-      async function genWithholdingPDF(empId) {
-        const emp = employees.find(e => String(e.id) === String(empId));
-        const ye = yearendRecords[empId];
-        if (!emp) { showToast('従業員が見つかりません', 'error'); return; }
-        const annGross = ye?.ann_gross || emp.gross * 12;
-        const annTax = ye?.ann_tax_owed || emp.tax * 12;
-        const refund = ye?.refund_amount || 0;
-        const html = `
-    <div style="font-family:'Noto Sans JP',sans-serif;padding:24px;width:540px;border:2px solid #333">
-      <h2 style="text-align:center;font-size:14pt;margin-bottom:12px">源泉徴収票 ${yearendYear}年分</h2>
-      <table style="width:100%;border-collapse:collapse;font-size:9pt">
-        <tr><td style="border:1px solid #999;padding:6px;background:#f5f5f5;font-weight:700;width:45%">受給者氏名</td><td style="border:1px solid #999;padding:6px">${emp.name}</td></tr>
-        <tr><td style="border:1px solid #999;padding:6px;background:#f5f5f5;font-weight:700">支払者名称</td><td style="border:1px solid #999;padding:6px">${currentCompany.name}</td></tr>
-        <tr><td style="border:1px solid #999;padding:6px;background:#f5f5f5;font-weight:700">支払金額</td><td style="border:1px solid #999;padding:6px;font-family:monospace">${fmtY(annGross)}</td></tr>
-        <tr><td style="border:1px solid #999;padding:6px;background:#f5f5f5;font-weight:700">源泉徴収税額</td><td style="border:1px solid #999;padding:6px;font-family:monospace">${fmtY(annTax)}</td></tr>
-        <tr><td style="border:1px solid #999;padding:6px;background:#f5f5f5;font-weight:700">還付・追加徴収</td><td style="border:1px solid #999;padding:6px;font-family:monospace;color:${refund >= 0 ? '#1e6e45' : '#c0422a'}">${refund >= 0 ? '+' : ''}${fmtY(Math.abs(refund))}</td></tr>
-        <tr><td style="border:1px solid #999;padding:6px;background:#f5f5f5;font-weight:700">発行日</td><td style="border:1px solid #999;padding:6px">${yearendYear}年12月31日</td></tr>
-      </table>
-      <p style="font-size:7pt;color:#777;margin-top:8px;text-align:right">※ 本票はシステム出力です。正式な法定調書は別途ご確認ください。</p>
-    </div>`;
-        const div = document.createElement('div');
-        div.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1';
-        div.innerHTML = html; document.body.appendChild(div);
-        try {
-          if (!window.html2canvas || !window.jspdf) { showToast('PDFライブラリ読み込み中です', 'error'); return; }
-          const canvas = await html2canvas(div, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' });
-          const { jsPDF } = window.jspdf;
-          const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a5' });
-          const imgData = canvas.toDataURL('image/jpeg', 0.85);
-          pdf.addImage(imgData, 'JPEG', 10, 10, 180, canvas.height * (180 / canvas.width));
-          pdf.save(`源泉徴収票_${emp.name}_${yearendYear}.pdf`);
-        } finally { document.body.removeChild(div); }
-      }
-
       function exportYearendCSV() {
         const rows = [['氏名', '年間総収入', '年税額', '源泉徴収済', '還付額', 'ステータス']];
         employees.forEach(e => {
@@ -6975,15 +6932,15 @@
       // ══ 年末調整 ══
       $('btnYearendPDF').addEventListener('click', () => {
         if (!yearendEditEmpId) { showToast('従業員を選択してください', 'error'); return; }
-        genWithholdingPDF(yearendEditEmpId);
+        /* 源泉徴収票PDF生成機能は削除済み */
       });
       $('btnYearendCSV').addEventListener('click', exportYearendCSV);
-      $('btnYearendConfirm').addEventListener('click', confirmAllYearend);
+      /* 年末調整一括確定機能は削除済み */
 
       // ══ 社保届出（Sprint 9） ══
       $('btnShahouCheck').addEventListener('click', checkShahouChanges);
       $('btnSanteiGen').addEventListener('click', generateSanteiKisho);
-      $('btnGetsugakuPDF').addEventListener('click', generateGetsugakuPDF);
+      /* 月額変更届PDF生成機能は削除済み */
       $('shahouPeriodSel').addEventListener('change', checkShahouChanges);
 
       // ══ ダッシュボード強化（Sprint 10） ══
@@ -7339,90 +7296,6 @@
       </tbody>
     </table>`;
       }
-
-      async function generateGetsugakuPDF() {
-        // 月額変更届PDF生成（法定様式準拠）
-        const allRows = await dbGetAll('payroll_history', { company_id: currentCompany.id });
-        allRows.sort((a, b) => b.period.localeCompare(a.period));
-        const recent4 = allRows.slice(0, 4);
-        if (recent4.length < 4) { showToast('4ヶ月以上の給与履歴が必要です', 'error'); return; }
-
-        const now = new Date();
-        const html = `
-  <div style="font-family:'Noto Sans JP',sans-serif;padding:20px;width:600px;font-size:9pt">
-    <h2 style="text-align:center;font-size:13pt;border-bottom:2px solid #333;padding-bottom:8px;margin-bottom:12px">
-      健康保険・厚生年金保険 被保険者報酬月額変更届
-    </h2>
-    <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:8pt">
-      <tr>
-        <td style="border:1px solid #999;padding:5px;background:#f5f5f5;font-weight:700;width:30%">事業所名称</td>
-        <td style="border:1px solid #999;padding:5px">${esc(currentCompany.name)}</td>
-        <td style="border:1px solid #999;padding:5px;background:#f5f5f5;font-weight:700;width:20%">提出年月日</td>
-        <td style="border:1px solid #999;padding:5px">${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日</td>
-      </tr>
-      <tr>
-        <td style="border:1px solid #999;padding:5px;background:#f5f5f5;font-weight:700">事業所所在地</td>
-        <td colspan="3" style="border:1px solid #999;padding:5px">${esc(currentCompany.address || '（未設定）')}</td>
-      </tr>
-    </table>
-    <table style="width:100%;border-collapse:collapse;font-size:8pt">
-      <thead>
-        <tr style="background:#e8e8e8">
-          <th style="border:1px solid #999;padding:4px">氏名</th>
-          <th style="border:1px solid #999;padding:4px">変更前<br>標準報酬</th>
-          <th style="border:1px solid #999;padding:4px">1月目</th>
-          <th style="border:1px solid #999;padding:4px">2月目</th>
-          <th style="border:1px solid #999;padding:4px">3月目</th>
-          <th style="border:1px solid #999;padding:4px">3ヶ月平均</th>
-          <th style="border:1px solid #999;padding:4px">変更後<br>標準報酬</th>
-          <th style="border:1px solid #999;padding:4px">改定月</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${(recent4[3].employees || []).map(baseEmp => {
-          const months = recent4.slice(0, 3).map(m => (m.employees || []).find(x => x.id === baseEmp.id || x.name === baseEmp.name));
-          const pays = months.map(e => e ? e.base : 0);
-          const avg = Math.round(pays.reduce((s, v) => s + v, 0) / 3);
-          const bg = getHoshuGrade(baseEmp.base);
-          const ng = getHoshuGrade(avg);
-          if (Math.abs(ng.grade - bg.grade) < 2) return '';
-          const [y, m] = recent4[0].period.split('-');
-          const kaiteMonth = `${y}年${parseInt(m) + 1}月`;
-          return `<tr>
-            <td style="border:1px solid #999;padding:4px;font-weight:600">${esc(baseEmp.name)}</td>
-            <td style="border:1px solid #999;padding:4px;text-align:center">${bg.grade}級<br><small>${fmtY(bg.standard)}</small></td>
-            <td style="border:1px solid #999;padding:4px;text-align:right;font-family:monospace">${fmtY(pays[2] || 0)}</td>
-            <td style="border:1px solid #999;padding:4px;text-align:right;font-family:monospace">${fmtY(pays[1] || 0)}</td>
-            <td style="border:1px solid #999;padding:4px;text-align:right;font-family:monospace">${fmtY(pays[0] || 0)}</td>
-            <td style="border:1px solid #999;padding:4px;text-align:right;font-family:monospace;font-weight:700">${fmtY(avg)}</td>
-            <td style="border:1px solid #999;padding:4px;text-align:center;background:#fff3f0;font-weight:700">${ng.grade}級<br><small>${fmtY(ng.standard)}</small></td>
-            <td style="border:1px solid #999;padding:4px;text-align:center">${kaiteMonth}</td>
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table>
-    <p style="font-size:7pt;color:#888;margin-top:8px">
-      ※ 本届出書はシステム出力です。提出前に日本年金機構の最新様式と内容を照合してください。（健康保険法第43条）
-    </p>
-  </div>`;
-
-        const div = document.createElement('div');
-        div.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;background:#fff';
-        div.innerHTML = html;
-        document.body.appendChild(div);
-        try {
-          if (!window.html2canvas || !window.jspdf) { showToast('PDFライブラリ読み込み中です', 'error'); return; }
-          const canvas = await html2canvas(div, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
-          const { jsPDF } = window.jspdf;
-          const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-          const imgData = canvas.toDataURL('image/jpeg', 0.88);
-          const ratio = canvas.height / canvas.width;
-          pdf.addImage(imgData, 'JPEG', 10, 10, 277, 277 * ratio);
-          pdf.save(`月額変更届_${currentCompany.name}_${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}.pdf`);
-          showToast('月額変更届PDFを生成しました', 'success');
-        } finally { document.body.removeChild(div); }
-      }
-
       function renderHoshuTable() {
         const body = $('hoshuTableBody');
         if (!body) return;
@@ -7746,8 +7619,7 @@
       window.showPage = showPage;
       window.calcYearend = calcYearend;
       window.saveYearend = saveYearend;
-      window.genWithholdingPDF = genWithholdingPDF;
-      window.toggleAcc = toggleAcc;
+            window.toggleAcc = toggleAcc;
       window.renderDrilldownChart = renderDrilldownChart;
       window.checkShahouChanges = checkShahouChanges;
       // CalcAIスクリプト（Script9）から使う関数を公開
