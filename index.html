@@ -7055,16 +7055,12 @@
           const user = session.user;
           currentUser = { id: user.id, email: user.email, name: user.user_metadata?.name || user.email };
 
-          // Supabase初期化中にSIGNED_INが発火する場合、JWTがまだセットされず
-          // RLSで弾かれてクエリがタイムアウトする。
-          // access_tokenがセットされるまで最大3秒待つ。
-          for (let i = 0; i < 6; i++) {
-            const sess = await sb.auth.getSession().catch(() => null);
-            if (sess?.data?.session?.access_token) break;
-            console.log('[AUTH] waiting for session to be ready...', i);
-            await new Promise(r => setTimeout(r, 500));
-          }
-          console.log('[AUTH] session ready, calling loadCompanyList...');
+          // Supabase初期化中（_recoverAndRefresh）にSIGNED_INが発火する場合、
+          // JWTがまだセットされずRLSで弾かれる。
+          // 初期化完了を待つため1秒遅延してからクエリを実行する。
+          console.log('[AUTH] waiting 1s for Supabase init...');
+          await new Promise(r => setTimeout(r, 1000));
+          console.log('[AUTH] calling loadCompanyList...');
           await loadCompanyList(user.id);
           console.log('[AUTH] loadCompanyList done');
         } catch (e) {
