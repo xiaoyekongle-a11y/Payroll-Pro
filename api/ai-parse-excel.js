@@ -69,7 +69,7 @@ module.exports = async function handler(req, res) {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
         signal: controller.signal,
         body: JSON.stringify({
-          model: 'gemini-1.5-flash',
+          model: 'gemini-2.0-flash',
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user',   content: `以下のデータを解析してJSONを返してください:\n\n${JSON.stringify(safeRows)}` },
@@ -83,8 +83,9 @@ module.exports = async function handler(req, res) {
     clearTimeout(timeout);
 
     if (!geminiRes.ok) {
-      console.error('[AI-PARSE] Gemini error:', geminiRes.status);
-      return res.status(502).json({ error: 'AI処理に失敗しました。しばらくしてから再試行してください。' });
+      const errText = await geminiRes.text().catch(() => '');
+      console.error('[AI-PARSE] Gemini error:', geminiRes.status, errText.slice(0, 500));
+      return res.status(502).json({ error: `AI処理に失敗しました (${geminiRes.status})。しばらくしてから再試行してください。` });
     }
 
     const data = await geminiRes.json();
