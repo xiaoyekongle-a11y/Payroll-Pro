@@ -94,7 +94,7 @@ JSON配列:`;
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
         signal: controller.signal,
         body: JSON.stringify({
-          model: 'gemini-1.5-flash',
+          model: 'gemini-2.0-flash',
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user',   content: userPrompt },
@@ -107,9 +107,9 @@ JSON配列:`;
     clearTimeout(timeout);
 
     if (!geminiRes.ok) {
-      const err = await geminiRes.json().catch(() => ({}));
-      console.error('[AI] Gemini error:', geminiRes.status, JSON.stringify(err));
-      return res.status(502).json({ error: 'AI処理に失敗しました。しばらくしてから再試行してください。' });
+      const errText = await geminiRes.text().catch(() => '');
+      console.error('[AI] Gemini error:', geminiRes.status, errText.slice(0, 500));
+      return res.status(502).json({ error: `AI処理に失敗しました (${geminiRes.status})。しばらくしてから再試行してください。` });
     }
 
     const data = await geminiRes.json();
