@@ -7012,6 +7012,7 @@
       if (window.__PA_AUTH_UNSUB) { try { window.__PA_AUTH_UNSUB(); } catch (_) { } }
 
       const { data: { subscription } } = sb.auth.onAuthStateChange(async (event, session) => {
+        console.log('[AUTH] event:', event, 'session:', !!session, 'uid:', session?.user?.id);
         // ログアウト・セッション切れ
         if (!session) {
           _lastHandledUserId = null;
@@ -7028,12 +7029,12 @@
         if (event === 'TOKEN_REFRESHED') return;
 
         // 処理中のみスキップ（同じユーザーの再ログインは通す）
-        if (_isHandlingAuth) return;
+        if (_isHandlingAuth) { console.log('[AUTH] skipped: isHandlingAuth'); return; }
 
         // appScreenが既に表示されていて同じユーザーならスキップ
         const uid = session.user.id;
         const appVisible = document.getElementById('appScreen')?.classList.contains('active');
-        if (appVisible && _lastHandledUserId === uid) return;
+        if (appVisible && _lastHandledUserId === uid) { console.log('[AUTH] skipped: already loaded'); return; }
 
         _isHandlingAuth = true;
         _lastHandledUserId = uid;
@@ -7041,7 +7042,9 @@
         try {
           const user = session.user;
           currentUser = { id: user.id, email: user.email, name: user.user_metadata?.name || user.email };
+          console.log('[AUTH] calling loadCompanyList...');
           await loadCompanyList(user.id);
+          console.log('[AUTH] loadCompanyList done');
         } catch (e) {
           console.error('[PA] auth handler error:', e);
           _lastHandledUserId = null;
