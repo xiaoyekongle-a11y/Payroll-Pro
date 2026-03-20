@@ -1,25 +1,47 @@
+/**
+ * /api/ai — CalcAI 給与ルール解析
+ */
+
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '';
+
+
 module.exports = async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
-  res.setHeader('Access-Control-Allow-Origin', '*');
+
+  const origin = req.headers.origin || '';
+  const corsOrigin = ALLOWED_ORIGIN || '*';
+  if (ALLOWED_ORIGIN && origin !== ALLOWED_ORIGIN) {
+    return res.status(403).json({ error: '不正なオリジンです' });
+  }
+  res.setHeader('Access-Control-Allow-Origin', corsOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY が未設定です' });
+  if (!apiKey) return res.status(500).json({ error: 'サーバー設定エラー' });
 
   let body = req.body;
-  if (typeof body === 'string') { try { body = JSON.parse(body); } catch { return res.status(400).json({ error: 'JSON不正' }); } }
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch { return res.status(400).json({ error: 'リクエスト形式が不正です' }); }
+  }
   if (!body?.instruction) return res.status(400).json({ error: 'instruction が必要です' });
-  if (body.instruction.length > 3000) return res.status(400).json({ error: '指示文が長すぎます（3000文字以内）' });
 
-  // 従業員データコンテキスト
+  const instruction = String(body.instruction).slice(0, 500);
+
   let empContext = '';
-  if (body.employees && Array.isArray(body.employees) && body.employees.length > 0) {
-    const sample = body.employees.slice(0, 20).map(e =>
-      `${e.name}(部署:${e.dept || '未設定'},役職:${e.pos || '未設定'},基本給:${e.base}円)`
-    ).join(', ');
+  if (Array.isArray(body.employees) && body.employees.length > 0) {
+    const sample = body.employees
+      .slice(0, 30)
+      .map(e => {
+        const name = String(e.name || '').slice(0, 20);
+        const dept = String(e.dept || '未設定').slice(0, 20);
+        const pos  = String(e.pos  || '未設定').slice(0, 20);
+        const base = Number(e.base) || 0;
+        return `${name}(部署:${dept},役職:${pos},基本給:${base}円)`;
+      })
+      .join(', ');
     empContext = `\n\n現在の従業員: ${sample}`;
   }
 
@@ -43,7 +65,7 @@ target一覧:
 
 必ずJSON配列のみを出力。余計な説明は禁止。`;
 
-  const userPrompt = `指示: ${body.instruction}${empContext}
+  const userPrompt = `指示: ${instruction}${empContext}
 
 上記の指示をJSON配列で出力してください。
 
@@ -62,87 +84,84 @@ target一覧:
 JSON配列:`;
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 25000);
+  const timeout = setTimeout(() => controller.abort(), 20000);
 
   try {
-    const geminiRes = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-      signal: controller.signal,
-      body: JSON.stringify({
-        model: 'gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature: 0.0,
-        max_tokens: 2048,
-      }),
-    });
+    const geminiRes = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: 'gemini-1.5-flash',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user',   content: userPrompt },
+          ],
+          temperature: 0.0,
+          max_tokens: 1024,
+        }),
+      }
+    );
     clearTimeout(timeout);
 
     if (!geminiRes.ok) {
       const err = await geminiRes.json().catch(() => ({}));
       console.error('[AI] Gemini error:', geminiRes.status, JSON.stringify(err));
-      return res.status(502).json({ error: err?.error?.message || `Gemini APIエラー: ${geminiRes.status}` });
+      return res.status(502).json({ error: 'AI処理に失敗しました。しばらくしてから再試行してください。' });
     }
 
     const data = await geminiRes.json();
     const raw = (data?.choices?.[0]?.message?.content || '').trim();
-    console.log('[AI] raw response:', raw.slice(0, 500));
-
     if (!raw) return res.status(500).json({ error: 'AIが空のレスポンスを返しました' });
 
-    // JSONを抽出（コードブロック・余計なテキストを除去）
     let cleaned = raw.replace(/```json?\s*/g, '').replace(/```/g, '').trim();
-
-    // JSON配列またはオブジェクトをパース
     let rules = [];
     try {
       const parsed = JSON.parse(cleaned);
       if (Array.isArray(parsed)) {
         rules = parsed;
       } else if (parsed && typeof parsed === 'object') {
-        // {"rules": [...]} や {"result": [...]} 等に対応
         const arr = Object.values(parsed).find(v => Array.isArray(v));
         rules = arr || [];
       }
     } catch {
-      // JSON全体がパースできない場合、配列部分だけ抽出
       const m = cleaned.match(/\[[\s\S]*\]/);
-      if (m) {
-        try { rules = JSON.parse(m[0]); } catch { /* ignore */ }
-      }
+      if (m) { try { rules = JSON.parse(m[0]); } catch { /* ignore */ } }
     }
 
-    console.log('[AI] parsed rules before validation:', JSON.stringify(rules));
+    const VALID_TYPES = [
+      'perf_multiply', 'perf_set', 'perf_min',
+      'allowance_add', 'allowance_set',
+      'base_multiply', 'base_add',
+    ];
 
-    const VALID_TYPES = ['perf_multiply', 'perf_set', 'perf_min', 'allowance_add', 'allowance_set', 'base_multiply', 'base_add'];
     const validated = rules
+      .slice(0, 20)
       .filter(r => {
         if (!r || typeof r !== 'object') return false;
         if (!VALID_TYPES.includes(r.type)) return false;
         if (typeof r.target !== 'string') return false;
-        // value を数値に変換（文字列 "1.2" も対応）
         const v = Number(r.value);
         if (!Number.isFinite(v)) return false;
-        r.value = v; // 数値に正規化
+        r.value = v;
         return true;
       })
       .map(r => ({
-        type: r.type,
-        target: r.target,
-        value: r.value,
-        label: typeof r.label === 'string' ? r.label : `${r.type}(${r.target}=${r.value})`
+        type:   r.type,
+        target: String(r.target).slice(0, 50),
+        value:  r.value,
+        label:  typeof r.label === 'string' ? String(r.label).slice(0, 100) : `${r.type}(${r.target}=${r.value})`,
       }));
 
-    console.log(`[AI] "${body.instruction.slice(0, 60)}" → ${validated.length}ルール`);
+    console.log(`[AI] "${instruction.slice(0, 60)}" → ${validated.length}ルール`);
     return res.status(200).json({ rules: validated });
 
   } catch (e) {
     clearTimeout(timeout);
     console.error('[AI] exception:', e.message);
-    if (e.name === 'AbortError') return res.status(504).json({ error: 'タイムアウト（25秒）' });
-    return res.status(500).json({ error: e.message });
+    if (e.name === 'AbortError') return res.status(504).json({ error: 'タイムアウトしました。再試行してください。' });
+    return res.status(500).json({ error: '内部エラーが発生しました。' });
   }
 };
