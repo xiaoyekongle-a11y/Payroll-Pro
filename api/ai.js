@@ -1,28 +1,66 @@
 /**
  * /api/ai — CalcAI 給与ルール解析
+ * Gemini不使用・正規表現パターンマッチのみで動作（レート制限なし）
  */
 
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '';
 
+function parseRules(instruction) {
+  const rules = [];
 
+  instruction.split('\n').forEach(line => {
+    const l = line.trim();
+    if (!l) return;
 
-// 429リトライ（指数バックオフ、最大3回）
-async function callGeminiWithRetry(url, options, maxRetries = 3) {
-  let lastStatus = 0;
-  let lastText = '';
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    if (attempt > 0) {
-      const delay = 1000 * Math.pow(2, attempt - 1); // 1s, 2s
-      await new Promise(r => setTimeout(r, delay));
-    }
-    const res = await fetch(url, options);
-    if (res.status !== 429) return res;
-    lastStatus = res.status;
-    lastText = await res.text().catch(() => '');
-    console.warn(`[GEMINI] 429 rate limit, attempt ${attempt + 1}/${maxRetries}`);
-  }
-  // 全リトライ失敗：429をそのまま返す疑似Responseを作る
-  return { ok: false, status: 429, text: async () => lastText };
+    // ① 全員への倍率
+    const mAll = l.match(/(?:全員|全社員|全スタッフ|みんな).*?(\d+\.?\d*)\s*倍/);
+    if (mAll) { rules.push({ type: 'perf_multiply', target: 'all', value: Number(mAll[1]), label: '全員×' + mAll[1] + '倍' }); return; }
+
+    // ② 基本給・給与を倍率変更（全員）
+    const mBase = l.match(/(?:給与|給料|基本給).*?(?:全員|全社員)?.*?(\d+\.?\d*)\s*倍/);
+    if (mBase) { rules.push({ type: 'base_multiply', target: 'all', value: Number(mBase[1]), label: '全員基本給×' + mBase[1] + '倍' }); return; }
+
+    // ③ 部署への倍率
+    const mDept = l.match(/([^\s]+[部課室グループ]).*?(\d+\.?\d*)\s*倍/);
+    if (mDept) { rules.push({ type: 'perf_multiply', target: 'dept:' + mDept[1], value: Number(mDept[2]), label: mDept[1] + '×' + mDept[2] + '倍' }); return; }
+
+    // ④ 役職への倍率
+    const mPos = l.match(/([^\s]+(?:長|役|員|部長|課長|主任|マネージャー|リーダー)).*?(\d+\.?\d*)\s*倍/);
+    if (mPos) { rules.push({ type: 'perf_multiply', target: 'pos:' + mPos[1], value: Number(mPos[2]), label: mPos[1] + '×' + mPos[2] + '倍' }); return; }
+
+    // ⑤ 全員への手当追加
+    const mAdd = l.match(/(?:全員|全社員).*?(\d{3,8})\s*円/);
+    if (mAdd) { rules.push({ type: 'allowance_add', target: 'all', value: Number(mAdd[1]), label: '全員手当+' + mAdd[1] + '円' }); return; }
+
+    // ⑥ 部署への手当追加
+    const mDeptAdd = l.match(/([^\s]+[部課室グループ]).*?(\d{3,8})\s*円/);
+    if (mDeptAdd) { rules.push({ type: 'allowance_add', target: 'dept:' + mDeptAdd[1], value: Number(mDeptAdd[2]), label: mDeptAdd[1] + '手当+' + mDeptAdd[2] + '円' }); return; }
+
+    // ⑦ 個人への係数設定
+    const mName = l.match(/([^\s]{2,10})(?:さん|の係数|の評価).*?(\d+\.?\d*)/);
+    if (mName) { rules.push({ type: 'perf_set', target: 'name:' + mName[1], value: Number(mName[2]), label: mName[1] + 'の係数' + mName[2] }); return; }
+
+    // ⑧ 係数を固定値に（全員）
+    const mSet = l.match(/(?:係数|全員)\s*(\d+\.?\d*)\s*(?:固定|に設定|にする)/);
+    if (mSet) { rules.push({ type: 'perf_set', target: 'all', value: Number(mSet[1]), label: '係数' + mSet[1] + '固定' }); return; }
+
+    // ⑨ 最低係数保証
+    const mMin = l.match(/(?:最低|以上|以下.*引き上げ|保証).*?(\d+\.?\d*)/);
+    if (mMin) { rules.push({ type: 'perf_min', target: 'all', value: Number(mMin[1]), label: '係数最低' + mMin[1] + '保証' }); return; }
+
+    // ⑩ 基本給に加算（全員）
+    const mBaseAdd = l.match(/(?:全員|全社員).*?基本給.*?\+?(\d{3,8})\s*円/);
+    if (mBaseAdd) { rules.push({ type: 'base_add', target: 'all', value: Number(mBaseAdd[1]), label: '全員基本給+' + mBaseAdd[1] + '円' }); return; }
+
+    // ⑪ 部署への基本給倍率（%表記）
+    const mDeptPct = l.match(/([^\s]+[部課室グループ]).*?[+＋](\d+\.?\d*)\s*%/);
+    if (mDeptPct) { rules.push({ type: 'base_multiply', target: 'dept:' + mDeptPct[1], value: 1 + Number(mDeptPct[2]) / 100, label: mDeptPct[1] + '基本給+' + mDeptPct[2] + '%' }); return; }
+
+    const mDeptPctMinus = l.match(/([^\s]+[部課室グループ]).*?[-－](\d+\.?\d*)\s*%/);
+    if (mDeptPctMinus) { rules.push({ type: 'base_multiply', target: 'dept:' + mDeptPctMinus[1], value: 1 - Number(mDeptPctMinus[2]) / 100, label: mDeptPctMinus[1] + '基本給-' + mDeptPctMinus[2] + '%' }); return; }
+  });
+
+  return rules;
 }
 
 module.exports = async function handler(req, res) {
@@ -39,9 +77,6 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: 'サーバー設定エラー' });
-
   let body = req.body;
   if (typeof body === 'string') {
     try { body = JSON.parse(body); } catch { return res.status(400).json({ error: 'リクエスト形式が不正です' }); }
@@ -49,139 +84,8 @@ module.exports = async function handler(req, res) {
   if (!body?.instruction) return res.status(400).json({ error: 'instruction が必要です' });
 
   const instruction = String(body.instruction).slice(0, 500);
+  const rules = parseRules(instruction);
 
-  let empContext = '';
-  if (Array.isArray(body.employees) && body.employees.length > 0) {
-    const sample = body.employees
-      .slice(0, 30)
-      .map(e => {
-        const name = String(e.name || '').slice(0, 20);
-        const dept = String(e.dept || '未設定').slice(0, 20);
-        const pos  = String(e.pos  || '未設定').slice(0, 20);
-        const base = Number(e.base) || 0;
-        return `${name}(部署:${dept},役職:${pos},基本給:${base}円)`;
-      })
-      .join(', ');
-    empContext = `\n\n現在の従業員: ${sample}`;
-  }
-
-  const systemPrompt = `あなたは給与計算ルールのJSONパーサーです。
-ユーザーの自然言語指示を以下のJSON配列に変換してください。
-
-ルールtype一覧:
-- perf_multiply: 業績係数を掛ける (value=倍率, 例:1.2)
-- perf_set: 業績係数を固定 (value=係数, 例:1.5)
-- perf_min: 係数の最低保証 (value=最低値, 例:1.0)
-- allowance_add: 手当を追加 (value=円, 例:5000)
-- allowance_set: 手当を固定 (value=円, 例:30000)
-- base_multiply: 基本給を倍率変更 (value=倍率, 例:1.05)
-- base_add: 基本給を加算 (value=円, 例:10000)
-
-target一覧:
-- "all": 全員
-- "dept:営業部": 特定部署
-- "pos:部長": 特定役職
-- "name:田中": 特定個人
-
-必ずJSON配列のみを出力。余計な説明は禁止。`;
-
-  const userPrompt = `指示: ${instruction}${empContext}
-
-上記の指示をJSON配列で出力してください。
-
-例1: "全員の給与を2倍にする"
-→ [{"type":"perf_multiply","target":"all","value":2.0,"label":"全員×2倍"}]
-
-例2: "営業部に5000円の手当を追加"
-→ [{"type":"allowance_add","target":"dept:営業部","value":5000,"label":"営業部に手当5000円追加"}]
-
-例3: "田中さんの係数を1.5に固定して、全員に交通費3000円追加"
-→ [{"type":"perf_set","target":"name:田中","value":1.5,"label":"田中の係数1.5固定"},{"type":"allowance_add","target":"all","value":3000,"label":"全員に交通費3000円"}]
-
-例4: "開発部の基本給を+20%して、営業部を-10%する"
-→ [{"type":"base_multiply","target":"dept:開発部","value":1.2,"label":"開発部基本給+20%"},{"type":"base_multiply","target":"dept:営業部","value":0.9,"label":"営業部基本給-10%"}]
-
-JSON配列:`;
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 20000);
-
-  try {
-    const geminiRes = await callGeminiWithRetry(
-      'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-        signal: controller.signal,
-        body: JSON.stringify({
-          model: 'gemini-2.0-flash',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user',   content: userPrompt },
-          ],
-          temperature: 0.0,
-          max_tokens: 1024,
-        }),
-      }
-    );
-    clearTimeout(timeout);
-
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text().catch(() => '');
-      console.error('[AI] Gemini error:', geminiRes.status, errText.slice(0, 500));
-      return res.status(502).json({ error: `AI処理に失敗しました (${geminiRes.status})。しばらくしてから再試行してください。` });
-    }
-
-    const data = await geminiRes.json();
-    const raw = (data?.choices?.[0]?.message?.content || '').trim();
-    if (!raw) return res.status(500).json({ error: 'AIが空のレスポンスを返しました' });
-
-    let cleaned = raw.replace(/```json?\s*/g, '').replace(/```/g, '').trim();
-    let rules = [];
-    try {
-      const parsed = JSON.parse(cleaned);
-      if (Array.isArray(parsed)) {
-        rules = parsed;
-      } else if (parsed && typeof parsed === 'object') {
-        const arr = Object.values(parsed).find(v => Array.isArray(v));
-        rules = arr || [];
-      }
-    } catch {
-      const m = cleaned.match(/\[[\s\S]*\]/);
-      if (m) { try { rules = JSON.parse(m[0]); } catch { /* ignore */ } }
-    }
-
-    const VALID_TYPES = [
-      'perf_multiply', 'perf_set', 'perf_min',
-      'allowance_add', 'allowance_set',
-      'base_multiply', 'base_add',
-    ];
-
-    const validated = rules
-      .slice(0, 20)
-      .filter(r => {
-        if (!r || typeof r !== 'object') return false;
-        if (!VALID_TYPES.includes(r.type)) return false;
-        if (typeof r.target !== 'string') return false;
-        const v = Number(r.value);
-        if (!Number.isFinite(v)) return false;
-        r.value = v;
-        return true;
-      })
-      .map(r => ({
-        type:   r.type,
-        target: String(r.target).slice(0, 50),
-        value:  r.value,
-        label:  typeof r.label === 'string' ? String(r.label).slice(0, 100) : `${r.type}(${r.target}=${r.value})`,
-      }));
-
-    console.log(`[AI] "${instruction.slice(0, 60)}" → ${validated.length}ルール`);
-    return res.status(200).json({ rules: validated });
-
-  } catch (e) {
-    clearTimeout(timeout);
-    console.error('[AI] exception:', e.message);
-    if (e.name === 'AbortError') return res.status(504).json({ error: 'タイムアウトしました。再試行してください。' });
-    return res.status(500).json({ error: '内部エラーが発生しました。' });
-  }
+  console.log(`[AI] "${instruction.slice(0, 60)}" → ${rules.length}ルール`);
+  return res.status(200).json({ rules });
 };
