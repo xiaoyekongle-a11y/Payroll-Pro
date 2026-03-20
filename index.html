@@ -5161,14 +5161,15 @@
           btn.disabled = false; btn.textContent = 'ログイン';
           showAuthErr('loginErr', authErrMsg(error.message));
         } else {
-          btn.textContent = '接続中...';
-          // 10秒以内に画面遷移しなければボタンを復元（固まり防止）
+          btn.textContent = 'サーバー起動中...';
+          showAuthErr('loginErr', '初回アクセス時はサーバー起動に15〜30秒かかる場合があります。このままお待ちください。');
+          // 30秒以内に画面遷移しなければボタンを復元
           setTimeout(() => {
             if (btn.disabled) {
               btn.disabled = false; btn.textContent = 'ログイン';
-              showAuthErr('loginErr', '接続がタイムアウトしました。再度お試しください。');
+              showAuthErr('loginErr', '接続がタイムアウトしました。もう一度ログインボタンを押してください。');
             }
-          }, 10000);
+          }, 30000);
         }
       });
 
