@@ -6930,10 +6930,6 @@
       $('attEmpSelect').addEventListener('change', e => { attEmpId = e.target.value || null; loadAttRecords(); });
 
       // ══ 年末調整 ══
-      $('btnYearendPDF').addEventListener('click', () => {
-        if (!yearendEditEmpId) { showToast('従業員を選択してください', 'error'); return; }
-        /* 源泉徴収票PDF生成機能は削除済み */
-      });
       $('btnYearendCSV').addEventListener('click', exportYearendCSV);
       /* 年末調整一括確定機能は削除済み */
 
@@ -8565,7 +8561,7 @@
           `${acResults.length}名 ／ 支給額合計 ${fmtY(tG)}${tBG > 0 ? ' ／ ボーナス ' + fmtY(tBG) : ''} ／ 手取り合計 ${fmtY(tN)}`;
       });
       document.getElementById('acBtnRestart')?.addEventListener('click', acReset);
-      document.getElementById('acBtnTemplate')?.addEventListener('click', downloadImportTemplate);
+      document.getElementById('acBtnTemplate')?.addEventListener('click', () => window.downloadImportTemplate?.());
 
       // Salario給与計算へ反映
       document.getElementById('acBtnSendToSalario')?.addEventListener('click', () => {
