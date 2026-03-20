@@ -5352,9 +5352,7 @@
       let _justJoined = false;
 
       async function loadCompanyList(uid) {
-        console.log('[LCL] start uid:', uid);
         let members = await dbGetAll('company_users', { user_id: uid });
-        console.log('[LCL] members:', members.length);
 
         // 招待参加直後のみ最大3回リトライ（RLS反映遅延対策・通常ログインには影響しない）
         if (!members.length && _justJoined) {
@@ -5381,11 +5379,9 @@
         const cids = members.map(m => m.company_id);
         let companiesRaw = [];
         try {
-          console.log('[LCL] fetching companies for cids:', cids);
           const { data, error } = await sb.from('companies').select('*').in('id', cids);
           if (error) throw error;
           companiesRaw = data || [];
-          console.log('[LCL] companies fetched:', companiesRaw.length);
         } catch (e) { console.warn('[PA] companies fetch', e.message); }
         const companyMap = Object.fromEntries(companiesRaw.map(c => [c.id, c]));
         const companies = members.map(m => { const c = companyMap[m.company_id]; return c ? { ...c, role: m.role } : null; }).filter(Boolean);
@@ -7024,18 +7020,14 @@
       if (window.__PA_AUTH_UNSUB) { try { window.__PA_AUTH_UNSUB(); } catch (_) { } }
 
       const { data: { subscription } } = sb.auth.onAuthStateChange(async (event, session) => {
-        console.log('[AUTH] event:', event, 'session:', !!session, 'uid:', session?.user?.id);
-        console.log('[AUTH] localStorage pa_auth:', !!localStorage.getItem('pa_auth'));
 
         // INITIAL_SESSION = Supabase初期化完了の合図（session有無に関わらず必ずフラグを立てる）
         if (event === 'INITIAL_SESSION') {
           _initializeDone = true;
-          console.log('[AUTH] INITIAL_SESSION → initDone=true, session:', !!session);
         }
 
         // _initialize完了前に発火するSIGNED_INはスキップ。
         if (event === 'SIGNED_IN' && !_initializeDone) {
-          console.log('[AUTH] skipped: SIGNED_IN before INITIAL_SESSION');
           return;
         }
 
@@ -7055,12 +7047,11 @@
         if (event === 'TOKEN_REFRESHED') return;
 
         // 処理中のみスキップ（同じユーザーの再ログインは通す）
-        if (_isHandlingAuth) { console.log('[AUTH] skipped: isHandlingAuth'); return; }
+        if (_isHandlingAuth) return;
 
         // appScreenが既に表示されていて同じユーザーならスキップ
         const uid = session.user.id;
         const appVisible = document.getElementById('appScreen')?.classList.contains('active');
-        if (appVisible && _lastHandledUserId === uid) { console.log('[AUTH] skipped: already loaded'); return; }
 
         _isHandlingAuth = true;
         _lastHandledUserId = uid;
@@ -7069,9 +7060,7 @@
           const user = session.user;
           currentUser = { id: user.id, email: user.email, name: user.user_metadata?.name || user.email };
 
-          console.log('[AUTH] calling loadCompanyList...');
           await loadCompanyList(user.id);
-          console.log('[AUTH] loadCompanyList done');
         } catch (e) {
           console.error('[PA] auth handler error:', e);
           _lastHandledUserId = null;
