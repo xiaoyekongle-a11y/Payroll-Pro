@@ -5,6 +5,26 @@
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '';
 
 
+
+// 429リトライ（指数バックオフ、最大3回）
+async function callGeminiWithRetry(url, options, maxRetries = 3) {
+  let lastStatus = 0;
+  let lastText = '';
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    if (attempt > 0) {
+      const delay = 1000 * Math.pow(2, attempt - 1); // 1s, 2s
+      await new Promise(r => setTimeout(r, delay));
+    }
+    const res = await fetch(url, options);
+    if (res.status !== 429) return res;
+    lastStatus = res.status;
+    lastText = await res.text().catch(() => '');
+    console.warn(`[GEMINI] 429 rate limit, attempt ${attempt + 1}/${maxRetries}`);
+  }
+  // 全リトライ失敗：429をそのまま返す疑似Responseを作る
+  return { ok: false, status: 429, text: async () => lastText };
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
 
@@ -62,7 +82,7 @@ module.exports = async function handler(req, res) {
   const timeout = setTimeout(() => controller.abort(), 15000);
 
   try {
-    const geminiRes = await fetch(
+    const geminiRes = await callGeminiWithRetry(
       'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
       {
         method: 'POST',
