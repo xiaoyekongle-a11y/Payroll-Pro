@@ -5116,6 +5116,7 @@
 
       /* ── State ── */
       let currentUser = null, currentCompany = null, employees = [], lockedPeriods = new Set();
+      let _initializeDone = false;
       let taxRates = { hRate: 5.0, pRate: 9.15, eRate: 0.6, mRate: 10.0 };
       let currentPeriod = '', editingId = null, allowances = [], trendChartObj = null;
 
@@ -7025,6 +7026,14 @@
       const { data: { subscription } } = sb.auth.onAuthStateChange(async (event, session) => {
         console.log('[AUTH] event:', event, 'session:', !!session, 'uid:', session?.user?.id);
         console.log('[AUTH] localStorage pa_auth:', !!localStorage.getItem('pa_auth'));
+
+        // _initialize完了前に発火するSIGNED_INはスキップ。
+        // INITIAL_SESSION（初期化完了後）またはログインボタン押下後のSIGNED_INのみ処理する。
+        if (event === 'SIGNED_IN' && !_initializeDone) {
+          console.log('[AUTH] skipped: SIGNED_IN before INITIAL_SESSION');
+          return;
+        }
+
         // ログアウト・セッション切れ
         if (!session) {
           _lastHandledUserId = null;
@@ -7036,6 +7045,9 @@
           showScreen('authScreen');
           return;
         }
+
+        // INITIAL_SESSION = Supabaseの_initialize完了の合図
+        if (event === 'INITIAL_SESSION') { _initializeDone = true; console.log('[AUTH] INITIAL_SESSION received, init done'); }
 
         // TOKEN_REFRESHED は画面遷移済みなら無視
         if (event === 'TOKEN_REFRESHED') return;
@@ -7055,11 +7067,6 @@
           const user = session.user;
           currentUser = { id: user.id, email: user.email, name: user.user_metadata?.name || user.email };
 
-          // Supabase初期化中（_recoverAndRefresh）にSIGNED_INが発火する場合、
-          // JWTがまだセットされずRLSで弾かれる。
-          // 初期化完了を待つため1秒遅延してからクエリを実行する。
-          console.log('[AUTH] waiting 1s for Supabase init...');
-          await new Promise(r => setTimeout(r, 1000));
           console.log('[AUTH] calling loadCompanyList...');
           await loadCompanyList(user.id);
           console.log('[AUTH] loadCompanyList done');
