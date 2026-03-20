@@ -2131,97 +2131,6 @@
       }
     }
 
-    /* ═══════════ AI CHAT BUBBLE UI ═══════════ */
-    .ac-chat-bubble {
-      padding: 0.6rem 0.85rem;
-      border-radius: 12px;
-      margin-bottom: 0.55rem;
-      font-size: 0.78rem;
-      line-height: 1.65;
-      animation: acBubbleIn 0.3s cubic-bezier(0.34, 1.4, 0.64, 1);
-      max-width: 92%;
-      word-wrap: break-word;
-    }
-
-    .ac-chat-bubble.user {
-      background: var(--accent);
-      color: #fff;
-      margin-left: auto;
-      border-bottom-right-radius: 4px;
-      box-shadow: 0 2px 8px rgba(26, 86, 219, 0.25);
-    }
-
-    .ac-chat-bubble.ai {
-      background: var(--surface-2);
-      color: var(--ink);
-      border: 1px solid var(--border);
-      border-bottom-left-radius: 4px;
-      box-shadow: var(--sh-xs);
-    }
-
-    .ac-chat-bubble.ai b {
-      color: var(--accent)
-    }
-
-    @keyframes acBubbleIn {
-      from {
-        opacity: 0;
-        transform: translateY(8px) scale(0.95)
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0) scale(1)
-      }
-    }
-
-    /* タイピングインジケーター */
-    .ac-typing {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 0.5rem 0.85rem;
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      border-bottom-left-radius: 4px;
-      margin-bottom: 0.55rem;
-    }
-
-    .ac-typing-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--muted);
-      animation: acTypingBounce 1.4s infinite ease-in-out both;
-    }
-
-    .ac-typing-dot:nth-child(1) {
-      animation-delay: 0s
-    }
-
-    .ac-typing-dot:nth-child(2) {
-      animation-delay: 0.16s
-    }
-
-    .ac-typing-dot:nth-child(3) {
-      animation-delay: 0.32s
-    }
-
-    @keyframes acTypingBounce {
-
-      0%,
-      80%,
-      100% {
-        transform: scale(0.6);
-        opacity: 0.4
-      }
-
-      40% {
-        transform: scale(1);
-        opacity: 1
-      }
-    }
 
     /* ═══════════ AI調整行ハイライト ═══════════ */
     tr.ac-ai-row td {
@@ -2839,74 +2748,6 @@
     .ye-refund-neg {
       color: var(--red);
       font-weight: 700
-    }
-
-    /* ═══════════ TRANSFER ═══════════ */
-    .transfer-tbl {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.79rem
-    }
-
-    .transfer-tbl th {
-      background: var(--surface-2);
-      padding: 0.5rem 0.65rem;
-      text-align: left;
-      font-size: 0.63rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--muted);
-      border-bottom: 2px solid var(--border);
-    }
-
-    .transfer-tbl td {
-      padding: 0.55rem 0.65rem;
-      border-bottom: 1px solid var(--border-2);
-      vertical-align: middle
-    }
-
-    .transfer-tbl tr:hover td {
-      background: var(--surface-3);
-      transition: background var(--t)
-    }
-
-    .transfer-check {
-      width: 16px;
-      height: 16px;
-      cursor: pointer;
-      accent-color: var(--accent)
-    }
-
-    .transfer-bank {
-      font-size: 0.7rem;
-      color: var(--muted)
-    }
-
-    .transfer-amount {
-      font-family: var(--font-mono);
-      font-weight: 700;
-      text-align: right;
-      color: var(--green)
-    }
-
-    .transfer-total-bar {
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: var(--r);
-      padding: 0.65rem 1rem;
-      margin: 0.75rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.82rem;
-    }
-
-    .transfer-total-amount {
-      font-family: var(--font-mono);
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--green)
     }
 
     /* ═══════════ SHAHOU ═══════════ */
@@ -3838,6 +3679,8 @@
       }
     }
 
+
+
     @media (max-width: 480px) {
       .app-header {
         gap: 0.2rem;
@@ -3981,6 +3824,7 @@
       <button class="header-btn" id="btnDarkMode">🌙</button>
       <button class="header-btn" id="btnSignOut">ログアウト</button>
     </header>
+
     <nav class="nav-tabs">
       <div class="nav-tab" data-page="calcai">⚡ CalcAI</div>
       <div class="nav-tab active" data-page="dashboard">📊 ダッシュボード</div>
@@ -3990,7 +3834,6 @@
       <!-- 詳細機能（設定画面から有効化） -->
       <div class="nav-tab advanced-nav" data-page="attendance" style="display:none">🕐 勤怠</div>
       <div class="nav-tab advanced-nav" data-page="yearend" style="display:none">📋 年末調整</div>
-      <div class="nav-tab owner-only advanced-nav" data-page="transfer" style="display:none">🏦 振込</div>
       <div class="nav-tab owner-only advanced-nav" data-page="shahou" style="display:none">🏛 社保</div>
       <div class="nav-tab advanced-nav" data-page="taxrates" style="display:none">⚙ 税率</div>
       <div class="nav-tab owner-only advanced-nav" data-page="users" style="display:none">👤 ユーザー</div>
@@ -4095,12 +3938,7 @@
                 <span style="font-size:1.3rem">📋</span>
                 <span style="font-size:0.72rem;font-weight:700">年末調整</span>
               </button>
-              <button class="btn btn-secondary owner-only"
-                style="flex-direction:column;gap:0.3rem;padding:0.85rem;height:auto;align-items:center"
-                onclick="showPage('transfer')">
-                <span style="font-size:1.3rem">💳</span>
-                <span style="font-size:0.72rem;font-weight:700">振込管理</span>
-              </button>
+
               <button class="btn btn-secondary owner-only"
                 style="flex-direction:column;gap:0.3rem;padding:0.85rem;height:auto;align-items:center"
                 onclick="showPage('shahou')">
@@ -4137,7 +3975,7 @@
             <button class="btn btn-sm btn-blue" id="btnPDF">🖨 PDF</button>
             <button class="btn btn-sm btn-secondary" id="btnExcel">📗 Excel</button>
             <button class="btn btn-sm btn-secondary" id="btnCSV">📄 CSV</button>
-            <button class="btn btn-sm btn-secondary" id="btnYayoi" title="弥生給与インポート用CSV">📊 弥生CSV</button>
+            <button class="btn btn-sm btn-secondary" id="btnYayoi" title="会計ソフト用CSV">📊 会計CSV</button>
           </div>
           <div class="btn-cluster">
             <span class="cluster-label">入力</span>
@@ -4396,6 +4234,7 @@
             </div>
           </div>
         </div>
+
       </div>
       <!-- ══ 勤怠管理ページ ══ -->
       <div class="page" id="pageAttendance">
@@ -4479,32 +4318,7 @@
           </div>
         </div>
       </div>
-      <!-- ══ 振込管理ページ ══ -->
-      <div class="page" id="pageTransfer">
-        <div class="period-bar">
-          <div class="period-bar-left">
-            <label class="period-label">対象年月</label>
-            <select id="transferPeriodSel"
-              style="padding:0.4rem 0.65rem;border:1.5px solid var(--border);border-radius:var(--radius);font-family:var(--font-mono);font-size:0.82rem"></select>
-          </div>
-          <div style="flex:1"></div>
-          <div class="btn-cluster">
-            <span class="cluster-label">振込操作</span>
-            <button class="btn btn-sm btn-blue" id="btnTransferLoad">🔄 振込データ作成</button>
-            <button class="btn btn-sm btn-secondary" id="btnTransferFB">📥 FBファイル生成</button>
-            <button class="btn btn-sm btn-green" id="btnTransferMarkSent">✅ 振込済みにマーク</button>
-          </div>
-        </div>
-        <div class="panel">
-          <div class="panel-header">💳 振込データ一覧 <span id="transferSummary"
-              style="font-size:0.72rem;color:var(--muted);margin-left:0.5rem"></span></div>
-          <div class="panel-body" style="padding:0">
-            <div id="transferList" style="padding:0.75rem">
-              <p style="font-size:0.8rem;color:var(--muted)">「振込データ作成」ボタンで確定済み給与から自動生成します</p>
-            </div>
-          </div>
-        </div>
-      </div>
+
       <!-- ══ 社保届出ページ（Sprint 9） ══ -->
       <div class="page" id="pageShahou">
         <div class="period-bar">
@@ -4695,19 +4509,7 @@
                   </div>
                 </div>
 
-                <!-- AIチャット（強化機能） -->
-                <div id="acChatWrap"
-                  style="display:none;margin-bottom:0.85rem;border:1px solid var(--border);border-radius:var(--r);overflow:hidden">
-                  <div
-                    style="background:var(--surface-2);padding:0.4rem 0.75rem;font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;display:flex;justify-content:space-between;align-items:center">
-                    <span>🤖 AI会話ログ</span>
-                    <button onclick="document.getElementById('acChatWrap').style.display='none'"
-                      style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.8rem">✕</button>
-                  </div>
-                  <div id="acChatLog"
-                    style="max-height:200px;overflow-y:auto;padding:0.65rem 0.75rem;font-size:0.78rem;line-height:1.7">
-                  </div>
-                </div>
+
 
                 <!-- 進捗バー -->
                 <div id="acProgressWrap" style="display:none;margin-bottom:0.75rem">
@@ -4730,26 +4532,7 @@
               </div>
             </div>
 
-            <!-- 右: AIチャット入力（強化機能） -->
-            <div>
-              <div class="panel">
-                <div class="panel-header">💬 AIに質問する</div>
-                <div class="panel-body" style="padding:0.75rem">
-                  <p style="font-size:0.72rem;color:var(--muted);margin-bottom:0.65rem">
-                    給与ルールについて AIに自由に質問できます。
-                  </p>
-                  <textarea id="acChatInput" rows="3"
-                    style="width:100%;padding:0.45rem 0.65rem;border:1px solid var(--border);border-radius:var(--r);font-family:var(--font-body);font-size:0.8rem;background:var(--surface);color:var(--ink);resize:vertical;margin-bottom:0.5rem"
-                    placeholder="例：&#10;どんな指示が使えますか？&#10;部署と個人を同時に指定できますか？"></textarea>
-                  <button class="btn btn-secondary btn-sm" style="width:100%" id="acBtnChat">
-                    💬 AIに質問する
-                  </button>
-                  <div id="acChatAnswer"
-                    style="display:none;margin-top:0.65rem;font-size:0.78rem;line-height:1.7;padding:0.5rem 0.65rem;background:var(--surface-2);border-radius:var(--r);border:1px solid var(--border)">
-                  </div>
-                </div>
-              </div>
-            </div>
+
 
           </div>
         </div>
@@ -4802,15 +4585,7 @@
                       <button class="btn btn-secondary btn-sm" style="width:100%" id="acBtnDlLedger">⬇ Excel DL</button>
                     </div>
                   </div>
-                  <div class="ac-output-card" style="grid-column:span 2">
-                    <div style="display:flex;align-items:center;justify-content:space-between">
-                      <div style="text-align:left">
-                        <div style="font-size:0.82rem;font-weight:700;margin-bottom:0.1rem">💳 振込データ</div>
-                        <div style="font-size:0.7rem;color:var(--muted)">銀行振込用CSV</div>
-                      </div>
-                      <button class="btn btn-secondary btn-sm" id="acBtnDlTransfer">⬇ CSV DL</button>
-                    </div>
-                  </div>
+
                 </div>
               </div>
               <div class="panel">
@@ -4843,6 +4618,7 @@
     <!-- フッター -->
     <footer class="app-footer">
       <span>Salario v1.0 — 人件費経営プラットフォーム</span>
+      <span style="color:var(--muted-2);font-size:0.6rem">本ツールは給与計算の補助を目的としています。計算結果は参考値であり、正確性・適法性を保証するものではありません。税務・労務上の判断は税理士・社会保険労務士にご相談ください。</span>
       <div class="footer-links">
         <a href="#" id="footerHelp">❓ ヘルプ</a>
         <a href="#" id="footerTerms">📜 利用規約</a>
@@ -5154,7 +4930,7 @@
         { emoji: '⚡', title: 'CalcAI — AI給与計算', desc: 'Excelをアップロードし、自然言語で指示するだけで\n給与計算 → Excel出力まで完結します。' },
         { emoji: '📊', title: 'ダッシュボード', desc: '人件費推移・部署別コスト・扶養の壁アラートなど\n経営に必要な指標を一目で確認できます。' },
         { emoji: '📝', title: '給与計算', desc: '個別の従業員登録・計算・PDF明細発行が可能。\n前月データのコピーやCSV/Excelインポートにも対応。' },
-        { emoji: '🏢', title: 'その他の機能', desc: '勤怠管理・年末調整・振込管理・社保届出など\n給与業務をまるごとカバーします。' },
+        { emoji: '🏢', title: 'その他の機能', desc: '勤怠管理・年末調整・社保届出など\n給与業務をまるごとカバーします。' },
         { emoji: '🚀', title: '準備完了！', desc: 'さっそくCalcAIから始めてみましょう。\nヘッダーの🔔で操作ログ、?キーでショートカット一覧を確認できます。' },
       ];
       let _onboardStep = 0;
@@ -5200,11 +4976,17 @@
       });
       $('footerTerms')?.addEventListener('click', (e) => {
         e.preventDefault();
-        showModal('利用規約', '<p style="font-size:0.78rem;line-height:1.8;color:var(--muted)">Salarioの利用に際しては、本規約に同意いただいたものとみなします。給与計算結果はあくまで参考値であり、正確性については利用者ご自身の責任にてご確認ください。</p>', '閉じる', 'btn-secondary', () => { });
+        showModal('利用規約', `<div style="font-size:0.78rem;line-height:2;color:var(--muted)">
+          <p style="font-weight:700;color:var(--ink);margin-bottom:0.5rem">■ 本サービスの位置づけ</p>
+          <p>Salarioは<b>給与計算の補助ツール</b>です。本サービスが提供する計算結果・情報はすべて参考値であり、正確性・完全性・適法性を一切保証しません。税務申告・社会保険手続き・労務管理などの最終判断は、必ず税理士・社会保険労務士・弁護士等の有資格専門家にご確認ください。</p>
+          <p style="margin-top:0.75rem;font-weight:700;color:var(--ink)">■ 免責事項</p>
+          <p>本サービスの利用により生じた損害（計算誤り・法令違反・データ損失等）について、当社は一切の責任を負いません。利用者ご自身の責任においてご使用ください。</p>
+
+        </div>`, '閉じる', 'btn-secondary', () => { });
       });
       $('footerPrivacy')?.addEventListener('click', (e) => {
         e.preventDefault();
-        showModal('プライバシーポリシー', '<p style="font-size:0.78rem;line-height:1.8;color:var(--muted)">Salarioは、お客様の個人情報・給与データを厳重に管理し、第三者へ提供することはありません。データはSupabaseのセキュアなインフラ上に暗号化して保存されます。</p>', '閉じる', 'btn-secondary', () => { });
+        showModal('プライバシーポリシー', '<p style="font-size:0.78rem;line-height:1.8;color:var(--muted)">Salarioは、お客様の個人情報・給与データを厳重に管理し、第三者へ提供することはありません。データはSupabaseのセキュアなインフラ上に暗号化して保存されます。取得する情報：メールアドレス・会社名・給与計算データ。利用目的：本サービスの提供・改善のみ。お問い合わせはサポートページよりご連絡ください。</p>', '閉じる', 'btn-secondary', () => { });
       });
 
       /* ── Calc engine ── */
@@ -5615,9 +5397,6 @@
           depts: company.depts || ['営業部', '開発部', '管理部', '製造部', '企画部'],
           invite_code: company.invite_code || '', industry: company.industry || '',
           address: company.address || '', phone: company.phone || '', logo_url: company.logo_url || '',
-          // プラン情報
-
-          isActive: true, // initApp内で再評価
         };
         await initApp();
       }
@@ -5632,16 +5411,6 @@
         const isEditor = role === 'editor' || role === 'owner' || role === 'admin';
         document.querySelectorAll('.owner-only').forEach(el => el.style.display = isOwner ? '' : 'none');
         document.querySelectorAll('.editor-only').forEach(el => el.style.display = isEditor ? '' : 'none');
-
-        // プランステータス評価・バナー表示
-
-        // Stripeチェックアウト完了検知
-        const urlParams = new URLSearchParams(location.search);
-        if (urlParams.get('checkout') === 'success') {
-          history.replaceState(null, '', location.pathname);
-          // DB更新を待ってリロード
-          setTimeout(() => location.reload(), 2000);
-        }
 
         await loadTaxRates();
         buildPeriodSelector();
@@ -5668,7 +5437,6 @@
         // 新機能初期化
         buildAttPeriodSelector();
         buildYearendYearSelector();
-        buildTransferPeriodSelector();
         buildShahouPeriodSelector();
         showScreen('appScreen'); showPage('dashboard'); initDarkMode();
         // SaaS品質機能初期化
@@ -6386,12 +6154,12 @@
         showToast(`CSVをダウンロードしました（${empList.length}名）`, 'success');
       }
 
-      /* ══ 弥生給与CSVエクスポート ══ */
+      /* ══ 会計ソフト用CSVエクスポート ══ */
       function exportYayoiCSV(empList, period) {
         if (!empList || empList.length === 0) { showToast('データがありません', 'error'); return; }
         const [y, m] = period.split('-');
         const iTotal = e => (e.hRate || 0) + (e.pRate || 0) + (e.eRate || 0) || 1;
-        // 弥生給与インポート標準フォーマット（社員コード,氏名,支給額,控除合計,...）
+        // 会計ソフト汎用インポートフォーマット（社員コード,氏名,支給額,控除合計,...）
         const headers = ['社員コード', '氏名', '基本給', '支給合計', '健保', '厚年', '雇保', '所得税', '住民税', '控除合計', '手取り'];
         const rows = empList.map((e, i) => {
           const hIns = Math.round(e.insurance * ((e.hRate || 0) / iTotal(e)));
@@ -6403,8 +6171,8 @@
         const csv = '\uFEFF' + [headers, ...rows].map(r => r.map(v => typeof v === 'string' && v.includes(',') ? `"${v}"` : v).join(',')).join('\r\n');
         const a = document.createElement('a');
         a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-        a.download = `弥生_${y}${m}.csv`; a.click();
-        showToast('弥生給与用CSVを出力しました', 'success');
+        a.download = `会計_${y}${m}.csv`; a.click();
+        showToast('会計ソフト用CSVを出力しました', 'success');
       }
 
       /* ══ インポートテンプレートDL ══ */
@@ -6619,7 +6387,6 @@
         if (pageEl) pageEl.scrollTop = 0;
         if (id === 'attendance') renderAttCalendar();
         if (id === 'yearend') renderYearendList();
-        if (id === 'transfer') renderTransferList();
         if (id === 'shahou') { renderHoshuTable(); checkShahouChanges(); }
         if (id === 'dashboard') {
           if (deptDonutObj) { deptDonutObj.destroy(); deptDonutObj = null; }
@@ -7099,196 +6866,14 @@
         a.download = `年末調整_${yearendYear}.csv`; a.click();
       }
 
-      /* ══════════════════════════════════════
-         ⑥ 振込管理 (Sprint 8)
-      ══════════════════════════════════════ */
-      let transferPeriod = '';
-      let transferData = [];
+      /* 振込管理機能は削除済み */
 
-      function buildTransferPeriodSelector() {
-        const sel = $('transferPeriodSel'), now = new Date();
-        sel.innerHTML = '';
-        for (let i = -2; i <= 1; i++) {
-          const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-          const v = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-          const o = document.createElement('option');
-          o.value = v; o.textContent = v.replace('-', '年') + '月';
-          if (i === 0) o.selected = true;
-          sel.appendChild(o);
-        }
-        transferPeriod = sel.value;
-        sel.addEventListener('change', e => { transferPeriod = e.target.value; renderTransferList(); });
-      }
+      function buildTransferPeriodSelector() { /* 振込管理機能は削除済み */ }
 
-      async function loadTransferData() {
-        // 確定済み給与historyから振込データを生成
-        const hist = await dbGet('payroll_history', { company_id: currentCompany.id, period: transferPeriod });
-        if (!hist || !hist.employees) { showToast('確定済みの給与データが見つかりません。先に給与を確定してください。', 'error'); return; }
-        transferData = hist.employees.map(e => ({
-          employee_id: e.id,
-          name: e.name,
-          dept: e.dept || '—',
-          amount: e.monthlyNet || 0,
-          bank_name: e.bank_name || '',
-          branch_name: e.branch_name || '',
-          account_type: e.account_type || 'ordinary',
-          account_no: e.account_no || '',
-          account_name: e.account_name || e.name,
-          status: 'pending',
-          selected: true
-        }));
-        // DBにupsert（一括）
-        const _upsertRows = transferData.map(t => ({
-          company_id: currentCompany.id, period: transferPeriod,
-          employee_id: parseInt(t.employee_id) || t.employee_id,
-          account_name: t.account_name, amount: t.amount, status: 'pending',
-          account_no: t.account_no || '', bank_code: t.bank_code || '0000',
-          branch_code: t.branch_code || '000', account_type: t.account_type || 'ordinary',
-        }));
-        await sb.from('bank_transfers').upsert(_upsertRows, { onConflict: 'company_id,period,employee_id' });
-        showToast(`${transferData.length}件の振込データを作成しました`, 'success');
-        renderTransferList();
-      }
-
-      async function renderTransferList() {
-        const wrap = $('transferList');
-        if (!currentCompany) return;
-        const { data } = await sb.from('bank_transfers')
-          .select('*').eq('company_id', currentCompany.id).eq('period', transferPeriod);
-        transferData = (data || []).map(r => ({ ...r, selected: r.status !== 'completed' }));
-        if (!transferData.length) {
-          wrap.innerHTML = '<p style="font-size:0.8rem;color:var(--muted)">「振込データ作成」ボタンで確定済み給与から自動生成します</p>';
-          $('transferSummary').textContent = ''; return;
-        }
-        const total = transferData.filter(t => t.selected).reduce((s, t) => s + t.amount, 0);
-        const cnt = transferData.filter(t => t.selected).length;
-        $('transferSummary').textContent = `合計 ${fmtY(total)} / ${cnt}件`;
-        const rows = transferData.map((t, i) => {
-          const statusCls = `badge-${t.status || 'pending'}`;
-          const hasBankInfo = t.account_no && t.account_no !== '';
-          return `<tr>
-      <td><input type="checkbox" class="transfer-check" data-idx="${i}" ${t.selected ? 'checked' : ''} ${t.status === 'completed' ? 'disabled' : ''}></td>
-      <td>
-        <div style="font-weight:600;font-size:0.82rem">${esc(t.account_name || '—')}</div>
-        <div class="transfer-bank">${esc(t.dept || '—')}</div>
-      </td>
-      <td>
-        ${hasBankInfo
-              ? `<div style="font-size:0.75rem">${esc(t.bank_code || '')} ${esc(t.branch_code || '')} ${t.account_type === 'checking' ? '当座' : '普通'} ${esc(t.account_no)}</div>`
-              : '<span style="color:var(--accent);font-size:0.72rem">⚠ 口座未登録</span>'}
-      </td>
-      <td class="transfer-amount">${fmtY(t.amount)}</td>
-      <td><span class="badge ${statusCls}">${(t.status || 'PENDING').toUpperCase()}</span></td>
-    </tr>`;
-        }).join('');
-        wrap.innerHTML = `
-    <div class="transfer-total-bar">
-      <span>選択中合計</span>
-      <span class="transfer-total-amount" id="transferTotalAmt">${fmtY(total)}</span>
-      <span style="font-size:0.72rem;color:var(--muted)">${cnt}件</span>
-    </div>
-    <table class="transfer-tbl">
-      <thead><tr>
-        <th style="width:36px"><input type="checkbox" id="transferCheckAll" class="transfer-check" checked></th>
-        <th>受取人</th><th>口座情報</th><th style="text-align:right">振込金額</th><th>ステータス</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
-        // 全選択チェックボックス
-        const chkAll = $('transferCheckAll');
-        if (chkAll) chkAll.addEventListener('change', e => {
-          transferData.forEach((t, i) => { if (t.status !== 'completed') t.selected = e.target.checked; });
-          renderTransferList();
-        });
-        wrap.querySelectorAll('.transfer-check[data-idx]').forEach(chk => {
-          chk.addEventListener('change', e => {
-            transferData[parseInt(e.target.dataset.idx)].selected = e.target.checked;
-            const total2 = transferData.filter(t => t.selected).reduce((s, t) => s + t.amount, 0);
-            const cnt2 = transferData.filter(t => t.selected).length;
-            const el = $('transferTotalAmt');
-            if (el) el.textContent = fmtY(total2);
-            $('transferSummary').textContent = `合計 ${fmtY(total2)} / ${cnt2}件`;
-          });
-        });
-      }
-
-      function generateFBFile() {
-        // 全銀協フォーマット（総合振込）固定120バイト
-        if (!transferData.length) { showToast('振込データがありません', 'error'); return; }
-        const selected = transferData.filter(t => t.selected);
-        if (!selected.length) { showToast('振込対象を選択してください', 'error'); return; }
-        const now = new Date();
-        const pad = (s, n, right = false) => { s = String(s || ''); return right ? s.slice(0, n).padEnd(n, ' ') : s.slice(0, n).padStart(n, '0'); }
-        const padL = (s, n) => pad(s, n, true);
-        const ym = `${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
-        // ヘッダレコード（120バイト）
-        const header = [
-          '1',       // データ区分
-          '21',      // 種別コード（総合振込）
-          '0',       // コード区分
-          padL(currentCompany.id.slice(0, 10), 10), // 依頼人コード
-          padL(currentCompany.name.slice(0, 40), 40), // 依頼人名
-          ym,        // 振込日
-          '0000',    // 仕向銀行番号
-          padL('', 15), // 仕向銀行名（スペース）
-          '000',     // 仕向支店番号
-          padL('', 15), // 仕向支店名（スペース）
-          padL('', 4), // 預金種目（スペース）
-          padL('', 7), // 口座番号（スペース）
-          padL('', 17) // 予備
-        ].join('').slice(0, 120).padEnd(120, ' ');
-        // データレコード群
-        const dataRecords = selected.map((t, i) => {
-          const acType = t.account_type === 'checking' ? '2' : '1';
-          const rec = [
-            pad(t.bank_code || '0000', 4),
-            padL(t.bank_name || '', 15),
-            pad(t.branch_code || '000', 3),
-            padL(t.branch_name || '', 15),
-            padL('', 4), // 手順（スペース）
-            acType,
-            pad(t.account_no || '0000000', 7),
-            padL(String(t.account_name || '').toUpperCase(), 30),
-            pad(t.amount, 10),
-            '0', // 新規コード
-            padL('', 10), // 顧客コード1
-            padL('', 10), // 顧客コード2
-            '0', // 振込区分
-            padL('', 7)  // 予備
-          ].join('').slice(0, 120).padEnd(120, ' ');
-          return rec;
-        });
-        // トレーラレコード
-        const totAmt = selected.reduce((s, t) => s + t.amount, 0);
-        const trailer = [
-          '8',
-          pad(selected.length, 6),
-          pad(totAmt, 12),
-          padL('', 101)
-        ].join('').slice(0, 120).padEnd(120, ' ');
-        // エンドレコード
-        const end = '9'.padEnd(120, ' ');
-        const content = [header, ...dataRecords, trailer, end].join('\r\n');
-        const blob = new Blob([content], { type: 'text/plain;charset=Shift_JIS' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = `FB振込_${transferPeriod}.txt`; a.click();
-        URL.revokeObjectURL(url);
-        showToast('全銀協FBファイルを生成しました 📥', 'success');
-      }
-
-      async function markTransferSent() {
-        if (currentCompany.role !== 'owner') { showToast('owner権限が必要です', 'error'); return; }
-        const selected = transferData.filter(t => t.selected && t.id);
-        if (!selected.length) { showToast('マークする振込データを選択してください', 'error'); return; }
-        showModal('振込済みマーク', `${selected.length}件を「振込済み」としてマークしますか？`, 'マークする', 'btn-green', async () => {
-          for (const t of selected) {
-            await sb.from('bank_transfers').update({ status: 'sent', transferred_at: new Date().toISOString() }).eq('id', t.id);
-          }
-          showToast('振込済みにマークしました ✅', 'success');
-          renderTransferList();
-        });
-      }
+      function loadTransferData() { /* 振込管理機能は削除済み */ }
+      function renderTransferList() { /* 振込管理機能は削除済み */ }
+      function generateFBFile() { /* 振込管理機能は削除済み */ }
+      function markTransferSent() { /* 振込管理機能は削除済み */ }
       document.querySelectorAll('.nav-tab').forEach(tab => { tab.addEventListener('click', () => showPage(tab.dataset.page)); });
 
       $('btnAdd').addEventListener('click', handleAdd);
@@ -7411,15 +6996,6 @@
       $('drilldownEmpSel').addEventListener('change', e => {
         renderDrilldownChart(e.target.value);
       });
-
-      // ══ 振込管理 ══
-      $('btnTransferLoad').addEventListener('click', () => {
-        showModal('振込データ作成', `<b>${transferPeriod}</b>の確定済み給与から振込データを作成します。`,
-          '作成する', 'btn-blue', loadTransferData);
-      });
-      $('btnTransferFB').addEventListener('click', generateFBFile);
-      $('btnTransferMarkSent').addEventListener('click', markTransferSent);
-      $('transferPeriodSel').addEventListener('change', e => { transferPeriod = e.target.value; renderTransferList(); });
 
       $('btnFetchTaxRates').addEventListener('click', fetchLatestTaxRates);
       $('btnSaveTaxRates').addEventListener('click', () => {
@@ -8192,16 +7768,6 @@
       //  💳 PLAN & BILLING MANAGEMENT
       // ═══════════════════════════════════════════════════
 
-      // ── プラン機能は無効化（全機能無料開放）──
-      function evaluatePlanStatus() { /* 無効化 */ }
-      function renderPlanBanner() { /* 無効化 */ }
-      function checkEmpLimit() { return true; } // 常にtrue（制限なし）
-      function renderPlanStatusBlock() { /* 無効化 */ }
-      function showPlanModal() { showToast('現在すべての機能を無料でご利用いただけます', 'success'); }
-      function startCheckout() { /* 無効化 */ }
-      function openCustomerPortal() { /* 無効化 */ }
-      window.showPlanModal = showPlanModal;
-
 
       // ── CalcAIからのインポート処理 ──
       function checkCalcAIImport() {
@@ -8313,20 +7879,7 @@
     let acResults = [];   // 計算結果
     let acLastAiLogs = [];
     let acLastAiN = 0;
-    let acChatHistory = [];   // AIチャット会話履歴 [{role, content}]
-
     const acSleep = ms => new Promise(r => setTimeout(r, ms));
-
-    // 簡易マークダウンレンダリング
-    function acRenderMd(text) {
-      return text
-        .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
-        .replace(/\*(.+?)\*/g, '<em>$1</em>')
-        .replace(/`(.+?)`/g, '<code style="background:var(--surface-3);padding:0.1rem 0.3rem;border-radius:3px;font-size:0.75rem">$1</code>')
-        .replace(/^- (.+)$/gm, '<span style="display:block;padding-left:0.75rem">• $1</span>')
-        .replace(/^(\d+)\. (.+)$/gm, '<span style="display:block;padding-left:0.75rem">$1. $2</span>')
-        .replace(/\n/g, '<br>');
-    }
 
     // 自動マッピング候補
     const AC_AUTO_MAP = {
@@ -8739,12 +8292,12 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               summary: {
-                emp_count: acResults.length,
-                total_gross: tG,
-                total_net: tN,
-                total_bonus: tBG,
-                ai_affected: aiN,
-                instruction: document.getElementById('acAiInstruction')?.value || '',
+                count:        acResults.length,
+                totalGross:   tG,
+                totalNet:     tN,
+                totalBonus:   tBG,
+                appliedRules: aiN,
+                month: document.getElementById('acMonth')?.value || '',
               }
             }),
           });
@@ -9010,20 +8563,6 @@
       showToast('給与台帳を出力しました', 'success');
     }
 
-    function acExportTransfer() {
-      if (!acResults.length) { showToast('計算結果がありません', 'error'); return; }
-      const month = document.getElementById('acMonth')?.value || '';
-      const bom = '\uFEFF';
-      const csv = bom + ['氏名,銀行名,振込金額',
-        ...acResults.map(e => [e.name, e.bank || '', e.monthlyNet].join(','))].join('\r\n');
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = `Salario_振込_${month || 'output'}.csv`;
-      a.click(); URL.revokeObjectURL(url);
-      showToast('振込リストを出力しました', 'success');
-    }
-
     // ─────────────────────────────────────────
     // AI呼び出し
     // ─────────────────────────────────────────
@@ -9031,14 +8570,16 @@
       const ctrl = new AbortController();
       const tid = setTimeout(() => ctrl.abort(), 25000);
       try {
-        // 従業員データをコンテキストとして送信（AIが部署名・役職名・個人名を正確に解釈できる）
         const empData = acRows.filter(r => r.name && r.base > 0).map(r => ({
           name: r.name, dept: r.dept || '', pos: r.pos || '', base: r.base, perf: r.perf || 1.0
         }));
         const resp = await fetch('/api/ai', {
           method: 'POST', signal: ctrl.signal,
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ instruction, employees: empData }),
+          body: JSON.stringify({
+            instruction,
+            employees: empData,
+          }),
         });
         clearTimeout(tid);
         if (!resp.ok) {
@@ -9172,80 +8713,9 @@
         setTimeout(() => { if (typeof checkCalcAIImport === 'function') checkCalcAIImport(); }, 300);
       });
 
-      // AIチャット（強化機能：会話履歴・バブルUI・タイピングアニメーション）
-      document.getElementById('acBtnChat')?.addEventListener('click', async () => {
-        const question = document.getElementById('acChatInput')?.value?.trim();
-        if (!question) return;
-        const btn = document.getElementById('acBtnChat');
-        const logEl = document.getElementById('acChatLog');
-        const wrap = document.getElementById('acChatWrap');
-        btn.disabled = true; btn.textContent = '回答中...';
-        document.getElementById('acChatInput').value = '';
-
-        // 会話履歴に追加
-        acChatHistory.push({ role: 'user', content: question });
-
-        // ユーザーバブル表示
-        if (logEl && wrap) {
-          wrap.style.display = 'block';
-          logEl.innerHTML += `<div class="ac-chat-bubble user">${esc(question)}</div>`;
-        }
-
-        // タイピングインジケーター表示
-        const typingId = 'acTyping_' + Date.now();
-        if (logEl) {
-          logEl.innerHTML += `<div id="${typingId}" class="ac-typing"><div class="ac-typing-dot"></div><div class="ac-typing-dot"></div><div class="ac-typing-dot"></div></div>`;
-          logEl.scrollTop = logEl.scrollHeight;
-        }
-
-        try {
-          const resp = await fetch('/api/ai-chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              question,
-              context: 'calcai',
-              history: acChatHistory.slice(-10),
-            }),
-          });
-          const data = await resp.json();
-          const answer = data.answer || 'エラーが発生しました';
-
-          // 会話履歴に追加
-          acChatHistory.push({ role: 'assistant', content: answer });
-
-          // タイピングインジケーター削除
-          const typEl = document.getElementById(typingId);
-          if (typEl) typEl.remove();
-
-          // AIバブル表示（簡易マークダウン描画）
-          if (logEl) {
-            logEl.innerHTML += `<div class="ac-chat-bubble ai">${acRenderMd(answer)}</div>`;
-            logEl.scrollTop = logEl.scrollHeight;
-          }
-
-          // 次の質問候補表示
-          if (data.suggestions && data.suggestions.length > 0 && logEl) {
-            const pills = data.suggestions.map(s =>
-              `<button class="btn btn-sm btn-secondary" style="font-size:0.68rem;margin:0.15rem" onclick="document.getElementById('acChatInput').value=this.textContent;document.getElementById('acBtnChat').click()">${esc(s)}</button>`
-            ).join('');
-            logEl.innerHTML += `<div style="margin-bottom:0.5rem;text-align:center">${pills}</div>`;
-          }
-        } catch (e) {
-          const typEl = document.getElementById(typingId);
-          if (typEl) typEl.remove();
-          if (logEl) {
-            logEl.innerHTML += `<div class="ac-chat-bubble ai" style="border-color:var(--red)">⚠ エラー: ${esc(e.message)}</div>`;
-          }
-        } finally {
-          btn.disabled = false; btn.textContent = '💬 AIに質問する';
-        }
-      });
-
       // 出力
       document.getElementById('acBtnDlSlip')?.addEventListener('click', acExportExcel);
       document.getElementById('acBtnDlLedger')?.addEventListener('click', acExportLedger);
-      document.getElementById('acBtnDlTransfer')?.addEventListener('click', acExportTransfer);
 
       // AI指示サンプル
       document.querySelectorAll('.ac-sample').forEach(btn => {
@@ -9277,6 +8747,13 @@
     window.acOverride = acOverride;
 
   </script>
+  <footer style="text-align: center; padding: 3rem 1rem 2rem; color: #888; font-size: 0.8rem; margin-top: auto; letter-spacing: 0.05em; background: #fff; border-top: 1px solid #e2e8f0; width: 100%; position: relative; z-index: 10;">
+    <a href="tokushoho.html" style="color:#888; text-decoration:none; margin: 0 10px;" onmouseover="this.style.color='#6366f1'" onmouseout="this.style.color='#888'">特定商取引法に基づく表記</a> |
+    <a href="terms.html" style="color:#888; text-decoration:none; margin: 0 10px;" onmouseover="this.style.color='#6366f1'" onmouseout="this.style.color='#888'">利用規約</a> |
+    <a href="privacy.html" style="color:#888; text-decoration:none; margin: 0 10px;" onmouseover="this.style.color='#6366f1'" onmouseout="this.style.color='#888'">プライバシーポリシー</a>
+    <br><br>
+    &copy; 2026 Salario. All rights reserved.
+  </footer>
 </body>
 
 </html>
