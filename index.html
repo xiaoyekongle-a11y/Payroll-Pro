@@ -7027,8 +7027,13 @@
         console.log('[AUTH] event:', event, 'session:', !!session, 'uid:', session?.user?.id);
         console.log('[AUTH] localStorage pa_auth:', !!localStorage.getItem('pa_auth'));
 
+        // INITIAL_SESSION = Supabase初期化完了の合図（session有無に関わらず必ずフラグを立てる）
+        if (event === 'INITIAL_SESSION') {
+          _initializeDone = true;
+          console.log('[AUTH] INITIAL_SESSION → initDone=true, session:', !!session);
+        }
+
         // _initialize完了前に発火するSIGNED_INはスキップ。
-        // INITIAL_SESSION（初期化完了後）またはログインボタン押下後のSIGNED_INのみ処理する。
         if (event === 'SIGNED_IN' && !_initializeDone) {
           console.log('[AUTH] skipped: SIGNED_IN before INITIAL_SESSION');
           return;
@@ -7045,9 +7050,6 @@
           showScreen('authScreen');
           return;
         }
-
-        // INITIAL_SESSION = Supabaseの_initialize完了の合図
-        if (event === 'INITIAL_SESSION') { _initializeDone = true; console.log('[AUTH] INITIAL_SESSION received, init done'); }
 
         // TOKEN_REFRESHED は画面遷移済みなら無視
         if (event === 'TOKEN_REFRESHED') return;
