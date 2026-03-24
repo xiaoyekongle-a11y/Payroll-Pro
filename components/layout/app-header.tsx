@@ -1,8 +1,7 @@
 "use client";
 
-import { cn, getInitials } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { Bell, Moon, Sun, LogOut, Building2 } from "lucide-react";
+import { getInitials } from "@/lib/utils";
+import { Bell, LogOut, Building2, ChevronDown } from "lucide-react";
 import { useState } from "react";
 
 interface AppHeaderProps {
@@ -20,78 +19,70 @@ export function AppHeader({
   onSwitchCompany,
   onSignOut,
 }: AppHeaderProps) {
-  const [darkMode, setDarkMode] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
 
   const roleLabels = {
-    owner: "OWNER",
-    editor: "EDITOR",
-    viewer: "VIEWER",
+    owner: "管理者",
+    editor: "編集者",
+    viewer: "閲覧者",
   };
 
   return (
-    <header className="h-[var(--header-height)] bg-primary text-white px-5 flex items-center gap-3 sticky top-0 z-50 shadow-[0_2px_8px_rgba(26,86,219,0.3)]">
+    <header className="h-[var(--header-height)] bg-white border-b border-border px-4 flex items-center gap-3 sticky top-0 z-50">
       {/* Logo */}
-      <div className="font-bold text-lg tracking-tight whitespace-nowrap">
-        <span className="text-white">Sala</span>
-        <span className="text-white/55">rio</span>
+      <div className="flex items-center gap-2">
+        <div className="w-7 h-7 bg-primary rounded flex items-center justify-center">
+          <span className="text-white font-bold text-sm">S</span>
+        </div>
+        <span className="font-bold text-base text-ink tracking-tight">Salario</span>
       </div>
 
-      {/* Company Badge */}
-      <div className="text-xs text-white/70 font-mono px-2.5 py-1 border border-white/20 rounded-full bg-white/10 truncate max-w-[160px]">
-        {companyName}
-      </div>
+      {/* Divider */}
+      <div className="w-px h-5 bg-border mx-1" />
+
+      {/* Company Selector */}
+      <button
+        onClick={onSwitchCompany}
+        className="flex items-center gap-1.5 text-sm text-ink hover:text-primary transition-colors group"
+      >
+        <Building2 className="w-4 h-4 text-muted group-hover:text-primary" />
+        <span className="font-medium truncate max-w-[140px]">{companyName}</span>
+        <ChevronDown className="w-3.5 h-3.5 text-muted" />
+      </button>
 
       {/* Spacer */}
       <div className="flex-1" />
 
       {/* Role Badge */}
-      <span className="text-[0.55rem] font-mono font-bold px-2 py-0.5 rounded-full bg-white/20 text-white hidden sm:inline">
+      <span className="text-xs px-2 py-0.5 rounded bg-surface-3 text-muted font-medium hidden sm:inline">
         {roleLabels[userRole]}
       </span>
 
       {/* Notifications */}
       <button
         onClick={() => setShowNotifications(!showNotifications)}
-        className="relative w-8 h-8 flex items-center justify-center rounded-[var(--radius)] bg-white/10 border border-white/20 hover:bg-white/20 transition-colors"
+        className="relative w-8 h-8 flex items-center justify-center rounded hover:bg-surface-3 transition-colors text-muted hover:text-ink"
         aria-label="通知"
       >
         <Bell className="w-4 h-4" />
-        <span className="absolute -top-1 -right-1 w-4 h-4 bg-danger text-[0.55rem] font-bold rounded-full flex items-center justify-center">
-          3
-        </span>
+        <span className="absolute top-1 right-1 w-2 h-2 bg-danger rounded-full" />
       </button>
 
-      {/* User Avatar */}
-      <div className="w-8 h-8 rounded-full bg-white/20 border-2 border-white/40 flex items-center justify-center font-bold text-xs cursor-pointer hover:bg-white/30 transition-colors">
-        {getInitials(userName)}
+      {/* User Menu */}
+      <div className="flex items-center gap-2 pl-2 border-l border-border">
+        <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
+          {getInitials(userName)}
+        </div>
+        <span className="text-sm font-medium text-ink hidden sm:inline">{userName}</span>
       </div>
-
-      {/* Switch Company */}
-      <button
-        onClick={onSwitchCompany}
-        className="text-xs text-white/90 px-3 py-1.5 rounded-[var(--radius)] bg-white/10 border border-white/20 hover:bg-white/20 transition-colors whitespace-nowrap hidden sm:flex items-center gap-1.5"
-      >
-        <Building2 className="w-3.5 h-3.5" />
-        会社切替
-      </button>
-
-      {/* Dark Mode Toggle */}
-      <button
-        onClick={() => setDarkMode(!darkMode)}
-        className="w-8 h-8 flex items-center justify-center rounded-[var(--radius)] bg-white/10 border border-white/20 hover:bg-white/20 transition-colors"
-        aria-label="ダークモード切替"
-      >
-        {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-      </button>
 
       {/* Sign Out */}
       <button
         onClick={onSignOut}
-        className="text-xs text-white/90 px-3 py-1.5 rounded-[var(--radius)] bg-white/10 border border-white/20 hover:bg-white/20 transition-colors whitespace-nowrap hidden md:flex items-center gap-1.5"
+        className="text-xs text-muted hover:text-ink px-2 py-1.5 rounded hover:bg-surface-3 transition-colors whitespace-nowrap flex items-center gap-1"
       >
         <LogOut className="w-3.5 h-3.5" />
-        ログアウト
+        <span className="hidden md:inline">ログアウト</span>
       </button>
     </header>
   );
