@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 interface LoginFormProps {
-  onLogin: (email: string, password: string) => void;
+  onLogin: (email: string) => void;
   onSwitchTab: (tab: "login" | "register" | "join") => void;
 }
 
@@ -29,7 +29,7 @@ export function LoginForm({ onLogin, onSwitchTab }: LoginFormProps) {
 
     // Simulate API call
     setTimeout(() => {
-      onLogin(email, password);
+      onLogin(email);
       setLoading(false);
     }, 500);
   };

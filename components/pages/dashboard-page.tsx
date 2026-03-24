@@ -17,8 +17,10 @@ import {
 import { TrendChart } from "@/components/charts/trend-chart";
 import { DeptDonutChart } from "@/components/charts/dept-donut-chart";
 
+import type { NavPage } from "@/components/layout/nav-tabs";
+
 interface DashboardPageProps {
-  onNavigate: (page: string) => void;
+  onNavigate: (page: NavPage) => void;
 }
 
 export function DashboardPage({ onNavigate }: DashboardPageProps) {
@@ -178,7 +180,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
             <Button
               variant="primary"
               className="flex-col h-auto py-4 gap-2"
-              onClick={() => onNavigate("calcai")}
+              onClick={() => onNavigate("calcai" as NavPage)}
             >
               <Zap className="w-6 h-6" />
               <span className="text-xs">CalcAI</span>
@@ -186,7 +188,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
             <Button
               variant="secondary"
               className="flex-col h-auto py-4 gap-2"
-              onClick={() => onNavigate("attendance")}
+              onClick={() => onNavigate("attendance" as NavPage)}
             >
               <Clock className="w-6 h-6" />
               <span className="text-xs">勤怠管理</span>
@@ -194,7 +196,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
             <Button
               variant="secondary"
               className="flex-col h-auto py-4 gap-2"
-              onClick={() => onNavigate("yearend")}
+              onClick={() => onNavigate("yearend" as NavPage)}
             >
               <FileCheck className="w-6 h-6" />
               <span className="text-xs">年末調整</span>
@@ -202,7 +204,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
             <Button
               variant="secondary"
               className="flex-col h-auto py-4 gap-2"
-              onClick={() => onNavigate("shahou")}
+              onClick={() => onNavigate("shahou" as NavPage)}
             >
               <Building className="w-6 h-6" />
               <span className="text-xs">社保届出</span>
@@ -210,7 +212,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
             <Button
               variant="secondary"
               className="flex-col h-auto py-4 gap-2"
-              onClick={() => onNavigate("history")}
+              onClick={() => onNavigate("history" as NavPage)}
             >
               <FolderOpen className="w-6 h-6" />
               <span className="text-xs">給与履歴</span>

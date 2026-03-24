@@ -13,7 +13,6 @@ import {
   CreditCard,
   Shield,
   Bell,
-  Palette,
   Plus,
   Copy,
   Trash2,

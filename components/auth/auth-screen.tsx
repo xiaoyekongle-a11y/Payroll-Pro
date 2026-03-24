@@ -29,7 +29,7 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
     onAuthSuccess({ email, name: "デモユーザー" });
   };
 
-  const handleRegister = (data: { companyName: string; userName: string; email: string }) => {
+  const handleRegister = (data: { companyName: string; userName: string; email: string; password: string }) => {
     onAuthSuccess({
       email: data.email,
       name: data.userName || "管理者",
@@ -37,7 +37,7 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
     });
   };
 
-  const handleJoin = (data: { userName: string; email: string }) => {
+  const handleJoin = (data: { userName: string; email: string; password: string; inviteCode: string }) => {
     onAuthSuccess({
       email: data.email,
       name: data.userName || "メンバー",
